@@ -1,0 +1,197 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 14px;
+
+  /* Bloomberg-style institutional dark palette (default) */
+  --bg: #111418;
+  --bg-2: #171b21;
+  --panel: #1c2129;
+  --panel-hover: #20262f;
+  --border: #2b313b;
+  --border-strong: #3a414d;
+
+  --text: #f3f5f7;
+  --text-2: #a0a9b7;
+  --muted: #707987;
+  --muted-2: #555c68;
+
+  --positive: #5fa97b;
+  --positive-bg: rgba(95, 169, 123, 0.12);
+  --negative: #cf6660;
+  --negative-bg: rgba(207, 102, 96, 0.12);
+  --warning: #c2945a;
+  --warning-bg: rgba(194, 148, 90, 0.12);
+  --link: #7396c2;
+  --link-hover: #8caedc;
+
+  --accent: #4a90c4;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--panel);
+  --card-foreground: var(--text);
+  --popover: var(--panel);
+  --popover-foreground: var(--text);
+  --primary: var(--text);
+  --primary-foreground: var(--bg);
+  --secondary: var(--bg-2);
+  --secondary-foreground: var(--text);
+  --muted-foreground: var(--text-2);
+  --accent-foreground: var(--text);
+  --destructive: var(--negative);
+  --destructive-foreground: var(--text);
+  --input: var(--bg-2);
+  --input-background: var(--bg-2);
+  --switch-background: var(--border);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: var(--accent);
+  --chart-1: #7396c2;
+  --chart-2: #5fa97b;
+  --chart-3: #c2945a;
+  --chart-4: #b18ab8;
+  --chart-5: #6fb5b5;
+  --radius: 4px;
+
+  --sidebar: var(--bg-2);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: var(--text);
+  --sidebar-accent: var(--panel);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--accent);
+
+  color-scheme: dark;
+}
+
+/* Light mode — FT / Morningstar / GitHub inspired */
+html.light {
+  --bg: #f7f6f3;
+  --bg-2: #eeece8;
+  --panel: #ffffff;
+  --panel-hover: #f4f2ee;
+  --border: #dbd8d1;
+  --border-strong: #c5c1b8;
+
+  --text: #1a1a1a;
+  --text-2: #4a4a52;
+  --muted: #828290;
+  --muted-2: #a8a8b4;
+
+  --positive: #1d7d47;
+  --positive-bg: rgba(29, 125, 71, 0.09);
+  --negative: #bf3535;
+  --negative-bg: rgba(191, 53, 53, 0.09);
+  --warning: #92640e;
+  --warning-bg: rgba(146, 100, 14, 0.09);
+  --link: #2b6cb0;
+  --link-hover: #1e4f89;
+
+  --accent: #2b6cb0;
+
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    font-size: var(--font-size);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color-scheme: dark;
+  }
+
+  html.light {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Horizontal scroll containers: smooth touch on iOS */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .font-num {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    font-feature-settings: 'tnum';
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-strong);
+  }
+
+  ::selection {
+    background: rgba(115, 150, 194, 0.3);
+    color: var(--text);
+  }
+
+  h1, h2, h3, h4 {
+    color: var(--text);
+    line-height: 1.25;
+    font-weight: 500;
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: var(--muted);
+  }
+}
