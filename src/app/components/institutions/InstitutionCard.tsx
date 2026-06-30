@@ -21,7 +21,7 @@ export function InstitutionCard({ institution, financial }: InstitutionCardProps
 
   return (
     <Link
-      to={`/institutions/${institution.id}`}
+      to={`/universities/${institution.id}`}
       className="block transition-colors group"
       style={{ backgroundColor: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 4 }}
       onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--border-strong)')}

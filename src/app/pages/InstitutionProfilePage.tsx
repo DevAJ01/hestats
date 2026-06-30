@@ -198,7 +198,7 @@ export function InstitutionProfilePage() {
     return (
       <div className="max-w-[1600px] mx-auto px-4 py-20 text-center">
         <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 12 }}>Institution not found.</p>
-        <Link to="/institutions" style={{ color: 'var(--link)', fontSize: 12 }}>
+        <Link to="/universities" style={{ color: 'var(--link)', fontSize: 12 }}>
           ← Back to institutions
         </Link>
       </div>

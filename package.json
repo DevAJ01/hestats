@@ -1,10 +1,17 @@
 {
-  "name": "@figma/my-make-file",
+  "name": "hestats",
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "packageManager": "pnpm@11.7.0",
   "scripts": {
-    "build": "vite build"
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:smoke": "vitest run src/app/__tests__/routes.smoke.test.tsx src/app/__tests__/open-data.test.ts",
+    "test:data": "vitest run src/app/data/validation.test.ts",
+    "validate:data": "vitest run src/app/data/validation.test.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -55,6 +62,8 @@
     "react-popper": "2.3.0",
     "react-resizable-panels": "2.1.7",
     "react-responsive-masonry": "2.7.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "react-router": "7.13.0",
     "react-slick": "0.31.0",
     "recharts": "2.15.2",
@@ -64,26 +73,17 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.0",
     "@tailwindcss/vite": "4.1.12",
+    "@types/node": "24.10.4",
+    "@types/react": "18.3.27",
+    "@types/react-dom": "18.3.7",
     "@vitejs/plugin-react": "4.7.0",
+    "jsdom": "27.3.0",
     "tailwindcss": "4.1.12",
+    "typescript": "5.9.3",
+    "vitest": "4.0.16",
     "vite": "6.3.5"
-  },
-  "peerDependencies": {
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    },
-    "react-dom": {
-      "optional": true
-    }
-  },
-  "pnpm": {
-    "overrides": {
-      "vite": "6.3.5"
-    }
   }
 }

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowUpRight, Shield, Database, ExternalLink, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Clock } from 'lucide-react'
 import { DATA_SOURCES, CONFIDENCE_META, LICENCE_DISPLAY, METRIC_SOURCES, DataSourceDef } from '../data/sources'
+import { AVAILABLE_YEARS, financials } from '../data/financials'
+import { institutions } from '../data/institutions'
 import { Panel } from '../components/layout/Panel'
 
 const TIER_LABELS: Record<number, string> = {
@@ -115,6 +117,8 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export function AboutPage() {
   const [activeSection, setActiveSection] = useState<'overview' | 'sources' | 'metrics' | 'confidence' | 'validation' | 'legal'>('overview')
+  const verifiedCount = financials.filter((row) => row.data_source === 'verified').length
+  const estimatedCount = financials.filter((row) => row.data_source === 'estimated').length
 
   const sections = [
     { id: 'overview', label: 'Overview' },
@@ -137,7 +141,7 @@ export function AboutPage() {
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>{DATA_SOURCES.length} official data sources registered</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}>Every statistic traceable to an official publication</span>
+        <span style={{ color: 'var(--text-2)' }}>Prototype dataset · estimates explicitly labelled</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
@@ -162,7 +166,7 @@ export function AboutPage() {
               </button>
             ))}
             <div className="pt-3 space-y-1.5">
-              <Link to="/institutions" className="flex items-center gap-1 px-3 py-1.5" style={{ color: 'var(--link)', fontSize: 11 }}>
+              <Link to="/universities" className="flex items-center gap-1 px-3 py-1.5" style={{ color: 'var(--link)', fontSize: 11 }}>
                 Browse institutions <ArrowUpRight className="w-3 h-3" />
               </Link>
               <Link to="/reports" className="flex items-center gap-1 px-3 py-1.5" style={{ color: 'var(--link)', fontSize: 11 }}>
@@ -189,14 +193,14 @@ export function AboutPage() {
                     finance directors, regulators, students and policy makers without cost or registration.
                   </p>
                   <p>
-                    Every statistic displayed on this platform is sourced from an official published document:
-                    a HESA dataset, an OfS return, an audited annual report, or a government statistical release.
-                    We do not fabricate, estimate, interpolate or AI-generate any financial figure.
+                    The current public build is a prototype dataset: verified seed rows are mixed with clearly labelled
+                    modelled estimates while the full official ingestion pipeline is being built. Verified rows should be
+                    traced back to annual reports or official datasets; estimated rows must not be cited as audited fact.
                   </p>
                   <p>
-                    Where official data has not yet been published for a given institution and year, we display
-                    <strong style={{ color: 'var(--text)' }}> "Awaiting official publication"</strong> rather than
-                    a placeholder number. Confidence levels are displayed on every metric.
+                    The production standard is stricter: where provenance cannot be established for a metric, HEStats
+                    should display <strong style={{ color: 'var(--text)' }}> "Awaiting official publication"</strong> or
+                    an explicit estimated/provisional badge rather than silent placeholder numbers.
                   </p>
                 </div>
               </Panel>
@@ -204,10 +208,10 @@ export function AboutPage() {
               <Panel title="Coverage" subtitle="Institutions, years and metrics">
                 <div className="grid grid-cols-2 sm:grid-cols-4 border-l border-t" style={{ borderColor: 'var(--border)' }}>
                   {[
-                    { value: '155+', label: 'Institutions indexed' },
-                    { value: '10', label: 'Financial years' },
-                    { value: '8', label: 'Official data sources' },
-                    { value: '95+', label: 'Verified audited records' },
+                    { value: String(institutions.length), label: 'Institutions indexed' },
+                    { value: String(AVAILABLE_YEARS.length), label: 'Financial years' },
+                    { value: String(DATA_SOURCES.length), label: 'Source registries' },
+                    { value: `${verifiedCount}/${estimatedCount}`, label: 'Verified / estimated rows' },
                   ].map((s) => (
                     <div key={s.label} className="px-3 py-3 border-r border-b" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)' }}>
                       <p className="font-num" style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700 }}>{s.value}</p>
@@ -333,7 +337,7 @@ export function AboutPage() {
                     ))}
                   </ul>
                   <p className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-2)' }}>
-                    Where provenance cannot be established for a metric, we display <strong style={{ color: 'var(--text)' }}>"Awaiting official publication"</strong> rather than a value. We never use estimated, interpolated or AI-generated figures.
+                    Where provenance cannot be established for a metric, production HEStats should display <strong style={{ color: 'var(--text)' }}>"Awaiting official publication"</strong> or an explicit estimated/provisional badge. The current prototype keeps modelled rows visible only when their data source is labelled.
                   </p>
                 </div>
               </Panel>

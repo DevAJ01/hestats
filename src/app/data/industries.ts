@@ -279,7 +279,7 @@ export const INDUSTRIES: Industry[] = [
     employment_growth_pct: 10,
     ai_exposure_pct: 46,
     retention_rate: 66,
-    top_universities: ['arts-london', 'edinburgh', 'manchester', 'bristol', 'leeds'],
+    top_universities: ['ual', 'edinburgh', 'manchester', 'bristol', 'leeds'],
     top_degrees: ['english', 'history', 'architecture', 'design', 'media'],
     regional_hubs: [
       { city: 'London', pct: 48 },

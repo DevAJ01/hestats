@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useWorkspace } from '../context/WorkspaceContext'
+import { useYear } from '../context/YearContext'
 import { X, Plus, Download, GitCompare, Camera, Bookmark } from 'lucide-react'
 import { institutions } from '../data/institutions'
-import { getAllLatestFinancials, getLatestFinancial, getFinancialsByInstitution } from '../data/financials'
+import { AVAILABLE_YEARS, financials, getLatestFinancial, getFinancialsByInstitution } from '../data/financials'
 import { Institution, FinancialYear } from '../data/types'
 import { RiskBadge } from '../components/institutions/RiskBadge'
 import { NationBadge } from '../components/institutions/NationBadge'
@@ -309,18 +310,24 @@ const COMPARE_PRESETS: Record<string, string[]> = {
 
 function initialSelection(params: URLSearchParams): string[] {
   const ids = params.get('ids')
-  if (ids) return ids.split(',').filter(Boolean).slice(0, 6)
+  if (ids) return completeSelection(ids.split(',').filter(Boolean).slice(0, 6))
   const set = params.get('set')
   if (set && COMPARE_PRESETS[set]) return COMPARE_PRESETS[set]
   const add = params.get('add')
-  if (add) return ['oxford', add].filter((v, i, a) => a.indexOf(v) === i)
+  if (add) return completeSelection([add])
   return ['oxford', 'cambridge']
 }
 
+function completeSelection(ids: string[]): string[] {
+  const unique = ids.filter((id, i, arr) => arr.indexOf(id) === i).slice(0, 6)
+  if (unique.length !== 1) return unique
+  return unique[0] === 'oxford' ? ['oxford', 'cambridge'] : [unique[0], 'oxford']
+}
+
 export function ComparePage() {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const { saveComparison } = useWorkspace()
-  const [selected, setSelected] = useState<string[]>(() => initialSelection(params))
+  const { selectedYear, setSelectedYear } = useYear()
   const [saved, setSaved] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
@@ -328,8 +335,9 @@ export function ComparePage() {
   const [showExport, setShowExport] = useState(false)
   const tableRef = useRef<HTMLDivElement>(null)
 
-  const allFins = getAllLatestFinancials()
-  const finMap = new Map(allFins.map((f) => [f.institution_id, f]))
+  const selected = useMemo(() => initialSelection(params), [params])
+  const allFins = useMemo(() => financials.filter((f) => f.fiscal_year === selectedYear), [selectedYear])
+  const finMap = useMemo(() => new Map(allFins.map((f) => [f.institution_id, f])), [allFins])
 
   const selectedInstitutions: { inst: Institution; fin: FinancialYear; color: string }[] = selected
     .map((id, i) => {
@@ -347,13 +355,26 @@ export function ComparePage() {
         i.short_name.toLowerCase().includes(searchQuery.toLowerCase())),
   )
 
+  function commitSelection(next: string[]) {
+    const complete = completeSelection(next)
+      .filter((id) => availableInstitutions.some((i) => i.id === id))
+      .slice(0, 6)
+    setParams((current) => {
+      const nextParams = new URLSearchParams(current)
+      nextParams.delete('set')
+      nextParams.delete('add')
+      nextParams.set('ids', complete.join(','))
+      return nextParams
+    })
+  }
+
   function addInstitution(id: string) {
-    if (selected.length < 6) setSelected([...selected, id])
+    if (selected.length < 6) commitSelection([...selected, id])
     setSearchQuery('')
     setShowDropdown(false)
   }
   function removeInstitution(id: string) {
-    setSelected(selected.filter((s) => s !== id))
+    commitSelection(selected.filter((s) => s !== id))
   }
 
   function getBestIdx(metricKey: keyof FinancialYear, higherBetter: boolean): number {
@@ -368,11 +389,6 @@ export function ComparePage() {
   const trendFinancials = selectedInstitutions.flatMap(({ inst }) =>
     getFinancialsByInstitution(inst.id)
   )
-
-  const aiInsight = selectedInstitutions
-    .map(({ inst }) => AI_INSIGHTS[inst.id])
-    .filter(Boolean)
-    .join('\n\n')
 
   return (
     <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-2.5 space-y-2.5">
@@ -395,7 +411,17 @@ export function ComparePage() {
           <span className="font-num" style={{ color: 'var(--text)' }}>{selected.length}</span> of 6 institutions selected
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}>Latest available financial year</span>
+        <span style={{ color: 'var(--text-2)' }}>FY</span>
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(e.target.value)}
+          className="bg-transparent outline-none font-num"
+          style={{ color: 'var(--text)', fontSize: 11, border: '1px solid var(--border)', borderRadius: 2, padding: '1px 4px', cursor: 'pointer' }}
+        >
+          {AVAILABLE_YEARS.map((year) => (
+            <option key={year} value={year} style={{ backgroundColor: 'var(--bg-2)', color: 'var(--text)' }}>{year}</option>
+          ))}
+        </select>
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={() => setShowShare(true)}
@@ -558,7 +584,7 @@ export function ComparePage() {
 
         {/* Summary KPI cards */}
         <div className="lg:col-span-2">
-          <Panel title="Financial Scorecard" subtitle="Latest available financial year · side-by-side" padded={false}>
+          <Panel title="Financial Scorecard" subtitle={`${selectedYear} · side-by-side`} padded={false}>
             <div className="overflow-x-auto" ref={tableRef}>
               <table className="w-full">
                 <thead>

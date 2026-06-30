@@ -131,10 +131,10 @@ export function getGradeBg(grade: string): string {
 }
 
 /** Returns health score for every institution's latest financials */
-export function getAllHealthScores(): { institution_id: string; score: number; grade: string }[] {
+export function getAllHealthScores(): (HealthScore & { institution_id: string })[] {
   return getAllLatestFinancials().map((fin) => {
-    const { score, grade } = computeHealthScore(fin)
-    return { institution_id: fin.institution_id, score, grade }
+    const health = computeHealthScore(fin)
+    return { institution_id: fin.institution_id, ...health }
   })
 }
 

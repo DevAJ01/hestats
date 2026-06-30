@@ -1,9 +1,7 @@
 // SUPPORT / OPEN SOURCE / CONTACT LINKS
-// One place to update when real handles are available — search REPLACE_ME and swap them in.
+// One place to update when project support channels change.
 export const SUPPORT_LINKS = {
-  github_sponsors: 'https://github.com/sponsors/REPLACE_ME',
-  kofi: 'https://ko-fi.com/REPLACE_ME',
-  bmac: 'https://buymeacoffee.com/REPLACE_ME',
-  github_repo: 'https://github.com/REPLACE_ME/hestats',
+  github_sponsors: 'https://github.com/sponsors/DevAJ01',
+  github_repo: 'https://github.com/DevAJ01/hestats',
   contact_email: 'hello@hestats.co.uk',
 }

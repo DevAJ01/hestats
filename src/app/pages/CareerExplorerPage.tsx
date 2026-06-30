@@ -99,7 +99,7 @@ function StepUniversities({ degree }: { degree: Degree }) {
                 </div>
               ))}
             </div>
-            <Link to={`/institutions/${inst.id}`} className="mt-2 flex items-center gap-1 text-xs hover:underline" style={{ color: 'var(--link)', fontSize: 11 }}>
+            <Link to={`/universities/${inst.id}`} className="mt-2 flex items-center gap-1 text-xs hover:underline" style={{ color: 'var(--link)', fontSize: 11 }}>
               View full profile <ArrowRight className="w-3 h-3" />
             </Link>
           </div>

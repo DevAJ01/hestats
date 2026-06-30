@@ -121,7 +121,7 @@ export function GraduateOutcomesPage() {
                 return (
                   <div key={o.institution_id} className="flex items-center gap-2">
                     <span className="font-num" style={{ color: 'var(--muted)', fontSize: 10, width: 16, flexShrink: 0 }}>{i + 1}</span>
-                    <Link to={`/institutions/${inst.id}`} className="flex-1 min-w-0 hover:underline truncate" style={{ color: 'var(--text)', fontSize: 12 }}>{inst.short_name}</Link>
+                    <Link to={`/universities/${inst.id}`} className="flex-1 min-w-0 hover:underline truncate" style={{ color: 'var(--text)', fontSize: 12 }}>{inst.short_name}</Link>
                     <div className="flex-1 h-1.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
                       <div style={{ height: '100%', width: `${o.employment_rate_15mo}%`, backgroundColor: 'var(--positive)', borderRadius: 1 }} />
                     </div>
@@ -141,7 +141,7 @@ export function GraduateOutcomesPage() {
                 return (
                   <div key={o.institution_id} className="flex items-center gap-2">
                     <span className="font-num" style={{ color: 'var(--muted)', fontSize: 10, width: 16, flexShrink: 0 }}>{i + 1}</span>
-                    <Link to={`/institutions/${inst.id}`} className="flex-1 min-w-0 hover:underline truncate" style={{ color: 'var(--text)', fontSize: 12 }}>{inst.short_name}</Link>
+                    <Link to={`/universities/${inst.id}`} className="flex-1 min-w-0 hover:underline truncate" style={{ color: 'var(--text)', fontSize: 12 }}>{inst.short_name}</Link>
                     <div className="flex-1 h-1.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
                       <div style={{ height: '100%', width: `${(o.avg_salary_k / maxSal) * 100}%`, backgroundColor: 'var(--link)', borderRadius: 1 }} />
                     </div>
@@ -261,7 +261,7 @@ export function GraduateOutcomesPage() {
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}>
                         <td className="px-2 py-2 font-num" style={{ color: 'var(--muted)', fontSize: 10 }}>{(idx + 1).toString().padStart(2, '0')}</td>
                         <td className="px-3 py-2">
-                          <Link to={`/institutions/${inst.id}`} className="flex items-center gap-1.5 min-w-0">
+                          <Link to={`/universities/${inst.id}`} className="flex items-center gap-1.5 min-w-0">
                             <NationBadge nation={inst.nation} size="sm" />
                             <span className="truncate group-hover:underline" style={{ color: 'var(--text)', fontSize: 11.5, fontWeight: 500 }}>{inst.canonical_name}</span>
                           </Link>
@@ -380,7 +380,7 @@ export function GraduateOutcomesPage() {
                       <div className="space-y-1.5">
                         {emp.top_universities.map(({ id, name, annual_hires }) => (
                           <div key={id} className="flex items-center gap-2">
-                            <Link to={`/institutions/${id}`} className="hover:underline" style={{ color: 'var(--text)', fontSize: 11.5, width: 100, flexShrink: 0 }}>{name}</Link>
+                            <Link to={`/universities/${id}`} className="hover:underline" style={{ color: 'var(--text)', fontSize: 11.5, width: 100, flexShrink: 0 }}>{name}</Link>
                             <div className="flex-1 h-1.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
                               <div style={{ height: '100%', width: `${(annual_hires / emp.top_universities[0].annual_hires) * 100}%`, backgroundColor: 'var(--accent)', borderRadius: 1 }} />
                             </div>

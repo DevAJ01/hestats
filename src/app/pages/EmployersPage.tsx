@@ -75,7 +75,7 @@ function EmployerCard({ emp, expanded, onToggle }: { emp: Employer; expanded: bo
                   return (
                     <div key={id} className="flex items-center gap-2">
                       <span className="font-num" style={{ color: 'var(--muted)', fontSize: 10, width: 14, flexShrink: 0 }}>{i + 1}</span>
-                      <Link to={`/institutions/${id}`} className="hover:underline flex-shrink-0" style={{ color: 'var(--text)', fontSize: 11.5, width: 120 }}>{name}</Link>
+                      <Link to={`/universities/${id}`} className="hover:underline flex-shrink-0" style={{ color: 'var(--text)', fontSize: 11.5, width: 120 }}>{name}</Link>
                       <div className="flex-1 h-2" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
                         <div style={{ height: '100%', width: `${(annual_hires / maxH) * 100}%`, backgroundColor: sectorColor, borderRadius: 1, opacity: 0.75 }} />
                       </div>

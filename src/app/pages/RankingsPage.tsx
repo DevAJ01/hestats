@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { Link } from 'react-router'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import { TrendingUp, TrendingDown, Download, ArrowUpDown } from 'lucide-react'
 import { institutions } from '../data/institutions'
 import { getFinancialsByInstitution, getAllLatestFinancials, financials, AVAILABLE_YEARS } from '../data/financials'
@@ -126,6 +126,22 @@ const TABS: TabDef[] = [
   },
 ]
 
+const SORT_KEYS = new Set<SortKey>(TABS.flatMap((tab) => tab.metrics.map((metric) => metric.key)).concat('health'))
+
+function resolveRankingParams(params: URLSearchParams): { tab: TabDef; sortKey: SortKey } {
+  const category = params.get('category')
+  const sort = params.get('sort') as SortKey | null
+  const categoryTab = category === 'outcomes'
+    ? TABS.find((tab) => tab.id === 'employment')
+    : TABS.find((tab) => tab.id === category)
+  const sortTab = sort && SORT_KEYS.has(sort)
+    ? TABS.find((tab) => tab.metrics.some((metric) => metric.key === sort) || (sort === 'health' && tab.id === 'health'))
+    : undefined
+  const tab = categoryTab ?? sortTab ?? TABS[0]
+  const sortKey = sort && SORT_KEYS.has(sort) ? sort : tab.defaultSort
+  return { tab, sortKey }
+}
+
 function fmt(key: SortKey, val: number): string {
   switch (key) {
     case 'surplus_margin':
@@ -206,11 +222,19 @@ function isLowerBetter(key: SortKey): boolean {
 }
 
 export function RankingsPage() {
-  const [activeTab, setActiveTab] = useState<TabDef>(TABS[0])
-  const [sortKey, setSortKey] = useState<SortKey>(TABS[0].defaultSort)
+  const [params] = useSearchParams()
+  const requested = useMemo(() => resolveRankingParams(params), [params])
+  const [activeTab, setActiveTab] = useState<TabDef>(requested.tab)
+  const [sortKey, setSortKey] = useState<SortKey>(requested.sortKey)
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
   const [search, setSearch] = useState('')
   const { selectedYear, setSelectedYear } = useYear()
+
+  useEffect(() => {
+    setActiveTab(requested.tab)
+    setSortKey(requested.sortKey)
+    setSortDir(isLowerBetter(requested.sortKey) ? 'asc' : 'desc')
+  }, [requested.tab, requested.sortKey])
 
   // Build financials for the selected year
   const yearFins = useMemo(() => {
@@ -415,7 +439,7 @@ export function RankingsPage() {
                       {(idx + 1).toString().padStart(2, '0')}
                     </td>
                     <td className="px-2 sm:px-3 py-2">
-                      <Link to={`/institutions/${r.inst.id}`} className="flex items-center gap-1.5 min-w-0">
+                      <Link to={`/universities/${r.inst.id}`} className="flex items-center gap-1.5 min-w-0">
                         <NationBadge nation={r.inst.nation} size="sm" />
                         <span className="truncate group-hover:underline" style={{ color: 'var(--text)', fontSize: 11.5, fontWeight: 500 }}>
                           {r.inst.canonical_name}

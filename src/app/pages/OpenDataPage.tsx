@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Download, Copy, CheckCircle, Database, FileJson, FileText, ExternalLink, Activity } from 'lucide-react'
 import { institutions } from '../data/institutions'
 import { financials, getAllLatestFinancials, AVAILABLE_YEARS } from '../data/financials'
-import { computeHealthScore } from '../data/health'
 import { Panel } from '../components/layout/Panel'
+import { getDataset, type Format } from '../data/openDataExports'
 
 const LICENCE = 'Creative Commons Attribution 4.0 International (CC BY 4.0)'
-const VERSION = '2025.2'
-const CITATION_YEAR = '2025'
+const VERSION = 'prototype-2026.1'
+const CITATION_YEAR = '2026'
 
 const DATASETS = [
   {
@@ -15,7 +15,7 @@ const DATASETS = [
     name: 'Full Financial Dataset',
     description: 'All financial metrics for all institutions across all available years (2015-16 to 2024-25). Includes income, surplus, research, staff costs, borrowing, liquidity, and student FTE.',
     rows: financials.length,
-    columns: 18,
+    columns: 22,
     years: `${AVAILABLE_YEARS[AVAILABLE_YEARS.length - 1]}–${AVAILABLE_YEARS[0]}`,
     formats: ['csv', 'json'],
     size: '~420 KB',
@@ -26,7 +26,7 @@ const DATASETS = [
     name: 'Latest Year Snapshot',
     description: `Single-year snapshot for FY${AVAILABLE_YEARS[0]}. Includes all computed metrics, financial health scores (0–100), letter grades (AAA–CCC), and risk flags.`,
     rows: getAllLatestFinancials().length,
-    columns: 21,
+    columns: 23,
     years: AVAILABLE_YEARS[0],
     formats: ['csv', 'json'],
     size: '~45 KB',
@@ -46,102 +46,15 @@ const DATASETS = [
   {
     id: 'health-scores',
     name: 'Financial Health Scores',
-    description: 'Computed financial health scores and component breakdowns (liquidity, surplus margin, borrowing burden, cash cover, income diversity, research intensity) for all institutions.',
+    description: 'Computed financial health scores, component breakdowns, and source confidence for all institutions.',
     rows: getAllLatestFinancials().length,
-    columns: 10,
+    columns: 12,
     years: AVAILABLE_YEARS[0],
     formats: ['csv', 'json'],
     size: '~18 KB',
     tier: 'derived',
   },
 ]
-
-type Format = 'csv' | 'json'
-
-function generateInstitutionsCsv() {
-  const header = 'id,ukprn,canonical_name,short_name,city,nation,founded,mission_group,official_website'
-  const rows = institutions.map((i) =>
-    [i.id, i.ukprn, `"${i.canonical_name}"`, `"${i.short_name}"`, `"${i.city}"`, i.nation, i.founded, `"${i.mission_group ?? ''}"`, `"${i.official_website ?? ''}"`].join(',')
-  )
-  return [header, ...rows].join('\n')
-}
-
-function generateInstitutionsJson() {
-  return JSON.stringify(institutions.map((i) => ({
-    id: i.id, ukprn: i.ukprn, canonical_name: i.canonical_name,
-    short_name: i.short_name, city: i.city, nation: i.nation,
-    founded: i.founded, mission_group: i.mission_group ?? null,
-    official_website: i.official_website ?? null,
-  })), null, 2)
-}
-
-function generateAllFinancialsCsv() {
-  const header = 'institution_id,fiscal_year,revenue_gbp_m,surplus_gbp_m,surplus_margin_pct,research_income_gbp_m,tuition_fee_income_gbp_m,other_income_gbp_m,staff_costs_gbp_m,total_expenditure_gbp_m,cash_gbp_m,borrowing_gbp_m,liquidity_days,international_fte_pct,student_fte_total,capital_expenditure_gbp_m,net_assets_gbp_m,risk_flag,data_source'
-  const rows = financials.map((f) =>
-    [f.institution_id, f.fiscal_year, f.revenue_gbp_m, f.surplus_gbp_m, f.surplus_margin_pct.toFixed(2),
-      f.research_income_gbp_m, f.tuition_fee_income_gbp_m, f.other_income_gbp_m,
-      f.staff_costs_gbp_m, f.total_expenditure_gbp_m, f.cash_gbp_m, f.borrowing_gbp_m,
-      f.liquidity_days, f.international_fte_pct, f.student_fte_total,
-      f.capital_expenditure_gbp_m, f.net_assets_gbp_m, f.risk_flag, f.data_source].join(',')
-  )
-  return [header, ...rows].join('\n')
-}
-
-function generateAllFinancialsJson() {
-  return JSON.stringify(financials, null, 2)
-}
-
-function generateLatestSnapshotCsv() {
-  const latest = getAllLatestFinancials()
-  const header = 'institution_id,fiscal_year,revenue_gbp_m,surplus_gbp_m,surplus_margin_pct,research_income_gbp_m,tuition_fee_income_gbp_m,staff_costs_gbp_m,cash_gbp_m,borrowing_gbp_m,liquidity_days,international_fte_pct,student_fte_total,capital_expenditure_gbp_m,net_assets_gbp_m,risk_flag,data_source,health_score,health_grade'
-  const rows = latest.map((f) => {
-    const h = computeHealthScore(f)
-    return [f.institution_id, f.fiscal_year, f.revenue_gbp_m, f.surplus_gbp_m, f.surplus_margin_pct.toFixed(2),
-      f.research_income_gbp_m, f.tuition_fee_income_gbp_m, f.staff_costs_gbp_m,
-      f.cash_gbp_m, f.borrowing_gbp_m, f.liquidity_days, f.international_fte_pct,
-      f.student_fte_total, f.capital_expenditure_gbp_m, f.net_assets_gbp_m,
-      f.risk_flag, f.data_source, h.score, h.grade].join(',')
-  })
-  return [header, ...rows].join('\n')
-}
-
-function generateLatestSnapshotJson() {
-  return JSON.stringify(getAllLatestFinancials().map((f) => {
-    const h = computeHealthScore(f)
-    return { ...f, health_score: h.score, health_grade: h.grade }
-  }), null, 2)
-}
-
-function generateHealthScoresCsv() {
-  const latest = getAllLatestFinancials()
-  const header = 'institution_id,fiscal_year,health_score,health_grade,liquidity,surplus_margin,borrowing_burden,cash_cover,income_diversity,research_intensity'
-  const rows = latest.map((f) => {
-    const h = computeHealthScore(f)
-    return [f.institution_id, f.fiscal_year, h.score, h.grade,
-      h.components.liquidity.toFixed(1), h.components.surplusMargin.toFixed(1),
-      h.components.borrowingBurden.toFixed(1), h.components.cashCover.toFixed(1),
-      h.components.incomeDiversity.toFixed(1), h.components.researchIntensity.toFixed(1)].join(',')
-  })
-  return [header, ...rows].join('\n')
-}
-
-function generateHealthScoresJson() {
-  return JSON.stringify(getAllLatestFinancials().map((f) => {
-    const h = computeHealthScore(f)
-    return {
-      institution_id: f.institution_id, fiscal_year: f.fiscal_year,
-      health_score: h.score, health_grade: h.grade, components: h.components,
-    }
-  }), null, 2)
-}
-
-function getDataset(id: string, fmt: Format): string {
-  if (id === 'institutions') return fmt === 'csv' ? generateInstitutionsCsv() : generateInstitutionsJson()
-  if (id === 'all-financials') return fmt === 'csv' ? generateAllFinancialsCsv() : generateAllFinancialsJson()
-  if (id === 'latest-snapshot') return fmt === 'csv' ? generateLatestSnapshotCsv() : generateLatestSnapshotJson()
-  if (id === 'health-scores') return fmt === 'csv' ? generateHealthScoresCsv() : generateHealthScoresJson()
-  return ''
-}
 
 function downloadFile(content: string, filename: string, mime: string) {
   const blob = new Blob([content], { type: mime })
@@ -158,7 +71,7 @@ type CitationStyle = (typeof CITATION_STYLES)[number]
 
 function buildCitation(style: CitationStyle, datasetName: string): string {
   const url = 'https://hestats.co.uk/open-data'
-  const accessed = 'June 2025'
+  const accessed = 'June 2026'
   switch (style) {
     case 'APA':
       return `HEStats. (${CITATION_YEAR}). ${datasetName} [Data set]. HEStats UK Higher Education Financial Intelligence. ${url}`
@@ -245,9 +158,9 @@ export function OpenDataPage() {
               HEStats Open Data
             </p>
             <p style={{ color: 'var(--text-2)', fontSize: 12.5, lineHeight: 1.6, maxWidth: 700 }}>
-              All financial datasets are available free of charge under <strong style={{ color: 'var(--text)' }}>CC BY 4.0</strong>.
-              Data is sourced from audited institutional annual reports, HESA Finance Open Data, and the Office for Students
-              Annual Financial Returns. Verified figures are cross-referenced against multiple official publications.
+              Prototype financial datasets are available free of charge under <strong style={{ color: 'var(--text)' }}>CC BY 4.0</strong>.
+              Rows marked <strong style={{ color: 'var(--positive)' }}>verified</strong> are intended to trace to official annual reports or open datasets;
+              rows marked <strong style={{ color: 'var(--warning)' }}>estimated</strong> are modelled placeholders and should not be cited as audited fact.
             </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-shrink-0">
@@ -503,18 +416,18 @@ export function OpenDataPage() {
       </div>
 
       {/* API preview */}
-      <Panel title="Programmatic Access" subtitle="Use the HEStats JSON API for real-time data integration">
+      <Panel title="Programmatic Access" subtitle="Use the local HEStats JSON API simulator for prototype integrations">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p style={{ color: 'var(--text-2)', fontSize: 12, lineHeight: 1.6, marginBottom: 12 }}>
-              All datasets are available via the HEStats REST API. No authentication required for read access.
-              Rate limit: 100 requests/minute per IP.
+              The current app includes a local read-only API simulator backed by this same dataset. Public endpoint shape is stable enough for
+              prototypes, but hosted API availability and rate limits are not yet production guarantees.
             </p>
             <div className="space-y-2">
               {[
                 { method: 'GET', path: '/api/v1/institutions', desc: 'List all institutions' },
-                { method: 'GET', path: '/api/v1/financials/{id}', desc: 'Full financial history for one institution' },
-                { method: 'GET', path: '/api/v1/financials?year=2024-25', desc: 'All institutions for a given year' },
+                { method: 'GET', path: '/api/v1/institutions/{id}/financials', desc: 'Full financial history for one institution' },
+                { method: 'GET', path: '/api/v1/rankings?metric=revenue&fiscal_year=2024-25', desc: 'All institutions ranked for a given year' },
                 { method: 'GET', path: '/api/v1/health-scores', desc: 'Financial health scores (latest year)' },
               ].map(({ method, path, desc }) => (
                 <div key={path} className="flex items-start gap-2">

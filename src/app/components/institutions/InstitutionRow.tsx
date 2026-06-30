@@ -29,7 +29,7 @@ export function InstitutionRow({ institution, financial, rank }: InstitutionRowP
         </td>
       )}
       <td className="px-3 py-2">
-        <Link to={`/institutions/${institution.id}`} className="flex items-center gap-2.5 min-w-0">
+        <Link to={`/universities/${institution.id}`} className="flex items-center gap-2.5 min-w-0">
           <NationBadge nation={institution.nation} size="sm" />
           <div className="min-w-0">
             <p

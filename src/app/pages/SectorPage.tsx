@@ -17,10 +17,10 @@ const ALERTS = [
 ]
 
 const MISSION_GROUPS = [
-  { name: 'Russell Group', ids: ['oxford', 'cambridge', 'imperial', 'ucl', 'lse', 'edinburgh', 'manchester', 'bristol', 'warwick', 'durham', 'exeter', 'cardiff', 'belfast'] },
-  { name: 'Alliance', ids: ['bath', 'brighton', 'brunel', 'city', 'coventry'] },
-  { name: 'Million+', ids: ['anglia-ruskin', 'bedfordshire', 'birmingham-city'] },
-  { name: 'GuildHE', ids: ['arts-london', 'falmouth'] },
+  { name: 'Russell Group', ids: ['oxford', 'cambridge', 'imperial', 'ucl', 'lse', 'edinburgh', 'manchester', 'bristol', 'warwick', 'durham', 'exeter', 'cardiff', 'qub'] },
+  { name: 'Alliance', ids: ['bath', 'brighton', 'brunel', 'city', 'coventry', 'shu', 'ljmu', 'northumbria', 'portsmouth', 'uwe'] },
+  { name: 'Million+', ids: ['anglia', 'beds', 'bcu', 'uel', 'londonmet', 'lsbu', 'sunderland', 'northampton', 'staffs', 'wlv', 'worc'] },
+  { name: 'GuildHE', ids: ['ual', 'falmouth'] },
 ]
 
 function alertColor(level: string) {
@@ -259,7 +259,7 @@ export function SectorPage() {
               return (
                 <div key={f.institution_id} className="flex items-center gap-2">
                   <span className="font-num" style={{ color: 'var(--muted)', fontSize: 10, width: 16, flexShrink: 0 }}>{i + 1}</span>
-                  <Link to={`/institutions/${f.institution_id}`} className="truncate hover:underline" style={{ color: 'var(--text)', fontSize: 11.5, flexShrink: 0, minWidth: 0, width: 120 }}>
+                  <Link to={`/universities/${f.institution_id}`} className="truncate hover:underline" style={{ color: 'var(--text)', fontSize: 11.5, flexShrink: 0, minWidth: 0, width: 120 }}>
                     {inst?.short_name}
                   </Link>
                   <div className="flex-1 h-1.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
@@ -301,7 +301,7 @@ export function SectorPage() {
               return (
                 <div key={f.institution_id} className="flex items-center gap-2">
                   <span className="font-num" style={{ color: 'var(--muted)', fontSize: 10, width: 16, flexShrink: 0 }}>{i + 1}</span>
-                  <Link to={`/institutions/${f.institution_id}`} className="truncate hover:underline" style={{ color: 'var(--text)', fontSize: 11.5, flexShrink: 0, minWidth: 0, width: 110 }}>
+                  <Link to={`/universities/${f.institution_id}`} className="truncate hover:underline" style={{ color: 'var(--text)', fontSize: 11.5, flexShrink: 0, minWidth: 0, width: 110 }}>
                     {inst?.short_name}
                   </Link>
                   <Sparkline values={history} width={36} height={11} color="var(--link)" />
@@ -337,7 +337,7 @@ export function SectorPage() {
             return (
               <Link
                 key={h.institution_id}
-                to={`/institutions/${h.institution_id}`}
+                to={`/universities/${h.institution_id}`}
                 className="flex flex-col gap-2 p-2.5 border transition-colors"
                 style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3, textDecoration: 'none' }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
@@ -423,7 +423,7 @@ export function SectorPage() {
                   {gradeInsts.map((h) => (
                     <Link
                       key={h.institution_id}
-                      to={`/institutions/${h.institution_id}`}
+                      to={`/universities/${h.institution_id}`}
                       className="flex items-center gap-1.5 px-2 py-1.5 border transition-colors"
                       style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3, textDecoration: 'none' }}
                       onMouseEnter={(e) => (e.currentTarget.style.borderColor = color)}

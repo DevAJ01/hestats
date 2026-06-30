@@ -3,14 +3,14 @@ import { Link } from 'react-router'
 import {
   Terminal, Copy, CheckCircle,
   Play, Clock, Database, Shield, Zap, BookOpen,
-  ArrowUpRight, Activity, Key, Globe, RefreshCw,
+  ArrowUpRight, Activity, Globe, RefreshCw,
   Heart, Hash
 } from 'lucide-react'
 import { dispatchRequest, type ApiResponse } from '../api/runtime'
 import { AVAILABLE_YEARS } from '../data/financials'
 import { institutions } from '../data/institutions'
 
-const BASE = 'https://api.hestats.co.uk/v1'
+const BASE = '/api/v1'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -163,28 +163,18 @@ function codeFor(lang: Lang, ep: EndpointDef, customQuery?: string): string {
     case 'curl':
       return `curl -X GET \\
   "${url}" \\
-  -H "Authorization: Bearer hsk_your_api_key_here" \\
   -H "Accept: application/json"`
     case 'python':
       return `import requests
 
-API_KEY = "hsk_your_api_key_here"
-BASE_URL = "https://api.hestats.co.uk/v1"
+BASE_URL = "${BASE}"
 
-response = requests.get(
-    "${url}",
-    headers={"Authorization": f"Bearer {API_KEY}"}
-)
+response = requests.get("${url}")
 response.raise_for_status()
 data = response.json()
 print(data["data"])`
     case 'javascript':
-      return `const API_KEY = 'hsk_your_api_key_here';
-
-const response = await fetch(
-  '${url}',
-  { headers: { Authorization: \`Bearer \${API_KEY}\` } }
-);
+      return `const response = await fetch('${url}');
 
 if (!response.ok) throw new Error(\`API error: \${response.status}\`);
 const { data, meta } = await response.json();
@@ -193,12 +183,7 @@ console.log(data);`
       return `library(httr)
 library(jsonlite)
 
-api_key <- "hsk_your_api_key_here"
-
-resp <- GET(
-  "${url}",
-  add_headers(Authorization = paste("Bearer", api_key))
-)
+resp <- GET("${url}")
 stop_for_status(resp)
 result <- fromJSON(content(resp, "text"))
 print(result$data)`
@@ -264,7 +249,7 @@ function JsonHighlight({ json }: { json: string }) {
   )
 }
 
-// ─── Live Playground ──────────────────────────────────────────────────────────
+// ─── Local Playground ─────────────────────────────────────────────────────────
 
 function Playground() {
   const [activeEp, setActiveEp] = useState(ENDPOINTS[0])
@@ -272,8 +257,6 @@ function Playground() {
   const [response, setResponse] = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [lang, setLang] = useState<Lang>('curl')
-  const [apiKey] = useState(`hsk_demo_${ Math.random().toString(36).slice(2, 14)}`)
-  const [keyCopied, setKeyCopied] = useState(false)
 
   function selectEndpoint(ep: EndpointDef) {
     setActiveEp(ep)
@@ -315,12 +298,6 @@ function Playground() {
 
   const customQuery = buildQueryFromParams()
   const customPath = buildPathWithParams()
-
-  function copyKey() {
-    navigator.clipboard.writeText(apiKey)
-    setKeyCopied(true)
-    setTimeout(() => setKeyCopied(false), 2000)
-  }
 
   const groups = [...new Set(ENDPOINTS.map((e) => e.group))]
 
@@ -371,14 +348,11 @@ function Playground() {
 
         {/* Params + request URL */}
         <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-          {/* API key row */}
+          {/* Access row */}
           <div className="flex items-center gap-2 mb-3 p-2 rounded" style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}>
-            <Key className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--warning)' }} />
-            <span style={{ color: 'var(--muted)', fontSize: 10, flexShrink: 0 }}>Demo key</span>
-            <code className="flex-1 truncate font-num" style={{ color: 'var(--warning)', fontSize: 10 }}>{apiKey}</code>
-            <button onClick={copyKey} className="flex items-center gap-1 flex-shrink-0" style={{ color: keyCopied ? 'var(--positive)' : 'var(--muted)', fontSize: 10 }}>
-              {keyCopied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-            </button>
+            <Shield className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--warning)' }} />
+            <span style={{ color: 'var(--muted)', fontSize: 10, flexShrink: 0 }}>Prototype access</span>
+            <code className="flex-1 truncate font-num" style={{ color: 'var(--warning)', fontSize: 10 }}>No API key · local read-only simulator</code>
           </div>
 
           {/* Parameters */}
@@ -711,9 +685,9 @@ function SchemaBlock({ s }: { s: typeof SCHEMAS[0] }) {
 // ─── Changelog ────────────────────────────────────────────────────────────────
 
 const CHANGELOG = [
-  { version: 'v1.2.0', date: 'Jun 2025', tag: 'New', color: 'var(--positive)', changes: ['Added /compare endpoint supporting up to 6 institutions', 'Health score components now included in /institutions/{id}/health', '/health-scores now supports grade and nation filtering', 'R SDK example added to all endpoint code samples'] },
-  { version: 'v1.1.0', date: 'Mar 2025', tag: 'Update', color: 'var(--link)', changes: ['Added /years endpoint listing all available fiscal years', 'Added /metrics catalogue endpoint', 'Pagination offset/limit added to /institutions and /health-scores', 'source_pdf field added to FinancialYear response'] },
-  { version: 'v1.0.0', date: 'Jan 2025', tag: 'Release', color: 'var(--warning)', changes: ['Initial v1 API release', 'Endpoints: /institutions, /sector/summary, /rankings', 'REST + JSON with Bearer token authentication', '10-year financial history for 155+ institutions'] },
+  { version: 'prototype-2026.1', date: 'Jun 2026', tag: 'New', color: 'var(--positive)', changes: ['Bundled read-only API simulator aligned with the React runtime', 'Added /compare endpoint supporting up to 6 institutions', 'Health score components included in /institutions/{id}/health', 'Export examples no longer require authentication headers'] },
+  { version: 'prototype-2025.2', date: 'Mar 2026', tag: 'Update', color: 'var(--link)', changes: ['Added /years endpoint listing available fiscal years', 'Added /metrics catalogue endpoint', 'Pagination offset/limit added to /institutions and /health-scores', 'source_pdf field exposed where a source document is known'] },
+  { version: 'prototype-2025.1', date: 'Jan 2026', tag: 'Baseline', color: 'var(--warning)', changes: ['Initial local API catalogue for the frontend prototype', 'Endpoints: /institutions, /sector/summary, /rankings', 'REST + JSON examples backed by bundled app data', 'Verified and estimated records are labelled in response payloads'] },
 ]
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
@@ -725,7 +699,7 @@ export function ApiPage() {
     { id: 'playground' as const, label: 'Playground', icon: <Terminal className="w-3.5 h-3.5" /> },
     { id: 'reference' as const, label: 'Reference', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'schema' as const, label: 'Schema', icon: <Database className="w-3.5 h-3.5" /> },
-    { id: 'auth' as const, label: 'Auth & Limits', icon: <Shield className="w-3.5 h-3.5" /> },
+    { id: 'auth' as const, label: 'Access & Limits', icon: <Shield className="w-3.5 h-3.5" /> },
     { id: 'changelog' as const, label: 'Changelog', icon: <Clock className="w-3.5 h-3.5" /> },
   ]
 
@@ -748,7 +722,7 @@ export function ApiPage() {
         <span style={{ color: 'var(--text-2)' }}>{institutions.length} institutions</span>
         <div className="ml-auto flex items-center gap-2">
           <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--positive)' }} />
-          <span style={{ color: 'var(--positive)', fontSize: 10, letterSpacing: '0.06em' }}>LIVE · OPEN ACCESS</span>
+          <span style={{ color: 'var(--positive)', fontSize: 10, letterSpacing: '0.06em' }}>LOCAL SIMULATOR · OPEN ACCESS</span>
         </div>
       </div>
 
@@ -757,18 +731,18 @@ export function ApiPage() {
         <div className="lg:col-span-2 p-4 border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
           <h1 style={{ color: 'var(--text)', fontSize: 20, fontWeight: 700, marginBottom: 8, letterSpacing: '-0.02em' }}>HEStats API</h1>
           <p style={{ color: 'var(--text-2)', fontSize: 13, lineHeight: 1.7, marginBottom: 14 }}>
-            Programmatic access to every financial metric, health score, and institution profile in the HEStats dataset.
-            Build dashboards, power research, and integrate audited UK Higher Education finance data into your own tools.
-            <strong style={{ color: 'var(--text)' }}> No authentication required for public endpoints.</strong>
+            Programmatic shape for HEStats financial metrics, health scores, and institution profiles. This build exposes
+            a local read-only simulator backed by the bundled prototype dataset, with verified and estimated records labelled.
+            <strong style={{ color: 'var(--text)' }}> No authentication is required in the prototype.</strong>
           </p>
           <div className="flex flex-wrap gap-2">
             {[
               { icon: <Zap className="w-3.5 h-3.5" />, label: 'REST + JSON' },
-              { icon: <Shield className="w-3.5 h-3.5" />, label: 'Source-verified' },
+              { icon: <Shield className="w-3.5 h-3.5" />, label: 'Provenance labelled' },
               { icon: <Globe className="w-3.5 h-3.5" />, label: `${institutions.length} institutions` },
               { icon: <Database className="w-3.5 h-3.5" />, label: '10 years history' },
-              { icon: <Activity className="w-3.5 h-3.5" />, label: 'Live data' },
-              { icon: <Heart className="w-3.5 h-3.5" />, label: 'Free forever' },
+              { icon: <Activity className="w-3.5 h-3.5" />, label: 'Prototype data' },
+              { icon: <Heart className="w-3.5 h-3.5" />, label: 'Open data intent' },
             ].map((f) => (
               <span key={f.label} className="flex items-center gap-1.5 px-2.5 py-1.5"
                 style={{ border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text-2)', fontSize: 11 }}>
@@ -785,7 +759,7 @@ export function ApiPage() {
             { label: 'Endpoints', value: ENDPOINTS.length, color: 'var(--accent)' },
             { label: 'Institutions', value: institutions.length, color: 'var(--positive)' },
             { label: 'Fiscal years', value: AVAILABLE_YEARS.length, color: 'var(--link)' },
-            { label: 'Rate limit', value: '50k/day', color: 'var(--warning)' },
+            { label: 'Access', value: 'Open', color: 'var(--warning)' },
           ].map(({ label, value, color }) => (
             <div key={label} className="flex flex-col justify-center px-3 py-3 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
               <p className="font-num" style={{ color, fontSize: 22, fontWeight: 700, lineHeight: 1 }}>{value}</p>
@@ -824,8 +798,8 @@ export function ApiPage() {
           <div className="px-3 py-2 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--accent)', borderRadius: 3, borderLeft: '3px solid var(--accent)' }}>
             <p style={{ color: 'var(--text)', fontSize: 12.5, fontWeight: 600, marginBottom: 2 }}>Interactive API Console</p>
             <p style={{ color: 'var(--text-2)', fontSize: 12, lineHeight: 1.55 }}>
-              Select an endpoint, fill in parameters, and click <strong style={{ color: 'var(--text)' }}>Run</strong> to execute a real query against the HEStats dataset.
-              Responses are live — the data comes directly from the same engine that powers this platform.
+              Select an endpoint, fill in parameters, and click <strong style={{ color: 'var(--text)' }}>Run</strong> to execute a local query against the bundled HEStats prototype dataset.
+              Responses are generated by the same in-browser runtime that powers this page.
             </p>
           </div>
           <Playground />
@@ -911,7 +885,7 @@ export function ApiPage() {
                   { code: 404, label: 'Not Found', desc: 'Institution, year, or endpoint not found.' },
                   { code: 405, label: 'Method Not Allowed', desc: 'Only GET requests are supported.' },
                   { code: 422, label: 'Unprocessable Entity', desc: 'Required parameter missing or invalid value (e.g. unknown metric).' },
-                  { code: 429, label: 'Too Many Requests', desc: 'Rate limit exceeded. See X-RateLimit-Reset header.' },
+                  { code: 429, label: 'Too Many Requests', desc: 'Reserved for a future hosted API. The local simulator does not enforce request quotas.' },
                 ].map(({ code, label, desc }) => (
                   <tr key={code} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td className="px-3 py-2 font-num" style={{ color: code < 300 ? 'var(--positive)' : code < 500 ? 'var(--warning)' : 'var(--negative)', fontSize: 12.5, fontWeight: 600, width: 60 }}>{code}</td>
@@ -925,35 +899,32 @@ export function ApiPage() {
         </div>
       )}
 
-      {/* ── AUTH & LIMITS ──────────────────────────────────────────────────────── */}
+      {/* ── ACCESS & LIMITS ────────────────────────────────────────────────────── */}
       {section === 'auth' && (
         <div className="space-y-3">
-          {/* Authentication */}
+          {/* Access */}
           <div className="border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
             <div className="px-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
-              <p style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600 }}>Authentication</p>
+              <p style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600 }}>Prototype Access</p>
             </div>
             <div className="p-4 space-y-4">
               <div>
                 <p style={{ color: 'var(--text-2)', fontSize: 12.5, lineHeight: 1.6, marginBottom: 10 }}>
-                  The HEStats API uses <strong style={{ color: 'var(--text)' }}>Bearer token authentication</strong>. Pass your API key in the
-                  <code className="font-num" style={{ color: 'var(--accent)', margin: '0 4px' }}>Authorization</code> header.
-                  All read endpoints are accessible with a free-tier key.
+                  This page documents the intended public API shape and runs a <strong style={{ color: 'var(--text)' }}>local read-only simulator</strong>.
+                  Requests in this build do not leave the browser and do not require credentials. A hosted API should preserve open read access
+                  unless a later product decision introduces operational controls.
                 </p>
                 <pre style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 3, padding: '10px 12px', fontSize: 11, color: 'var(--text-2)', fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.65, margin: 0, overflowX: 'auto', whiteSpace: 'pre' }}>
-{`Authorization: Bearer hsk_your_api_key_here
-
-# Example:
-curl -H "Authorization: Bearer hsk_live_abc123xyz" \\
-  "${BASE}/institutions/oxford"`}
+{`# Example:
+curl "${BASE}/institutions/oxford" \\
+  -H "Accept: application/json"`}
                 </pre>
               </div>
               <div>
-                <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Key format</p>
+                <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Production note</p>
                 <p style={{ color: 'var(--text-2)', fontSize: 12 }}>
-                  API keys follow the format <code className="font-num" style={{ color: 'var(--accent)' }}>hsk_&lt;env&gt;_&lt;32-char-random&gt;</code>.
-                  Environment prefix: <code className="font-num" style={{ color: 'var(--positive)' }}>live</code> for production,{' '}
-                  <code className="font-num" style={{ color: 'var(--warning)' }}>test</code> for sandbox.
+                  Production access, quotas, and service status are not yet implemented. Until then, downloads and the in-browser
+                  simulator are the authoritative public surfaces.
                 </p>
               </div>
             </div>
@@ -961,12 +932,12 @@ curl -H "Authorization: Bearer hsk_live_abc123xyz" \\
 
           {/* Rate limits */}
           <div>
-            <h2 style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Rate Limits & Tiers</h2>
+            <h2 style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Access Model</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
               {[
-                { tier: 'Free', rate: '1,000', unit: 'req/day', price: 'No cost', color: 'var(--muted)', features: ['All institution data', 'Latest fiscal year only', 'Public endpoints', 'JSON responses', 'Community support'] },
-                { tier: 'Research', rate: '50,000', unit: 'req/day', price: 'Contact us', color: 'var(--link)', features: ['Full 10-year history', 'Bulk CSV export', 'Provenance metadata', 'Priority support', 'SLA 99.5%'] },
-                { tier: 'Enterprise', rate: 'Unlimited', unit: '', price: 'Custom pricing', color: 'var(--warning)', features: ['All Research features', 'Custom data feeds', 'GraphQL endpoint', 'Dedicated support', 'SLA 99.9%', 'On-premise option'] },
+                { tier: 'Prototype', rate: 'Local', unit: 'runtime', price: 'Bundled', color: 'var(--muted)', features: ['Read-only responses', 'No account required', 'JSON response examples', 'Verified and estimated rows labelled', 'Runs from app data'] },
+                { tier: 'Open data', rate: 'CSV/JSON', unit: 'exports', price: 'Public', color: 'var(--link)', features: ['Institution directory', 'Financial rows', 'Health scores', 'Source and confidence fields', 'Versioned files planned'] },
+                { tier: 'Hosted API', rate: 'Planned', unit: 'surface', price: 'Not launched', color: 'var(--warning)', features: ['Service status needed', 'Quotas not implemented', 'Authentication undecided', 'Bulk feeds to be designed', 'Methodology versioning required'] },
               ].map((t) => (
                 <div key={t.tier} className="p-3.5 border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3, borderTop: `3px solid ${t.color}` }}>
                   <div className="flex items-baseline justify-between mb-1">
@@ -991,17 +962,17 @@ curl -H "Authorization: Bearer hsk_live_abc123xyz" \\
           {/* Rate limit headers */}
           <div className="border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
             <div className="px-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
-              <p style={{ color: 'var(--text)', fontSize: 12.5, fontWeight: 600 }}>Rate Limit Headers</p>
-              <p style={{ color: 'var(--muted)', fontSize: 10.5 }}>Included in every API response</p>
+              <p style={{ color: 'var(--text)', fontSize: 12.5, fontWeight: 600 }}>Response Metadata</p>
+              <p style={{ color: 'var(--muted)', fontSize: 10.5 }}>Current and planned response headers</p>
             </div>
             <table className="w-full">
               <tbody>
                 {[
-                  { header: 'X-RateLimit-Limit', desc: 'Daily request quota for your API key tier' },
-                  { header: 'X-RateLimit-Remaining', desc: 'Requests remaining in the current window' },
-                  { header: 'X-RateLimit-Reset', desc: 'Unix timestamp when the quota resets (midnight UTC)' },
-                  { header: 'X-API-Version', desc: 'API version that served this response' },
-                  { header: 'Cache-Control', desc: 'Caching directive — public responses are cached for 5 minutes' },
+                  { header: 'X-API-Version', desc: 'Planned hosted API version for a production response' },
+                  { header: 'X-Dataset-Version', desc: 'Planned dataset version identifier for reproducible research' },
+                  { header: 'Cache-Control', desc: 'Planned caching directive for hosted public responses' },
+                  { header: 'X-RateLimit-Limit', desc: 'Reserved for a future hosted service; not enforced by the local simulator' },
+                  { header: 'X-RateLimit-Reset', desc: 'Reserved for a future hosted service; not emitted by the local simulator' },
                 ].map(({ header, desc }) => (
                   <tr key={header} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td className="px-3 py-2 font-num" style={{ color: 'var(--accent)', fontSize: 11, width: 240 }}>{header}</td>
@@ -1016,13 +987,13 @@ curl -H "Authorization: Bearer hsk_live_abc123xyz" \\
           <div className="border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
             <div className="px-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
               <p style={{ color: 'var(--text)', fontSize: 12.5, fontWeight: 600 }}>Quick Start</p>
-              <p style={{ color: 'var(--muted)', fontSize: 10.5 }}>Get data in under 60 seconds</p>
+              <p style={{ color: 'var(--muted)', fontSize: 10.5 }}>Query the bundled dataset in under 60 seconds</p>
             </div>
             <div className="p-4 space-y-4">
               {[
-                { step: '1', title: 'Get an API key', desc: 'Register at hestats.co.uk/api/register. Free tier is available immediately with no credit card required.' },
-                { step: '2', title: 'Make your first request', code: `curl -H "Authorization: Bearer hsk_your_key" \\\n  "${BASE}/institutions/oxford"` },
-                { step: '3', title: 'Explore with the Playground', desc: 'Use the Playground tab above to run any endpoint with real parameters and see live responses.' },
+                { step: '1', title: 'Choose an endpoint', desc: 'Start with institutions, rankings, sector summary, or a single university profile.' },
+                { step: '2', title: 'Make your first request', code: `curl "${BASE}/institutions/oxford" \\\n  -H "Accept: application/json"` },
+                { step: '3', title: 'Explore with the Playground', desc: 'Use the Playground tab above to run endpoint-shaped requests against the bundled prototype data.' },
               ].map((s) => (
                 <div key={s.step} className="flex gap-3">
                   <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full" style={{ backgroundColor: 'var(--accent)' }}>

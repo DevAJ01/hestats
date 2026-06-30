@@ -1,10 +1,17 @@
 packages:
   - '.'
+allowBuilds:
+  '@tailwindcss/oxide': true
+  esbuild: true
 supportedArchitectures:
   os:
+    - current
+    - darwin
     - linux
   cpu:
+    - current
     - x64
     - arm64
   libc:
+    - current
     - glibc

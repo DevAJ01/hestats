@@ -46,17 +46,17 @@ export function Footer() {
 
         {/* Bottom row */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontSize: 10, color: 'var(--muted)' }}>
-          <span>© 2025 HEStats</span>
+          <span>© 2026 HEStats</span>
           <span>·</span>
-          <span>Data: OfS · HESA · Companies House</span>
+          <span>Data registry: OfS · HESA · annual reports · Companies House</span>
           <span>·</span>
           <span>CC BY 4.0</span>
           <span className="flex items-center gap-1.5 ml-auto">
             <span
               className="inline-block w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: 'var(--positive)' }}
+              style={{ backgroundColor: 'var(--warning)' }}
             />
-            Live · last sync 28 Jun 2026
+            Prototype dataset · verified and estimated rows labelled
           </span>
         </div>
       </div>

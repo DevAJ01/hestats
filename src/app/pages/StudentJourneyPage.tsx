@@ -58,7 +58,7 @@ export function StudentJourneyPage() {
         { label: 'International applicants', value: '118,000', note: 'non-UK domicile' },
         { label: 'Avg choices', value: '3.8', note: 'per applicant' },
       ],
-      links: [{ label: 'View institutions', href: '/institutions' }, { label: 'Rankings', href: '/rankings' }],
+      links: [{ label: 'View institutions', href: '/universities' }, { label: 'Rankings', href: '/rankings' }],
     },
     {
       id: 'offer',
@@ -92,7 +92,7 @@ export function StudentJourneyPage() {
         { label: 'NSS satisfaction', value: `${sector.avg_nss}%`, note: 'sector average' },
         { label: 'Degree subjects', value: `${degreeStats.total_subjects}`, note: 'tracked by HEStats' },
       ],
-      links: [{ label: 'Degree intelligence', href: '/degrees' }, { label: 'Institutions', href: '/institutions' }],
+      links: [{ label: 'Degree intelligence', href: '/degrees' }, { label: 'Institutions', href: '/universities' }],
     },
     {
       id: 'placement',

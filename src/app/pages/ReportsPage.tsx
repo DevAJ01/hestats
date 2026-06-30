@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FileText, ArrowUpRight, Search, CheckCircle, Clock, AlertCircle, Download } from 'lucide-react'
 import { institutions } from '../data/institutions'
 import { financials, AVAILABLE_YEARS } from '../data/financials'
+import type { FinancialYear, Institution } from '../data/types'
 import { NationBadge } from '../components/institutions/NationBadge'
 import { DataSourceBadge } from '../components/institutions/DataSourceBadge'
 import { Link } from 'react-router'
@@ -23,13 +24,13 @@ export function ReportsPage() {
       const inst = institutions.find((i) => i.id === f.institution_id)
       return inst ? { f, inst } : null
     })
-    .filter(Boolean)
+    .filter((row): row is { f: FinancialYear; inst: Institution } => row !== null)
     .filter(({ inst }) =>
       !search ||
-      inst!.canonical_name.toLowerCase().includes(search.toLowerCase()) ||
-      inst!.short_name.toLowerCase().includes(search.toLowerCase()),
+      inst.canonical_name.toLowerCase().includes(search.toLowerCase()) ||
+      inst.short_name.toLowerCase().includes(search.toLowerCase()),
     )
-    .sort((a, b) => a!.inst.canonical_name.localeCompare(b!.inst.canonical_name)) as { f: typeof allReportFins[0]; inst: typeof institutions[0] }[]
+    .sort((a, b) => a.inst.canonical_name.localeCompare(b.inst.canonical_name))
 
   const verifiedCount = rows.filter((r) => r.f.data_source === 'verified').length
   const withPdfCount = rows.filter((r) => r.f.source_pdf).length
@@ -163,7 +164,7 @@ export function ReportsPage() {
                 >
                   <td className="px-3 py-2">
                     <Link
-                      to={`/institutions/${inst.id}`}
+                      to={`/universities/${inst.id}`}
                       className="hover:underline"
                       style={{ color: 'var(--text)', fontSize: 12.5, fontWeight: 500 }}
                     >

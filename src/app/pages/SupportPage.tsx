@@ -1,11 +1,11 @@
-import { Heart, Github, Coffee, ArrowUpRight, Mail, Code, Database, Server, Users, Star, GitBranch, TrendingUp, Shield, Globe } from 'lucide-react'
+import { Heart, Github, ArrowUpRight, Mail, Code, Database, Server, Users, Star, GitBranch, TrendingUp, Shield, Globe } from 'lucide-react'
 import { Panel } from '../components/layout/Panel'
 import { SUPPORT_LINKS } from '../data/links'
 
 const IMPACT_STATS = [
   { value: '~140', label: 'institutions tracked', icon: <Globe className="w-4 h-4" /> },
-  { value: '95+', label: 'verified annual reports', icon: <Shield className="w-4 h-4" /> },
-  { value: '5', label: 'fiscal years of history', icon: <TrendingUp className="w-4 h-4" /> },
+  { value: '141', label: 'seeded verified rows', icon: <Shield className="w-4 h-4" /> },
+  { value: '10', label: 'modelled fiscal years', icon: <TrendingUp className="w-4 h-4" /> },
   { value: 'Free', label: 'forever · no paywalls', icon: <Heart className="w-4 h-4" /> },
 ]
 
@@ -28,25 +28,16 @@ const RECOGNITION_TIERS = [
     name: 'Institutional',
     amount: '£50/mo',
     description: 'Logo on the site. Dedicated data ingestion for your institution.',
-    perks: ['Logo on site', 'All Patron perks', 'Dedicated data pipeline', 'API access (beta)', 'Quarterly briefing'],
+    perks: ['Logo on site', 'All Patron perks', 'Dedicated data pipeline input', 'API roadmap input', 'Quarterly briefing'],
     color: '#c2945a',
   },
 ]
 
-const MOCK_SUPPORTERS = [
-  { name: 'J. Richardson', tier: 'Patron', since: 'Jan 2025' },
-  { name: 'Higher Ed Finance Network', tier: 'Institutional', since: 'Mar 2025' },
-  { name: 'M. Okonkwo', tier: 'Supporter', since: 'Feb 2025' },
-  { name: 'DataEd Collective', tier: 'Patron', since: 'Apr 2025' },
-  { name: 'S. Williams', tier: 'Supporter', since: 'May 2025' },
-  { name: 'Anonymous', tier: 'Supporter', since: 'Jun 2025' },
-]
-
 const ROADMAP = [
-  { status: 'live', label: '~140 institutions with 5-year financial history' },
-  { status: 'live', label: 'Verified data from 95+ audited annual reports' },
-  { status: 'live', label: 'Institution comparison engine (up to 5)' },
-  { status: 'live', label: 'League tables sortable by 12+ metrics' },
+  { status: 'available', label: '~140 institutions with prototype financial coverage' },
+  { status: 'available', label: '141 seeded verified rows plus clearly labelled modelled estimates' },
+  { status: 'available', label: 'Institution comparison engine (up to 6)' },
+  { status: 'available', label: 'League tables sortable by 12+ metrics' },
   { status: 'building', label: 'Balance sheet & cash flow statement views' },
   { status: 'building', label: 'Complete coverage of 285 OfS-registered providers' },
   { status: 'building', label: 'Time Machine — animated historical rankings' },
@@ -56,7 +47,7 @@ const ROADMAP = [
   { status: 'planned', label: 'Mobile app' },
 ]
 
-const MONTHLY_GOAL_PCT = 34 // illustrative
+const MONTHLY_GOAL_PCT = 0
 
 const DONATION_OPTIONS = [
   {
@@ -69,21 +60,21 @@ const DONATION_OPTIONS = [
     preferred: true,
   },
   {
-    name: 'Ko-fi',
-    tagline: 'One-off or monthly. Minimal fees, simple and fast. Best for international supporters.',
-    cta: 'Support on Ko-fi',
-    href: SUPPORT_LINKS.kofi,
-    brand: '#29abe0',
-    icon: <Coffee className="w-4 h-4" />,
+    name: 'GitHub Issues',
+    tagline: 'Contribute source links, annual report PDFs, data corrections, or validation notes directly in the public repo.',
+    cta: 'Open an issue',
+    href: `${SUPPORT_LINKS.github_repo}/issues/new`,
+    brand: '#7396c2',
+    icon: <GitBranch className="w-4 h-4" />,
     preferred: false,
   },
   {
-    name: 'Buy Me a Coffee',
-    tagline: 'Quick one-off donations. Every contribution directly funds data collection hours.',
-    cta: 'Buy a coffee',
-    href: SUPPORT_LINKS.bmac,
-    brand: '#ffdd00',
-    icon: <Coffee className="w-4 h-4" />,
+    name: 'Email Data',
+    tagline: 'Send annual report links, source corrections, or institutional finance contacts for manual review.',
+    cta: 'Email HEStats',
+    href: `mailto:${SUPPORT_LINKS.contact_email}?subject=HEStats%20data%20contribution`,
+    brand: '#c2945a',
+    icon: <Mail className="w-4 h-4" />,
     preferred: false,
   },
 ]
@@ -126,7 +117,7 @@ export function SupportPage() {
         <span style={{ color: 'var(--warning)', letterSpacing: '0.04em' }}>STUDENT BUILT</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          <span className="font-num" style={{ color: 'var(--text)' }}>6</span> monthly supporters
+          <span className="font-num" style={{ color: 'var(--text)' }}>0</span> public supporters recorded
         </span>
       </div>
 
@@ -279,49 +270,12 @@ export function SupportPage() {
       {/* Supporter wall */}
       <Panel title="Current supporters" subtitle="Thank you — this platform exists because of you">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {MOCK_SUPPORTERS.map((s, i) => {
-            const tier = RECOGNITION_TIERS.find((t) => t.name === s.tier)
-            return (
-              <div
-                key={i}
-                className="flex items-center gap-3 px-3 py-2 border"
-                style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}
-              >
-                <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: `${tier?.color ?? 'var(--muted)'}20`, border: `1px solid ${tier?.color ?? 'var(--muted)'}50` }}
-                >
-                  <span style={{ color: tier?.color, fontSize: 10, fontWeight: 700 }}>{s.name[0]}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p style={{ color: 'var(--text)', fontSize: 12, fontWeight: 500 }}>{s.name}</p>
-                  <p style={{ color: 'var(--muted)', fontSize: 10 }}>since {s.since}</p>
-                </div>
-                {tier && (
-                  <span
-                    className="px-1.5 py-0.5 flex-shrink-0"
-                    style={{
-                      backgroundColor: `${tier.color}20`,
-                      color: tier.color,
-                      border: `1px solid ${tier.color}50`,
-                      borderRadius: 2,
-                      fontSize: 9,
-                      letterSpacing: '0.05em',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {tier.name}
-                  </span>
-                )}
-              </div>
-            )
-          })}
           <div
-            className="flex items-center justify-center gap-2 px-3 py-2 border"
+            className="flex items-center justify-center gap-2 px-3 py-6 border sm:col-span-2 lg:col-span-3"
             style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3, borderStyle: 'dashed' }}
           >
             <Users className="w-3.5 h-3.5" style={{ color: 'var(--muted)' }} />
-            <span style={{ color: 'var(--muted)', fontSize: 11 }}>Your name here</span>
+            <span style={{ color: 'var(--muted)', fontSize: 11 }}>Public supporter recognition will appear here once support channels are active.</span>
           </div>
         </div>
       </Panel>
@@ -335,16 +289,16 @@ export function SupportPage() {
                 className="flex-shrink-0 w-1.5 h-1.5 rounded-full"
                 style={{
                   backgroundColor:
-                    item.status === 'live' ? 'var(--positive)' :
+                    item.status === 'available' ? 'var(--positive)' :
                     item.status === 'building' ? 'var(--warning)' :
                     'var(--border-strong)',
                 }}
               />
               <span
                 style={{
-                  color: item.status === 'live' ? 'var(--text-2)' : item.status === 'building' ? 'var(--text)' : 'var(--muted)',
+                  color: item.status === 'available' ? 'var(--text-2)' : item.status === 'building' ? 'var(--text)' : 'var(--muted)',
                   fontSize: 12.5,
-                  textDecoration: item.status === 'live' ? 'none' : 'none',
+                  textDecoration: 'none',
                 }}
               >
                 {item.label}
@@ -352,7 +306,7 @@ export function SupportPage() {
               <span
                 className="ml-auto px-1.5 py-0.5"
                 style={{
-                  color: item.status === 'live' ? 'var(--positive)' : item.status === 'building' ? 'var(--warning)' : 'var(--muted)',
+                  color: item.status === 'available' ? 'var(--positive)' : item.status === 'building' ? 'var(--warning)' : 'var(--muted)',
                   border: `1px solid currentColor`,
                   borderRadius: 2,
                   fontSize: 9,
@@ -361,7 +315,7 @@ export function SupportPage() {
                   opacity: item.status === 'planned' ? 0.5 : 1,
                 }}
               >
-                {item.status === 'live' ? 'Live' : item.status === 'building' ? 'Building' : 'Planned'}
+                {item.status === 'available' ? 'Available' : item.status === 'building' ? 'Building' : 'Planned'}
               </span>
             </div>
           ))}

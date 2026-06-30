@@ -292,7 +292,7 @@ export function MapPage() {
                   <p style={{ color: 'var(--muted)', fontSize: 11 }}>{displayInst.inst.city} · Est. {displayInst.inst.founded} · UKPRN {displayInst.inst.ukprn}</p>
                 </div>
                 <Link
-                  to={`/institutions/${displayInst.inst.id}`}
+                  to={`/universities/${displayInst.inst.id}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 flex-shrink-0"
                   style={{ backgroundColor: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 500, borderRadius: 3 }}
                 >

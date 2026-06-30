@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router'
+import { createBrowserRouter, Link, Navigate, useRouteError, type RouteObject } from 'react-router'
 import { RootLayout } from './components/layout/RootLayout'
 import { HomePage } from './pages/HomePage'
 import { InstitutionsPage } from './pages/InstitutionsPage'
@@ -20,10 +20,34 @@ import { StudentJourneyPage } from './pages/StudentJourneyPage'
 import { ExplorerPage } from './pages/ExplorerPage'
 import { IntelligencePage } from './pages/IntelligencePage'
 
-export const router = createBrowserRouter([
+function NotFoundPage() {
+  const error = useRouteError()
+  const status = error instanceof Response ? error.status : 404
+
+  return (
+    <div className="max-w-[900px] mx-auto px-4 py-10">
+      <div className="border p-5" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 4 }}>
+        <p className="font-num" style={{ color: 'var(--negative)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          {status} · Route unavailable
+        </p>
+        <h1 style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, marginTop: 8 }}>HEStats route not found</h1>
+        <p style={{ color: 'var(--text-2)', fontSize: 13, lineHeight: 1.6, marginTop: 8 }}>
+          The requested workspace is not part of the current public prototype.
+        </p>
+        <div className="flex flex-wrap gap-2 mt-4">
+          <Link to="/universities" style={{ backgroundColor: 'var(--accent)', color: '#fff', borderRadius: 3, fontSize: 12, fontWeight: 600, padding: '7px 10px' }}>Browse universities</Link>
+          <Link to="/open-data" style={{ border: '1px solid var(--border)', color: 'var(--text-2)', borderRadius: 3, fontSize: 12, padding: '7px 10px' }}>Open data</Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export const appRoutes: RouteObject[] = [
   {
     path: '/',
     Component: RootLayout,
+    errorElement: <NotFoundPage />,
     children: [
       { index: true, Component: HomePage },
 
@@ -59,4 +83,6 @@ export const router = createBrowserRouter([
       { path: '*', loader: () => { throw new Response('Not Found', { status: 404 }) } },
     ],
   },
-])
+]
+
+export const router = createBrowserRouter(appRoutes)

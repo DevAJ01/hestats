@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { TrendingUp, TrendingDown, ArrowUpRight, FileText, ChevronRight, Activity, AlertCircle, Heart, Coffee } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowUpRight, FileText, ChevronRight, Activity, AlertCircle, Heart } from 'lucide-react'
 import { institutions } from '../data/institutions'
 import { financials, getAllLatestFinancials, getFinancialsByInstitution, AVAILABLE_YEARS } from '../data/financials'
 import { getSectorAverageScore, getAllHealthScores, scoreToGrade, computeHealthScore, getGradeColor } from '../data/health'
@@ -59,7 +59,7 @@ const OBSERVATORY_FEED = [
   { level: 'info', title: 'Sector Borrowing Record', text: 'Aggregate external borrowing increased 8.2% YoY to £12.3bn. Fixed-rate bond exposure is £7.1bn.', href: '/sector', date: 'May 2025' },
   { level: 'positive', title: 'Research Income Growth', text: 'Research income grew 6.1% across the sector; strongest in London cluster and Russell Group.', href: '/sector', date: 'Apr 2025' },
   { level: 'warning', title: 'International Enrolment Softening', text: 'PGT international applications down 14% sector-wide. Revenue impact expected in FY2025-26.', href: '/reports', date: 'Mar 2025' },
-  { level: 'negative', title: 'University of Arts London Deficit', text: 'UAL reported a £19m operating deficit for FY2023-24, its third consecutive year of financial decline.', href: '/institutions/arts-london', date: 'Feb 2025' },
+  { level: 'negative', title: 'University of Arts London Deficit', text: 'UAL reported a £19m operating deficit for FY2023-24, its third consecutive year of financial decline.', href: '/universities/ual', date: 'Feb 2025' },
   { level: 'positive', title: 'UKRI Funding Uplift Confirmed', text: 'UKRI announced a £1.2bn uplift in research council funding for 2025-26, benefiting 45 institutions.', href: '/sector', date: 'Jan 2025' },
   { level: 'warning', title: 'Tuition Fee Policy Uncertainty', text: 'HM Treasury consultation on fee cap reform creates income planning risk for teaching-dependent providers.', href: '/about', date: 'Dec 2024' },
   { level: 'info', title: 'Staff Cost Pressure Accelerating', text: 'Sector-wide staff cost ratio reached 59.3% in FY2023-24, highest since pre-pandemic levels. USS pension contributions rising.', href: '/rankings', date: 'Nov 2024' },
@@ -184,7 +184,7 @@ export function HomePage() {
       change: 0,
       cagrVal: null as null | number,
       spark: sortedYears.map((y) => byYear.get(y)?.count ?? 0),
-      href: '/institutions',
+      href: '/universities',
     },
     {
       label: 'Avg Income / Institution',
@@ -255,6 +255,7 @@ export function HomePage() {
       net_assets_gbp_m: 0,
       risk_flag: 'Low' as const,
       status: 'found' as const,
+      data_source: 'estimated' as const,
     }
   })
 
@@ -281,8 +282,8 @@ export function HomePage() {
 
   function onSearchSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (filteredSuggestions[0]) navigate(`/institutions/${filteredSuggestions[0].id}`)
-    else navigate(`/institutions?q=${encodeURIComponent(search)}`)
+    if (filteredSuggestions[0]) navigate(`/universities/${filteredSuggestions[0].id}`)
+    else navigate(`/universities?q=${encodeURIComponent(search)}`)
   }
 
   return (
@@ -355,17 +356,6 @@ export function HomePage() {
         </div>
         <div className="flex flex-wrap items-center gap-2 ml-auto">
           <a
-            href={SUPPORT_LINKS.kofi}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 transition-colors"
-            style={{ backgroundColor: '#29abe0', color: '#fff', borderRadius: 3, fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-          >
-            <Coffee className="w-3.5 h-3.5" /> Ko-fi
-          </a>
-          <a
             href={SUPPORT_LINKS.github_sponsors}
             target="_blank"
             rel="noopener noreferrer"
@@ -375,6 +365,17 @@ export function HomePage() {
             onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
           >
             <Heart className="w-3.5 h-3.5" /> GitHub Sponsors
+          </a>
+          <a
+            href={SUPPORT_LINKS.github_repo}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 transition-colors"
+            style={{ backgroundColor: 'var(--bg-2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 3, fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+          >
+            <FileText className="w-3.5 h-3.5" /> Contribute
           </a>
           <Link
             to="/support"
@@ -550,7 +551,6 @@ export function HomePage() {
                       borderRadius: 3,
                       fontSize: 10,
                       color: 'var(--text-2)',
-                      whiteSpace: 'nowrap',
                       boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                     }}
                   >
@@ -716,7 +716,6 @@ export function HomePage() {
                       borderRadius: 3,
                       fontSize: 10,
                       color: 'var(--text-2)',
-                      whiteSpace: 'nowrap',
                       boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
                       maxWidth: 260,
                       whiteSpace: 'normal' as const,
@@ -851,7 +850,7 @@ export function HomePage() {
             {filteredSuggestions.map((s) => (
               <Link
                 key={s.id}
-                to={`/institutions/${s.id}`}
+                to={`/universities/${s.id}`}
                 className="flex items-center gap-3 px-4 py-2 transition-colors"
                 style={{ borderBottom: '1px solid var(--border)' }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--panel-hover)')}
@@ -874,7 +873,7 @@ export function HomePage() {
               return (
                 <Link
                   key={id}
-                  to={`/institutions/${id}`}
+                  to={`/universities/${id}`}
                   className="px-2 py-0.5 transition-colors"
                   style={{ border: '1px solid var(--border)', borderRadius: 2, fontSize: 11, color: 'var(--text-2)' }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--text)' }}
@@ -963,7 +962,7 @@ export function HomePage() {
                           {(idx + 1).toString().padStart(2, '0')}
                         </td>
                         <td className="px-2 sm:px-3 py-2">
-                          <Link to={`/institutions/${inst.id}`} className="flex items-center gap-1.5 min-w-0">
+                          <Link to={`/universities/${inst.id}`} className="flex items-center gap-1.5 min-w-0">
                             <NationBadge nation={inst.nation} size="sm" />
                             <span className="truncate group-hover:underline" style={{ color: 'var(--text)', fontSize: 11.5, fontWeight: 500 }}>
                               {inst.canonical_name}
@@ -1123,7 +1122,7 @@ export function HomePage() {
         <div className="ml-auto flex items-center gap-3">
           <span style={{ color: 'var(--muted)', fontSize: 10 }}>Free & open-source —</span>
           <a
-            href={SUPPORT_LINKS.kofi}
+            href={SUPPORT_LINKS.github_sponsors}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 hover:underline"

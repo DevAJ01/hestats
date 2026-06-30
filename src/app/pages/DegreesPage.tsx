@@ -160,7 +160,7 @@ function DegreeCard({ degree, expanded, onToggle }: { degree: Degree; expanded: 
                   <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Top institutions</p>
                   <div className="flex flex-wrap gap-1.5">
                     {topInsts.map((i) => i && (
-                      <Link key={i.id} to={`/institutions/${i.id}`} style={{ fontSize: 11, padding: '2px 7px', border: '1px solid var(--border)', borderRadius: 2, color: 'var(--text-2)', textDecoration: 'none', backgroundColor: 'var(--bg-2)' }}>
+                      <Link key={i.id} to={`/universities/${i.id}`} style={{ fontSize: 11, padding: '2px 7px', border: '1px solid var(--border)', borderRadius: 2, color: 'var(--text-2)', textDecoration: 'none', backgroundColor: 'var(--bg-2)' }}>
                         {i.short_name}
                       </Link>
                     ))}
