@@ -1,0 +1,45 @@
+name: Feature request
+description: Propose a product, data, or analysis feature.
+title: "Feature: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or sector-analysis problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the change you want.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Institution directory
+        - University profile
+        - Rankings
+        - Comparison engine
+        - Open data exports
+        - API/documentation
+        - Sources/methodology
+        - Charts/visualization
+        - Theme/design system
+        - Other
+  - type: textarea
+    id: evidence
+    attributes:
+      label: References or examples
+      description: Link to datasets, reports, comparable products, or screenshots.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How should reviewers know this is complete?

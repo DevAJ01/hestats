@@ -1,0 +1,72 @@
+name: Data correction
+description: Report an incorrect value, missing source, duplicate UKPRN, or provenance gap.
+title: "Data: "
+labels:
+  - data
+  - provenance
+body:
+  - type: markdown
+    attributes:
+      value: |
+        HEStats data corrections need official sources. Please include annual report, HESA, OfS, provider metadata, or other official evidence.
+  - type: input
+    id: institution
+    attributes:
+      label: Institution
+      placeholder: University of Oxford
+    validations:
+      required: true
+  - type: input
+    id: hestats_id
+    attributes:
+      label: HEStats id or UKPRN
+      placeholder: oxford or 10007774
+  - type: input
+    id: fiscal_year
+    attributes:
+      label: Fiscal year
+      placeholder: 2024-25
+  - type: input
+    id: metric
+    attributes:
+      label: Metric
+      placeholder: revenue_gbp_m, borrowing_gbp_m, UKPRN, source_pdf, etc.
+    validations:
+      required: true
+  - type: input
+    id: current_value
+    attributes:
+      label: Current value in HEStats
+  - type: input
+    id: proposed_value
+    attributes:
+      label: Proposed value
+    validations:
+      required: true
+  - type: input
+    id: source_url
+    attributes:
+      label: Official source URL
+      placeholder: https://...
+    validations:
+      required: true
+  - type: input
+    id: source_location
+    attributes:
+      label: Page, table, note, or row reference
+      placeholder: Annual report page 42, note 6, HESA row ID, etc.
+  - type: dropdown
+    id: confidence
+    attributes:
+      label: Confidence
+      options:
+        - verified
+        - pending
+        - estimated
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Add context, reconciliation notes, or uncertainty.

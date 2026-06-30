@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Support and funding
+    url: https://github.com/DevAJ01/hestats/blob/main/SUPPORT.md
+    about: Learn how to support the project or contribute data and review work.
