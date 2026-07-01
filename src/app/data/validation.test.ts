@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_FINANCIAL_VALUE_KEYS, AVAILABLE_YEARS, financials } from './financials'
 import { institutions } from './institutions'
-import { blockingIssues, validateData, validateFinancials, validateInstitutions } from './validation'
+import { INTELLIGENCE_RECORDS } from './intelligence'
+import { STUDENT_YEARS, studentEnrolments } from './students'
+import { blockingIssues, validateData, validateFinancials, validateInstitutionCoordinates, validateInstitutions, validateIntelligenceRecords, validateMapOutline, validateStudentEnrolments } from './validation'
 
 describe('HEStats data validation', () => {
-  it('has no blocking errors in the bundled prototype dataset', () => {
+  it('has no blocking errors in the bundled verified dataset', () => {
     const errors = blockingIssues(validateData())
     expect(errors).toEqual([])
   })
@@ -49,9 +51,9 @@ describe('HEStats data validation', () => {
   })
 
   it('does not allow estimated rows in the primary financial dataset', () => {
-    expect(financials.some((row) => row.data_source === 'estimated')).toBe(false)
+    expect(financials.some((row) => (row.data_source as string) === 'estimated')).toBe(false)
 
-    const row = { ...financials[0], data_source: 'estimated' as const }
+    const row = { ...financials[0], data_source: 'estimated' as never }
     const errors = blockingIssues(validateFinancials([row], [institutions[0]]))
     expect(errors.map((item) => item.code)).toContain('financial.estimated_in_primary_dataset')
   })
@@ -89,5 +91,70 @@ describe('HEStats data validation', () => {
     }
     const errors = blockingIssues(validateFinancials([row], [institutions[0]]))
     expect(errors.map((item) => item.code)).toContain('financial.verified_missing_provenance')
+  })
+
+  it('keeps complete student enrolment coverage for tracked institutions', () => {
+    const keys = new Set(studentEnrolments.map((row) => `${row.institution_id}:${row.academic_year}`))
+    expect(studentEnrolments).toHaveLength(institutions.length * STUDENT_YEARS.length)
+    expect(keys.size).toBe(studentEnrolments.length)
+
+    for (const institution of institutions) {
+      for (const year of STUDENT_YEARS) {
+        expect(keys.has(`${institution.id}:${year}`)).toBe(true)
+      }
+    }
+  })
+
+  it('keeps pending student rows numeric-null and excluded from aggregates', () => {
+    const pendingRows = studentEnrolments.filter((row) => row.source_status === 'pending')
+    expect(pendingRows.length).toBeGreaterThan(0)
+    expect(pendingRows.every((row) => !row.included_in_aggregates)).toBe(true)
+    expect(pendingRows.every((row) => row.total_enrolments === null)).toBe(true)
+    expect(pendingRows.every((row) => row.uk_enrolments === null)).toBe(true)
+    expect(pendingRows.every((row) => row.non_uk_enrolments === null)).toBe(true)
+    expect(pendingRows.every((row) => row.unknown_domicile_enrolments === null)).toBe(true)
+  })
+
+  it('fails when a student row lacks source metadata', () => {
+    const row = { ...studentEnrolments[0], source_url: '', source_reference: '' }
+    const errors = blockingIssues(validateStudentEnrolments([row], [institutions[0]]))
+    expect(errors.map((item) => item.code)).toContain('student.provenance_incomplete')
+  })
+
+  it('has valid map coordinates for every tracked institution', () => {
+    const errors = blockingIssues(validateInstitutionCoordinates(institutions))
+    expect(errors).toEqual([])
+  })
+
+  it('has a source-backed UK map outline', () => {
+    const errors = blockingIssues(validateMapOutline())
+    expect(errors).toEqual([])
+  })
+
+  it('requires every intelligence claim and metric to carry source provenance', () => {
+    expect(INTELLIGENCE_RECORDS.length).toBeGreaterThan(5)
+    const errors = blockingIssues(validateIntelligenceRecords())
+    expect(errors).toEqual([])
+
+    const row = { ...INTELLIGENCE_RECORDS[0], source_url: '', source_reference: '' }
+    const broken = blockingIssues(validateIntelligenceRecords([row]))
+    expect(broken.map((item) => item.code)).toContain('intelligence.provenance_incomplete')
+  })
+
+  it('keeps external analysis separate from official aggregate data', () => {
+    const externalRows = INTELLIGENCE_RECORDS.filter((row) => row.claim_type === 'external-analysis')
+    expect(externalRows.length).toBeGreaterThan(0)
+    expect(externalRows.every((row) => row.source_status === 'external_analysis')).toBe(true)
+    expect(externalRows.every((row) => row.confidence !== 'high')).toBe(true)
+    expect(externalRows.every((row) => row.metrics.every((metric) => !metric.included_in_aggregates))).toBe(true)
+
+    const row = {
+      ...externalRows[0],
+      confidence: 'high' as const,
+      metrics: [{ ...externalRows[0].metrics[0], included_in_aggregates: true }],
+    }
+    const errors = blockingIssues(validateIntelligenceRecords([row]))
+    expect(errors.map((item) => item.code)).toContain('intelligence.external_high_confidence')
+    expect(errors.map((item) => item.code)).toContain('intelligence.external_metric_in_aggregate')
   })
 })

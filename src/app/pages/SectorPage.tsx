@@ -2,19 +2,13 @@ import { Link } from 'react-router'
 import { AlertCircle, TrendingUp, TrendingDown, ArrowUpRight, Activity } from 'lucide-react'
 import { institutions } from '../data/institutions'
 import { compareNullableDesc, formatCurrencyM, getAllLatestFinancials, getFinancialsByInstitution, AVAILABLE_YEARS, isKnownNumber, ratioPct } from '../data/financials'
+import { getStudentCoverage } from '../data/students'
 import { computeHealthScore, getGradeColor, getSectorAverageScore, scoreToGrade, getAllHealthScores } from '../data/health'
 import { NationBadge } from '../components/institutions/NationBadge'
 import { HealthBadge } from '../components/institutions/HealthBadge'
 import { RiskBadge } from '../components/institutions/RiskBadge'
 import { Panel } from '../components/layout/Panel'
 import { Sparkline } from '../components/charts/Sparkline'
-
-const ALERTS = [
-  { level: 'high', title: 'OfS Financial Sustainability Review', body: '40+ providers identified as requiring enhanced monitoring. Borrowing-to-income ratios above 100% in 12 institutions.', date: 'Jun 2025' },
-  { level: 'medium', title: 'Sector Borrowing Hits Record £12.3bn', body: 'Aggregate external borrowing increased 8.2% YoY. Fixed-rate bond exposure is £7.1bn (58% of total).', date: 'May 2025' },
-  { level: 'low', title: 'Research Income Growth: +6.1% Sector-Wide', body: 'Strongest growth in London cluster universities. UKRI funding uplift driving results at research-intensive providers.', date: 'Apr 2025' },
-  { level: 'medium', title: 'International Student Enrolment Softening', body: 'Post-graduate taught international applications down 14% sector-wide. Revenue impact expected in 2025-26 accounts.', date: 'Mar 2025' },
-]
 
 const MISSION_GROUPS = [
   { name: 'Russell Group', ids: ['oxford', 'cambridge', 'imperial', 'ucl', 'lse', 'edinburgh', 'manchester', 'bristol', 'warwick', 'durham', 'exeter', 'cardiff', 'qub'] },
@@ -37,6 +31,8 @@ export function SectorPage() {
 
   const sectorAvgScore = getSectorAverageScore()
   const latestYear = AVAILABLE_YEARS[0]
+  const verifiedLatestFins = latestFins.filter((row) => row.data_source === 'verified')
+  const studentCoverage = getStudentCoverage()
 
   // Health score distribution (bins of 10)
   const bins = Array.from({ length: 10 }, (_, i) => ({ label: `${i * 10}–${i * 10 + 9}`, min: i * 10, max: i * 10 + 10, count: 0 }))
@@ -51,6 +47,38 @@ export function SectorPage() {
 
   // Distress count (score < 45 = BB or worse)
   const distressCount = healthScores.filter((h) => isKnownNumber(h.score) && h.score < 45).length
+  const deficitCount = verifiedLatestFins.filter((row) => isKnownNumber(row.surplus_gbp_m) && row.surplus_gbp_m < 0).length
+  const highBorrowingCount = verifiedLatestFins.filter((row) => {
+    const value = ratioPct(row.borrowing_gbp_m, row.revenue_gbp_m, 4)
+    return isKnownNumber(value) && value > 100
+  }).length
+
+  const alerts = [
+    {
+      level: studentCoverage.verified ? 'low' : 'medium',
+      title: 'HESA Student Figure 7 Coverage',
+      body: `${studentCoverage.verified} of ${studentCoverage.total_institutions} provider enrolment rows verified; ${studentCoverage.pending} remain pending.`,
+      date: 'Source coverage',
+    },
+    {
+      level: verifiedLatestFins.length ? 'low' : 'medium',
+      title: 'Latest Finance Coverage',
+      body: `${verifiedLatestFins.length} of ${institutions.length} providers have verified FY${latestYear} finance rows included in aggregates.`,
+      date: 'HESA Finance',
+    },
+    {
+      level: deficitCount > 0 ? 'medium' : 'low',
+      title: 'Operating Deficit Count',
+      body: `${deficitCount} verified FY${latestYear} provider rows report a negative operating surplus.`,
+      date: 'Derived metric',
+    },
+    {
+      level: highBorrowingCount > 0 ? 'high' : 'low',
+      title: 'Borrowing Burden Watch',
+      body: `${highBorrowingCount} verified FY${latestYear} provider rows have borrowing above annual income.`,
+      date: 'Derived metric',
+    },
+  ]
 
   // Top 10 by borrowing ratio
   const byBorrowingRatio = latestFins
@@ -101,7 +129,7 @@ export function SectorPage() {
 
   // Mission group aggregates
   const missionGroupData = MISSION_GROUPS.map((g) => {
-    const groupFins = g.ids.map((id) => finMap.get(id)).filter(Boolean)
+    const groupFins = g.ids.map((id) => finMap.get(id)).filter((row) => row?.included_in_aggregates)
     if (!groupFins.length) return { name: g.name, avgScore: 0, totalIncome: 0, count: 0 }
     const scores = g.ids.map((id) => healthMap.get(id)?.score).filter(isKnownNumber)
     return {
@@ -141,13 +169,13 @@ export function SectorPage() {
         </span>
         <div className="ml-auto flex items-center gap-2">
           <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--positive)' }} />
-          <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em' }}>LIVE DATA</span>
+          <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em' }}>VERIFIED DATA</span>
         </div>
       </div>
 
       {/* Sector Alerts */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
-        {ALERTS.map((alert, i) => (
+        {alerts.map((alert, i) => (
           <div
             key={i}
             className="px-3 py-2.5 border flex flex-col gap-1.5"

@@ -3,11 +3,10 @@ import { Link, useNavigate } from 'react-router'
 import { TrendingUp, TrendingDown, ArrowUpRight, FileText, ChevronRight, Activity, AlertCircle, Heart, Coffee } from 'lucide-react'
 import { institutions } from '../data/institutions'
 import { compareNullableDesc, financials, formatCurrencyM, formatNumber, formatPct, getAllLatestFinancials, getFinancialsByInstitution, AVAILABLE_YEARS, isAggregateEligible, isKnownNumber } from '../data/financials'
+import { getStudentCoverage } from '../data/students'
+import { getLatestIntelligence } from '../data/intelligence'
 import { getSectorAverageScore, getAllHealthScores, scoreToGrade, computeHealthScore, getGradeColor } from '../data/health'
 import { SUPPORT_LINKS } from '../data/links'
-import { getSectorOutcomes } from '../data/outcomes'
-import { getSectorDegreeStats, DEGREES } from '../data/degrees'
-import { EMPLOYERS } from '../data/employers'
 import { Sparkline } from '../components/charts/Sparkline'
 import { RiskBadge } from '../components/institutions/RiskBadge'
 import { NationBadge } from '../components/institutions/NationBadge'
@@ -16,11 +15,12 @@ import { MetricTrendChart } from '../components/charts/MetricTrendChart'
 import { IncomeBreakdownChart } from '../components/charts/IncomeBreakdownChart'
 import { Panel } from '../components/layout/Panel'
 import { WorkspaceSection } from '../components/layout/WorkspaceSection'
+import { IntelligenceCardList } from '../components/intelligence/IntelligenceCardList'
 
 function aggregateByYear() {
-  const byYear = new Map<string, { revenue: number; surplus: number; research: number; staff: number; cash: number; borrowing: number; capex: number; intl: number; students: number; tuition: number; other: number; net_assets: number; count: number }>()
+  const byYear = new Map<string, { revenue: number; surplus: number; research: number; staff: number; cash: number; borrowing: number; capex: number; intl: number; intlCount: number; students: number; studentsCount: number; tuition: number; other: number; net_assets: number; count: number }>()
   for (const f of financials) {
-    const e = byYear.get(f.fiscal_year) ?? { revenue: 0, surplus: 0, research: 0, staff: 0, cash: 0, borrowing: 0, capex: 0, intl: 0, students: 0, tuition: 0, other: 0, net_assets: 0, count: 0 }
+    const e = byYear.get(f.fiscal_year) ?? { revenue: 0, surplus: 0, research: 0, staff: 0, cash: 0, borrowing: 0, capex: 0, intl: 0, intlCount: 0, students: 0, studentsCount: 0, tuition: 0, other: 0, net_assets: 0, count: 0 }
     if (isKnownNumber(f.revenue_gbp_m)) e.revenue += f.revenue_gbp_m
     if (isKnownNumber(f.surplus_gbp_m)) e.surplus += f.surplus_gbp_m
     if (isKnownNumber(f.research_income_gbp_m)) e.research += f.research_income_gbp_m
@@ -28,8 +28,14 @@ function aggregateByYear() {
     if (isKnownNumber(f.cash_gbp_m)) e.cash += f.cash_gbp_m
     if (isKnownNumber(f.borrowing_gbp_m)) e.borrowing += f.borrowing_gbp_m
     if (isKnownNumber(f.capital_expenditure_gbp_m)) e.capex += f.capital_expenditure_gbp_m
-    if (isKnownNumber(f.international_fte_pct)) e.intl += f.international_fte_pct
-    if (isKnownNumber(f.student_fte_total)) e.students += f.student_fte_total
+    if (isKnownNumber(f.international_fte_pct)) {
+      e.intl += f.international_fte_pct
+      e.intlCount += 1
+    }
+    if (isKnownNumber(f.student_fte_total)) {
+      e.students += f.student_fte_total
+      e.studentsCount += 1
+    }
     if (isKnownNumber(f.tuition_fee_income_gbp_m)) e.tuition += f.tuition_fee_income_gbp_m
     if (isKnownNumber(f.other_income_gbp_m)) e.other += f.other_income_gbp_m
     if (isKnownNumber(f.net_assets_gbp_m)) e.net_assets += f.net_assets_gbp_m
@@ -54,19 +60,6 @@ function cagr(end: number, start: number, years: number) {
   return (Math.pow(end / start, 1 / years) - 1) * 100
 }
 
-const OBSERVATORY_FEED = [
-  { level: 'warning', title: 'OfS Financial Sustainability', text: '40+ providers flagged for enhanced monitoring. Liquidity stress most acute in smaller post-92 institutions.', href: '/sector', date: 'Jun 2025' },
-  { level: 'info', title: 'Sector Borrowing Record', text: 'Aggregate external borrowing increased 8.2% YoY to £12.3bn. Fixed-rate bond exposure is £7.1bn.', href: '/sector', date: 'May 2025' },
-  { level: 'positive', title: 'Research Income Growth', text: 'Research income grew 6.1% across the sector; strongest in London cluster and Russell Group.', href: '/sector', date: 'Apr 2025' },
-  { level: 'warning', title: 'International Enrolment Softening', text: 'PGT international applications down 14% sector-wide. Revenue impact expected in FY2025-26.', href: '/reports', date: 'Mar 2025' },
-  { level: 'negative', title: 'University of Arts London Deficit', text: 'UAL reported a £19m operating deficit for FY2023-24, its third consecutive year of financial decline.', href: '/universities/ual', date: 'Feb 2025' },
-  { level: 'positive', title: 'UKRI Funding Uplift Confirmed', text: 'UKRI announced a £1.2bn uplift in research council funding for 2025-26, benefiting 45 institutions.', href: '/sector', date: 'Jan 2025' },
-  { level: 'warning', title: 'Tuition Fee Policy Uncertainty', text: 'HM Treasury consultation on fee cap reform creates income planning risk for teaching-dependent providers.', href: '/about', date: 'Dec 2024' },
-  { level: 'info', title: 'Staff Cost Pressure Accelerating', text: 'Sector-wide staff cost ratio reached 59.3% in FY2023-24, highest since pre-pandemic levels. USS pension contributions rising.', href: '/rankings', date: 'Nov 2024' },
-  { level: 'negative', title: 'Graduate Visa Route Restriction Impact', text: 'ONS data confirms 18% decline in non-EU international PGT visas. Most affected: mid-size providers.', href: '/sector', date: 'Oct 2024' },
-  { level: 'positive', title: 'Capital Investment Cycle Underway', text: 'Sector CapEx rose to £4.8bn in FY2023-24. Seven Russell Group institutions announced major estate programmes.', href: '/rankings?sort=capex', date: 'Sep 2024' },
-]
-
 export function HomePage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
@@ -90,6 +83,13 @@ export function HomePage() {
   const sectorHealthScore = getSectorAverageScore()
   const healthScores = getAllHealthScores()
   const distressCount = healthScores.filter((h) => isKnownNumber(h.score) && h.score < 45).length
+  const studentCoverage = getStudentCoverage()
+  const latestIntlAvg = latest.intlCount ? latest.intl / latest.intlCount : null
+  const prevIntlAvg = prev.intlCount ? prev.intl / prev.intlCount : null
+  const latestStudentTotal = latest.studentsCount ? latest.students : null
+  const prevStudentTotal = prev.studentsCount ? prev.students : null
+  const latestIntelligence = getLatestIntelligence(3)
+  const careerIntelligence = latestIntelligence.filter((row) => ['graduate-outcomes', 'labour-market', 'ai-exposure', 'policy'].includes(row.category))
 
   const numYears = sortedYears.length - 1
 
@@ -163,20 +163,20 @@ export function HomePage() {
     },
     {
       label: 'Avg International %',
-      value: `${(latest.intl / latest.count).toFixed(1)}%`,
-      change: (latest.intl / latest.count) - (prev.intl / prev.count),
+      value: isKnownNumber(latestIntlAvg) ? `${latestIntlAvg.toFixed(1)}%` : 'Pending',
+      change: isKnownNumber(latestIntlAvg) && isKnownNumber(prevIntlAvg) ? latestIntlAvg - prevIntlAvg : 0,
       cagrVal: null as null | number,
       isPct: true,
-      spark: sortedYears.map((y) => { const e = byYear.get(y)!; return e.intl / e.count }),
+      spark: sortedYears.map((y) => { const e = byYear.get(y)!; return e.intlCount ? e.intl / e.intlCount : null }),
       href: '/rankings?sort=international',
     },
     {
-      label: 'Total Student FTE',
-      value: latest.students.toLocaleString(),
-      change: pctChange(latest.students, prev.students),
-      cagrVal: cagr(latest.students, first.students, numYears),
-      spark: sparkSeries('students'),
-      href: '/rankings?sort=students',
+      label: 'Student FTE',
+      value: isKnownNumber(latestStudentTotal) ? latestStudentTotal.toLocaleString() : 'Pending',
+      change: isKnownNumber(latestStudentTotal) && isKnownNumber(prevStudentTotal) ? pctChange(latestStudentTotal, prevStudentTotal) : 0,
+      cagrVal: isKnownNumber(latestStudentTotal) && first.studentsCount ? cagr(latestStudentTotal, first.students, numYears) : null as null | number,
+      spark: sortedYears.map((y) => { const e = byYear.get(y)!; return e.studentsCount ? e.students : null }),
+      href: '/open-data',
     },
     {
       label: 'Institutions Reporting',
@@ -325,7 +325,7 @@ export function HomePage() {
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          Updated <span className="font-num" style={{ color: 'var(--text)' }}>Jun 2025</span>
+          Source <span className="font-num" style={{ color: 'var(--text)' }}>HESA Finance</span>
         </span>
         <div className="ml-auto flex items-center gap-2">
           <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--positive)' }} />
@@ -410,9 +410,7 @@ export function HomePage() {
         const totalBorrowing = latest.borrowing
         const totalResearch = latest.research
         const avgStaffRatio = latest.revenue > 0 ? (latest.staff / latest.revenue) * 100 : 0
-        const avgIntl = latest.intl / latest.count
-        const totalStudents = latest.students
-        const highRiskCount = allFins.filter((f) => f.risk_flag === 'High').length
+        const avgIntl = latest.intlCount ? latest.intl / latest.intlCount : null
         const aaaCount = healthScores.filter((h) => h.grade === 'AAA' || h.grade === 'AA').length
         const cccCount = healthScores.filter((h) => h.grade === 'CCC' || h.grade === 'B').length
         const researchGrowth = prev ? pctChange(latest.research, prev.research) : 0
@@ -426,7 +424,7 @@ export function HomePage() {
             sub: `of ${allFins.length} reporting`,
             color: deficitInsts.length > 20 ? 'var(--negative)' : 'var(--warning)',
             signal: 'warning',
-            context: 'Deficit institutions carry elevated OfS monitoring risk',
+            context: 'Count of latest verified finance rows with negative operating surplus',
           },
           {
             label: 'Aggregate sector income',
@@ -434,7 +432,7 @@ export function HomePage() {
             sub: incomeGrowth >= 0 ? `+${incomeGrowth.toFixed(1)}% YoY` : `${incomeGrowth.toFixed(1)}% YoY`,
             color: incomeGrowth >= 0 ? 'var(--positive)' : 'var(--negative)',
             signal: incomeGrowth >= 0 ? 'positive' : 'negative',
-            context: `FY${latestYear} total across ${latest.count} providers`,
+            context: `FY${latestYear} total across ${latest.count} verified provider rows`,
           },
           {
             label: 'Research income',
@@ -442,47 +440,39 @@ export function HomePage() {
             sub: researchGrowth >= 0 ? `+${researchGrowth.toFixed(1)}% YoY` : `${researchGrowth.toFixed(1)}% YoY`,
             color: researchGrowth >= 0 ? 'var(--positive)' : 'var(--warning)',
             signal: researchGrowth >= 0 ? 'positive' : 'warning',
-            context: 'UKRI grants + contracts aggregate',
+            context: 'Research grants and contracts income from verified finance rows',
           },
           {
             label: 'Sector borrowing',
             value: fmtGBP(totalBorrowing),
-            sub: borrowingGrowth >= 0 ? `+${borrowingGrowth.toFixed(1)}% — record high` : `${borrowingGrowth.toFixed(1)}% YoY`,
+            sub: borrowingGrowth >= 0 ? `+${borrowingGrowth.toFixed(1)}% YoY` : `${borrowingGrowth.toFixed(1)}% YoY`,
             color: borrowingGrowth > 5 ? 'var(--negative)' : 'var(--warning)',
             signal: 'warning',
-            context: 'Long-term external debt; bonds + EIB + bank',
+            context: 'External borrowing from verified finance rows',
           },
           {
             label: 'Avg staff cost ratio',
             value: `${avgStaffRatio.toFixed(1)}%`,
-            sub: avgStaffRatio > 58 ? 'Above 58% OfS threshold' : 'Within OfS benchmark',
+            sub: 'Staff costs / total income',
             color: avgStaffRatio > 58 ? 'var(--negative)' : 'var(--positive)',
             signal: avgStaffRatio > 58 ? 'warning' : 'positive',
-            context: 'Staff costs as % of total income',
+            context: 'Derived from latest verified staff costs and total income',
           },
           {
             label: 'Avg international %',
-            value: `${avgIntl.toFixed(1)}%`,
-            sub: 'PGT applications −14% YoY',
+            value: isKnownNumber(avgIntl) ? `${avgIntl.toFixed(1)}%` : 'Pending',
+            sub: 'Mean across reporting rows',
             color: 'var(--warning)',
             signal: 'warning',
-            context: 'Revenue risk from visa policy changes',
+            context: 'International FTE percentage where reported in verified finance rows',
           },
           {
-            label: 'Total student FTE',
-            value: (totalStudents / 1000).toFixed(0) + 'k',
-            sub: `${pctChange(latest.students, prev?.students ?? latest.students).toFixed(1)}% YoY`,
+            label: 'HESA enrolment rows',
+            value: `${studentCoverage.verified}/${studentCoverage.total_institutions}`,
+            sub: studentCoverage.verified ? `${studentCoverage.pending} pending` : 'Figure 7 source rows pending',
             color: 'var(--text)',
             signal: 'neutral',
-            context: 'All HESA-registered enrolments',
-          },
-          {
-            label: 'High financial risk',
-            value: highRiskCount.toString(),
-            sub: `${((highRiskCount / allFins.length) * 100).toFixed(0)}% of sector`,
-            color: highRiskCount > 10 ? 'var(--negative)' : 'var(--warning)',
-            signal: highRiskCount > 10 ? 'negative' : 'warning',
-            context: 'Flagged by OfS or HEStats model',
+            context: 'Provider-level HESA Student Statistics rows attached to the platform',
           },
           {
             label: 'AAA / AA rated',
@@ -490,7 +480,7 @@ export function HomePage() {
             sub: `${((aaaCount / healthScores.length) * 100).toFixed(0)}% of sector`,
             color: 'var(--positive)',
             signal: 'positive',
-            context: 'Exceptional or very strong financial health',
+            context: 'Derived HEStats financial health grade from verified finance rows',
           },
           {
             label: 'B / CCC rated',
@@ -498,7 +488,7 @@ export function HomePage() {
             sub: `${((cccCount / healthScores.length) * 100).toFixed(0)}% of sector`,
             color: 'var(--negative)',
             signal: 'negative',
-            context: 'Weak or financially stressed institutions',
+            context: 'Derived HEStats financial health grade from verified finance rows',
           },
           {
             label: 'Avg health score',
@@ -508,21 +498,13 @@ export function HomePage() {
             signal: sectorHealthScore >= 60 ? 'positive' : 'warning',
             context: 'HEStats composite across 6 dimensions',
           },
-          {
-            label: 'OfS monitoring',
-            value: '40+',
-            sub: 'enhanced financial monitoring',
-            color: 'var(--negative)',
-            signal: 'negative',
-            context: 'Providers under OfS enhanced oversight (Jun 2025)',
-          },
         ]
 
         return (
           <div className="mb-2.5">
             <div className="flex items-center gap-3 mb-1.5">
               <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Current Era · UK Higher Education 2024–25
+                Verified finance indicators · UK higher education {latestYear}
               </span>
               <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
               <Link to="/sector" style={{ color: 'var(--link)', fontSize: 10, letterSpacing: '0.04em' }}>Full sector view →</Link>
@@ -577,204 +559,19 @@ export function HomePage() {
         )
       })()}
 
-      {/* ── National Student Debt ────────────────────────────────────────────── */}
-      {(() => {
-        const DEBT_INDICATORS = [
-          {
-            label: 'Total student loan book',
-            value: '£236bn',
-            sub: 'SLC outstanding balance 2024',
-            color: 'var(--negative)',
-            signal: 'negative',
-            note: 'Surpassed £200bn in 2022. Growing ~£20bn per year.',
-          },
-          {
-            label: 'Avg graduate debt (England)',
-            value: '~£45k',
-            sub: 'Post-2012 Plan 2 graduates',
-            color: 'var(--negative)',
-            signal: 'negative',
-            note: 'Up from ~£26k in 2016. Scottish graduates: £0 for Scottish unis.',
-          },
-          {
-            label: 'Annual new borrowing',
-            value: '~£20bn',
-            sub: 'new loans issued per year',
-            color: 'var(--warning)',
-            signal: 'warning',
-            note: 'Tuition + maintenance loans combined. Growing as maintenance rises.',
-          },
-          {
-            label: 'Expected repayment rate',
-            value: '~25%',
-            sub: 'of new loans (Plan 2)',
-            color: 'var(--warning)',
-            signal: 'warning',
-            note: 'OBR estimate: ~75% written off after 30 years under Plan 2.',
-          },
-          {
-            label: 'Repayment threshold',
-            value: '£25k',
-            sub: 'Plan 2 & Plan 5',
-            color: 'var(--text)',
-            signal: 'neutral',
-            note: 'Plan 5 (from 2023): 40-year term, frozen threshold until 2025.',
-          },
-          {
-            label: 'Max tuition fee (England)',
-            value: '£9,535',
-            sub: 'FY2025-26 · up from £9,250',
-            color: 'var(--warning)',
-            signal: 'warning',
-            note: 'First increase since 2017. RPI-linked future rises expected.',
-          },
-          {
-            label: 'Interest rate (Plan 2)',
-            value: 'RPI+3%',
-            sub: 'while studying / high earners',
-            color: 'var(--negative)',
-            signal: 'negative',
-            note: 'Capped to protect borrowers when commercial rates rise sharply.',
-          },
-          {
-            label: 'Scottish graduate debt',
-            value: '£0',
-            sub: 'for Scottish-domiciled students',
-            color: 'var(--positive)',
-            signal: 'positive',
-            note: 'Scottish Government funds SAAS grants. For Scottish universities only.',
-          },
-          {
-            label: 'Maintenance loan max',
-            value: '£13,348',
-            sub: 'London / away from home 2025-26',
-            color: 'var(--text)',
-            signal: 'neutral',
-            note: 'Means-tested. Below 2022 inflation peak in real terms for many.',
-          },
-          {
-            label: 'Graduate premium',
-            value: '+£100k',
-            sub: 'lifetime earnings uplift (median)',
-            color: 'var(--positive)',
-            signal: 'positive',
-            note: 'IFS estimate vs non-graduates. Varies hugely by subject and institution.',
-          },
-          {
-            label: 'NHS & teaching bursaries',
-            value: 'Up to £10k',
-            sub: 'non-repayable in shortage subjects',
-            color: 'var(--positive)',
-            signal: 'positive',
-            note: 'Targeted grants to address workforce gaps in health and education.',
-          },
-          {
-            label: 'Fiscal cost of HE loans',
-            value: '~£10bn/yr',
-            sub: 'RAB charge to government',
-            color: 'var(--warning)',
-            signal: 'warning',
-            note: 'Resource Accounting & Budgeting charge — the expected write-off cost.',
-          },
-        ]
-
-        return (
-          <div className="mb-2.5">
-            <div className="flex items-center gap-3 mb-1.5">
-              <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                National Student Debt & Finance · England / UK 2025
-              </span>
-              <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
-              <a
-                href="https://www.gov.uk/government/collections/student-loans-in-england"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: 'var(--link)', fontSize: 10, letterSpacing: '0.04em' }}
-              >
-                Source: SLC / DfE →
-              </a>
-            </div>
-            <div
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 border-l border-t"
-              style={{ borderColor: 'var(--border)' }}
-            >
-              {DEBT_INDICATORS.map((ind) => (
-                <div
-                  key={ind.label}
-                  className="px-3 py-2.5 border-r border-b group relative"
-                  style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)' }}
-                >
-                  <div
-                    className="absolute top-0 left-0 right-0 h-0.5"
-                    style={{
-                      backgroundColor:
-                        ind.signal === 'positive' ? 'var(--positive)'
-                        : ind.signal === 'negative' ? 'var(--negative)'
-                        : ind.signal === 'warning' ? 'var(--warning)'
-                        : 'transparent',
-                      opacity: 0.5,
-                    }}
-                  />
-                  <p style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>
-                    {ind.label}
-                  </p>
-                  <p className="font-num tabular-nums" style={{ color: ind.color, fontSize: 18, fontWeight: 700, lineHeight: 1.05, marginBottom: 2 }}>
-                    {ind.value}
-                  </p>
-                  <p style={{ color: 'var(--text-2)', fontSize: 10, lineHeight: 1.3 }}>{ind.sub}</p>
-                  <div
-                    className="absolute bottom-full left-0 mb-1 px-2 py-1.5 z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{
-                      backgroundColor: 'var(--panel)',
-                      border: '1px solid var(--border-strong)',
-                      borderRadius: 3,
-                      fontSize: 10,
-                      color: 'var(--text-2)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
-                      maxWidth: 260,
-                      whiteSpace: 'normal' as const,
-                    }}
-                  >
-                    {ind.note}
-                  </div>
-                </div>
-              ))}
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-2.5">
+        <Panel title="National student finance" subtitle="Awaiting source-row ingestion">
+          <div className="flex items-start gap-2 px-1 py-1">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
+            <p style={{ color: 'var(--text-2)', fontSize: 11.5, lineHeight: 1.6 }}>
+              SLC, DfE, OBR and IFS student-finance claims are withheld until each displayed statistic has source URL,
+              table reference, retrieved date and last verified date.
+            </p>
           </div>
-        )
-      })()}
-
-      {/* Observatory Feed */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2 mb-2.5">
-        {OBSERVATORY_FEED.map((alert, i) => {
-          const color = alert.level === 'warning' ? 'var(--warning)' : alert.level === 'positive' ? 'var(--positive)' : alert.level === 'negative' ? 'var(--negative)' : 'var(--link)'
-          return (
-            <Link
-              key={i}
-              to={alert.href}
-              className="flex flex-col gap-1.5 px-3 py-2.5 border transition-colors"
-              style={{
-                backgroundColor: 'var(--panel)',
-                borderColor: 'var(--border)',
-                borderRadius: 3,
-                borderLeft: `3px solid ${color}`,
-                textDecoration: 'none',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--panel-hover)')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--panel)')}
-            >
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color }} />
-                <p style={{ color: 'var(--text)', fontSize: 11.5, fontWeight: 600, lineHeight: 1.3 }}>{alert.title}</p>
-              </div>
-              <p style={{ color: 'var(--text-2)', fontSize: 11, lineHeight: 1.45 }}>{alert.text}</p>
-              <div className="flex items-center justify-between">
-                <span className="font-num" style={{ color: 'var(--muted)', fontSize: 9.5 }}>{alert.date}</span>
-                <span style={{ color: color, fontSize: 9.5, letterSpacing: '0.04em' }}>→ View in Sector</span>
-              </div>
-            </Link>
-          )
-        })}
+        </Panel>
+        <Panel title="Sector intelligence feed" subtitle="Latest source-backed records">
+          <IntelligenceCardList records={latestIntelligence} compact />
+        </Panel>
       </div>
 
       {/* KPI grid — every cell is a link */}
@@ -1057,11 +854,14 @@ export function HomePage() {
       <div className="mb-2.5 border px-3 py-3" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
         <div className="flex flex-wrap items-center gap-3 mb-2">
           <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Career Intelligence</span>
-          <span style={{ color: 'var(--warning)', fontSize: 11 }}>Pending official source rows</span>
+          <span style={{ color: 'var(--positive)', fontSize: 11 }}>{careerIntelligence.length} sourced records attached</span>
         </div>
         <p style={{ color: 'var(--text-2)', fontSize: 11.5, lineHeight: 1.6, marginBottom: 10 }}>
-          Graduate outcomes, degree, employer, career-pathway, and student-journey statistics are hidden until each displayed claim has source provenance and verification metadata.
+          Graduate outcomes, labour-market and AI exposure records now display only when each claim has source provenance and verification metadata. External analysis is labelled separately from official statistics.
         </p>
+        <div className="mb-3">
+          <IntelligenceCardList records={careerIntelligence} compact />
+        </div>
         <div className="flex flex-wrap gap-2">
           {[
             { label: 'Graduate Outcomes', href: '/graduate-outcomes' },

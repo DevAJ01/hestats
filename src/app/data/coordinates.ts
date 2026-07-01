@@ -95,7 +95,7 @@ export const INSTITUTION_COORDS: Record<string, [number, number]> = {
   edgehill: [53.564, -2.778],
   glos: [51.867, -2.244],
   huddersfield: [53.648, -1.778],
-  lhu: [51.720, -0.474],
+  lhu: [53.392, -2.891],
   northampton: [52.234, -0.902],
   brookes: [51.751, -1.237],
   solent: [50.907, -1.397],
@@ -112,7 +112,7 @@ export const INSTITUTION_COORDS: Record<string, [number, number]> = {
   winchester: [51.063, -1.316],
   stmarys: [51.436, -0.337],
   chichester: [50.837, -0.781],
-  bishop: [53.748, -2.478],
+  bishop: [53.233, -0.537],
   canterbury: [51.277, 1.082],
   arden: [52.485, -1.870],
   bpp: [51.517, -0.129],
@@ -133,26 +133,34 @@ export const INSTITUTION_COORDS: Record<string, [number, number]> = {
   aber: [52.411, -4.081],
   bangor: [53.228, -4.128],
   cardiffmet: [51.490, -3.213],
-  southwales: [51.583, -3.220],
-  uwtsd: [51.699, -4.099],
+  southwales: [51.589, -3.329],
+  uwtsd: [52.112, -4.080],
   wrexham: [53.047, -2.993],
-  ulster: [54.995, -6.406],
+  ulster: [55.146, -6.672],
   stmarysbel: [54.588, -5.940],
   stranmillis: [54.575, -5.924],
 }
 
 // UK bounding box for SVG projection
 export const UK_BOUNDS = {
-  minLat: 49.8,
-  maxLat: 60.9,
-  minLng: -8.2,
-  maxLng: 2.1,
+  minLat: 49.75,
+  maxLat: 61.15,
+  minLng: -8.75,
+  maxLng: 2.05,
 }
 
-// Convert lat/lng to SVG x/y
+function mercatorY(lat: number): number {
+  const radians = lat * Math.PI / 180
+  return Math.log(Math.tan(Math.PI / 4 + radians / 2))
+}
+
+// Convert lat/lng to SVG x/y using Web Mercator. This keeps the UK outline
+// visually narrower and closer to the source boundary shape than raw lat/lng.
 export function projectToSvg(lat: number, lng: number, svgW: number, svgH: number): [number, number] {
   const { minLat, maxLat, minLng, maxLng } = UK_BOUNDS
   const x = ((lng - minLng) / (maxLng - minLng)) * svgW
-  const y = (1 - (lat - minLat) / (maxLat - minLat)) * svgH
+  const minY = mercatorY(minLat)
+  const maxY = mercatorY(maxLat)
+  const y = (1 - (mercatorY(lat) - minY) / (maxY - minY)) * svgH
   return [x, y]
 }

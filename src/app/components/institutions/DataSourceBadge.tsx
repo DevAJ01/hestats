@@ -7,7 +7,6 @@ interface DataSourceBadgeProps {
 
 const map = {
   verified: { label: 'VERIFIED', fg: 'var(--positive)', bg: 'var(--positive-bg)' },
-  estimated: { label: 'ESTIMATED', fg: 'var(--warning)', bg: 'var(--warning-bg)' },
   pending: { label: 'PENDING', fg: 'var(--muted)', bg: 'var(--bg)' },
 }
 
@@ -30,8 +29,6 @@ export function DataSourceBadge({ source, size = 'md' }: DataSourceBadgeProps) {
       title={
         source === 'verified'
           ? 'Sourced from audited annual financial statements'
-          : source === 'estimated'
-          ? 'Tier-based estimate — audited source not yet ingested'
           : 'Awaiting data'
       }
     >

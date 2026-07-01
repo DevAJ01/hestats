@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { Download, Copy, CheckCircle, Database, FileJson, FileText, ExternalLink, Activity } from 'lucide-react'
 import { institutions } from '../data/institutions'
 import { financials, getAllLatestFinancials, AVAILABLE_YEARS } from '../data/financials'
+import { STUDENT_YEARS, studentEnrolments } from '../data/students'
+import { INTELLIGENCE_RECORDS } from '../data/intelligence'
+import { computeHealthScore } from '../data/health'
 import { Panel } from '../components/layout/Panel'
 import { getDataset, type Format } from '../data/openDataExports'
 
 const LICENCE = 'Creative Commons Attribution 4.0 International (CC BY 4.0)'
-const VERSION = 'prototype-2026.1'
+const VERSION = 'verified-2026.1'
 const CITATION_YEAR = '2026'
 
 const DATASETS = [
@@ -33,6 +36,17 @@ const DATASETS = [
     tier: 'core',
   },
   {
+    id: 'student-enrolments',
+    name: 'Student Enrolment Coverage',
+    description: 'HESA Student Statistics provider-level enrolment coverage. Pending rows remain blank until Figure 7 source rows are ingested.',
+    rows: studentEnrolments.length,
+    columns: 16,
+    years: STUDENT_YEARS.join(', '),
+    formats: ['csv', 'json'],
+    size: '~30 KB',
+    tier: 'core',
+  },
+  {
     id: 'institutions',
     name: 'Institution Reference',
     description: 'Canonical institution metadata: UKPRN, full name, short name, city, nation, founding year, and mission group membership.',
@@ -41,6 +55,17 @@ const DATASETS = [
     years: 'Static',
     formats: ['csv', 'json'],
     size: '~12 KB',
+    tier: 'reference',
+  },
+  {
+    id: 'intelligence',
+    name: 'Source-backed Intelligence',
+    description: 'Official statistics, regulator publications, government policy records and clearly labelled external AI-risk analysis. Every record includes source URL, reference, publisher, dates and confidence.',
+    rows: INTELLIGENCE_RECORDS.length,
+    columns: 18,
+    years: '2025-2026',
+    formats: ['csv', 'json'],
+    size: '~20 KB',
     tier: 'reference',
   },
   {
@@ -104,6 +129,23 @@ export function OpenDataPage() {
 
   const ds = DATASETS.find((d) => d.id === selectedDataset) ?? DATASETS[0]
   const citation = buildCitation(citationStyle, ds.name)
+  const exampleFinancial = getAllLatestFinancials().find((row) => row.institution_id === 'oxford') ?? getAllLatestFinancials()[0]
+  const exampleHealth = computeHealthScore(exampleFinancial)
+  const examplePayload = JSON.stringify({
+    institution_id: exampleFinancial.institution_id,
+    fiscal_year: exampleFinancial.fiscal_year,
+    revenue_gbp_m: exampleFinancial.revenue_gbp_m,
+    surplus_gbp_m: exampleFinancial.surplus_gbp_m,
+    surplus_margin_pct: exampleFinancial.surplus_margin_pct,
+    research_income_gbp_m: exampleFinancial.research_income_gbp_m,
+    health_score: exampleHealth.score,
+    health_grade: exampleHealth.grade,
+    risk_flag: exampleFinancial.risk_flag,
+    data_source: exampleFinancial.data_source,
+    source_status: exampleFinancial.status,
+    confidence: exampleFinancial.confidence,
+    included_in_aggregates: exampleFinancial.included_in_aggregates,
+  }, null, 2)
 
   function handleDownload(id: string, fmt: Format) {
     const content = getDataset(id, fmt)
@@ -133,7 +175,7 @@ export function OpenDataPage() {
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          <span className="font-num" style={{ color: 'var(--text)' }}>{financials.length.toLocaleString()}</span> records
+          <span className="font-num" style={{ color: 'var(--text)' }}>{(financials.length + studentEnrolments.length).toLocaleString()}</span> records
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
@@ -167,7 +209,7 @@ export function OpenDataPage() {
             {[
               { label: 'Institutions', value: institutions.length },
               { label: 'Financial years', value: AVAILABLE_YEARS.length },
-              { label: 'Total records', value: financials.length.toLocaleString() },
+              { label: 'Total records', value: (financials.length + studentEnrolments.length).toLocaleString() },
               { label: 'Data version', value: VERSION },
             ].map(({ label, value }) => (
               <div key={label} className="text-center px-3 py-2" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 3, border: '1px solid var(--border)' }}>
@@ -180,7 +222,7 @@ export function OpenDataPage() {
       </div>
 
       {/* Dataset grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2">
         {DATASETS.map((d) => (
           <button
             key={d.id}
@@ -394,8 +436,14 @@ export function OpenDataPage() {
                 </p>
                 {[
                   { label: 'HESA Finance Open Data', url: 'https://www.hesa.ac.uk/data-and-analysis/finances' },
-                  { label: 'HESA Student Open Data', url: 'https://www.hesa.ac.uk/data-and-analysis/students' },
-                  { label: 'OfS Annual Financial Returns', url: 'https://www.officeforstudents.org.uk/data-and-analysis' },
+                  { label: 'HESA Student Statistics 2024/25', url: 'https://ckan.publishing.service.gov.uk/dataset/higher-education-student-statistics-uk-2024-25' },
+                  { label: 'DfE LEO graduate labour-market outcomes', url: 'https://explore-education-statistics.service.gov.uk/find-statistics/graduate-labour-market-outcomes-leo/2023-24' },
+                  { label: 'ONS Business Insights and Conditions Survey', url: 'https://www.ons.gov.uk/businessindustryandtrade/business/businessservices/bulletins/businessinsightsandimpactontheukeconomy/2april2026' },
+                  { label: 'Office for Students financial sustainability reports', url: 'https://www.officeforstudents.org.uk/publications/financial-sustainability-of-higher-education-providers-in-england-2026/' },
+                  { label: 'ILO generative AI occupational exposure research', url: 'https://www.ilo.org/publications/generative-ai-and-jobs-refined-global-index-occupational-exposure' },
+                  { label: 'World Economic Forum Future of Jobs 2025', url: 'https://www.weforum.org/publications/the-future-of-jobs-report-2025/' },
+                  { label: 'McKinsey Superagency in the workplace 2025', url: 'https://www.mckinsey.com/capabilities/tech-and-ai/our-insights/superagency-in-the-workplace-empowering-people-to-unlock-ais-full-potential-at-work' },
+                  { label: 'HESA provider tools', url: 'https://www.hesa.ac.uk/collection/provider-tools/' },
                   { label: 'Institutional audited accounts', url: null },
                 ].map(({ label, url }) => (
                   <div key={label} className="flex items-center gap-1.5 mb-1">
@@ -416,12 +464,12 @@ export function OpenDataPage() {
       </div>
 
       {/* API preview */}
-      <Panel title="Programmatic Access" subtitle="Use the local HEStats JSON API simulator for prototype integrations">
+      <Panel title="Programmatic Access" subtitle="Use the local HEStats JSON API simulator for verified data consumers">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p style={{ color: 'var(--text-2)', fontSize: 12, lineHeight: 1.6, marginBottom: 12 }}>
-              The current app includes a local read-only API simulator backed by this same dataset. Public endpoint shape is stable enough for
-              prototypes, but hosted API availability and rate limits are not yet production guarantees.
+              The current app includes a local read-only API simulator backed by this same verified dataset. Public endpoint shape is stable,
+              but hosted API availability and rate limits are not yet production guarantees.
             </p>
             <div className="space-y-2">
               {[
@@ -473,18 +521,7 @@ export function OpenDataPage() {
                 maxWidth: '100%',
                 whiteSpace: 'pre',
               }}
-            >{`{
-  "institution_id": "oxford",
-  "fiscal_year": "2024-25",
-  "revenue_gbp_m": 2860,
-  "surplus_gbp_m": 213,
-  "surplus_margin_pct": 7.4,
-  "research_income_gbp_m": 742,
-  "health_score": 91,
-  "health_grade": "AAA",
-  "risk_flag": "Low",
-  "data_source": "verified"
-}`}</pre>
+            >{examplePayload}</pre>
           </div>
         </div>
       </Panel>
@@ -498,7 +535,7 @@ export function OpenDataPage() {
         <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em' }}>DATA STANDARDS</span>
         <span style={{ color: 'var(--text-2)', fontSize: 11 }}>
           Financial figures in £ millions (GBP). Years in HESA format (e.g. 2024-25 = academic year ending July 2025).
-          Estimated figures are modelled from growth rates; verified figures are sourced from audited accounts.
+          Pending fields are blank or null and excluded from aggregates; verified rows include source URL/reference columns.
         </span>
       </div>
     </div>

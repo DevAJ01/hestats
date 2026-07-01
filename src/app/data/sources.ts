@@ -5,9 +5,9 @@
 
 import { generatedFinancialProvenance } from './generated/financialRecords'
 
-export type SourceTier = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+export type SourceTier = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 export type Confidence = 'high' | 'medium' | 'provisional' | 'awaiting'
-export type Licence = 'OGL-3.0' | 'CC-BY-4.0' | 'Crown-Copyright' | 'Institutional-Copyright' | 'Companies-House' | 'Charity-Commission'
+export type Licence = 'OGL-3.0' | 'CC-BY-4.0' | 'Crown-Copyright' | 'Institutional-Copyright' | 'Companies-House' | 'Charity-Commission' | 'Public-Domain' | 'External-Copyright'
 
 export interface DataSourceDef {
   id: string
@@ -65,18 +65,19 @@ export const DATA_SOURCES: DataSourceDef[] = [
     tier: 1,
     publisher: 'Higher Education Statistics Agency (HESA)',
     publisher_url: 'https://www.hesa.ac.uk',
-    dataset: 'Student Open Data',
-    dataset_url: 'https://www.hesa.ac.uk/data-and-analysis/students',
-    description: 'Full student enrolment data by institution, domicile, subject, level and mode. Used for international student percentages and total FTE.',
+    dataset: 'Higher Education Student Statistics UK 2024/25',
+    dataset_url: 'https://ckan.publishing.service.gov.uk/dataset/higher-education-student-statistics-uk-2024-25',
+    description: 'Official provider-level enrolment data from HESA Student Statistics. HEStats uses Figure 7 for enrolments by provider and permanent address when the official CSV has been attached by the internal pipeline.',
     licence: 'CC-BY-4.0',
     licence_url: 'https://www.hesa.ac.uk/about/copyright',
     update_frequency: 'Annual (typically January)',
     methodology_url: 'https://www.hesa.ac.uk/data-and-analysis/students/methodology',
     known_limitations: [
-      'FTE calculations use standard HESA mode-of-study weights',
-      'Some provider-level breakdowns suppressed for disclosure control',
+      'Figure 7 records enrolments by provider and permanent address; it is not a total FTE finance metric',
+      'Some provider-level cells may be suppressed for disclosure control',
+      'The official HESA CSV should be stored by the internal data pipeline before verified rows are generated',
     ],
-    coverage: '2015-16 to 2023-24',
+    coverage: '2024-25 Figure 7 pipeline-ready; historical provider-level student rows pending source ingestion',
   },
   {
     id: 'hesa-staff',
@@ -111,6 +112,62 @@ export const DATA_SOURCES: DataSourceDef[] = [
       'LEO data matched on earnings — lower-earning graduates may be under-represented',
     ],
     coverage: 'Academic years 2015-16 to 2023-24 (varies by dataset)',
+  },
+  {
+    id: 'dfe-leo',
+    tier: 2,
+    publisher: 'Department for Education',
+    publisher_url: 'https://www.gov.uk/government/organisations/department-for-education',
+    dataset: 'Graduate labour market outcomes (LEO)',
+    dataset_url: 'https://explore-education-statistics.service.gov.uk/find-statistics/graduate-labour-market-outcomes-leo/2023-24',
+    description: 'Official statistics on earnings and employment outcomes for higher education graduates and postgraduates using Longitudinal Education Outcomes data.',
+    licence: 'OGL-3.0',
+    licence_url: 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
+    update_frequency: 'Annual',
+    methodology_url: 'https://explore-education-statistics.service.gov.uk/find-statistics/graduate-labour-market-outcomes-leo/2023-24#methodology',
+    known_limitations: [
+      'LEO outcomes are lagged because earnings and employment are measured after study',
+      'Annualised earnings do not fully adjust for part-time work unless the release labels the value as an FTE estimate',
+      'Graduate outcomes should not be interpreted as causal effects of attending a specific provider or studying a specific subject',
+    ],
+    coverage: 'Latest release: tax year 2023-24, published 25 June 2026',
+  },
+  {
+    id: 'ons-bics-ai',
+    tier: 2,
+    publisher: 'Office for National Statistics',
+    publisher_url: 'https://www.ons.gov.uk',
+    dataset: 'Business Insights and Conditions Survey: AI adoption',
+    dataset_url: 'https://www.ons.gov.uk/businessindustryandtrade/business/businessservices/bulletins/businessinsightsandimpactontheukeconomy/2april2026',
+    description: 'Official statistics in development on UK business AI adoption, planned adoption and reported workforce effects.',
+    licence: 'OGL-3.0',
+    licence_url: 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
+    update_frequency: 'Fortnightly survey release, AI questions vary by wave',
+    methodology_url: 'https://www.ons.gov.uk/businessindustryandtrade/business/businessservices/methodologies/businessinsightsandconditionssurveyqmi',
+    known_limitations: [
+      'BICS is a voluntary business survey and the AI measures are official statistics in development',
+      'Coverage excludes public administration and publicly provided education and health',
+      'Questions and response options can change between survey waves',
+    ],
+    coverage: 'Wave 153, 16 to 29 March 2026, released 2 April 2026',
+  },
+  {
+    id: 'gov-ai-action-plan-one-year',
+    tier: 2,
+    publisher: 'Department for Science, Innovation and Technology',
+    publisher_url: 'https://www.gov.uk/government/organisations/department-for-science-innovation-and-technology',
+    dataset: 'AI Opportunities Action Plan: One Year On',
+    dataset_url: 'https://www.gov.uk/government/publications/ai-opportunities-action-plan-one-year-on/ai-opportunities-action-plan-one-year-on',
+    description: 'Government policy update tracking delivery against the UK AI Opportunities Action Plan and related skills, compute, safety and adoption commitments.',
+    licence: 'OGL-3.0',
+    licence_url: 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
+    update_frequency: 'Policy update',
+    methodology_url: 'https://delivery.ai.gov.uk/',
+    known_limitations: [
+      'Policy commitments and delivery counts are not official statistics',
+      'Delivery milestones may be updated by government after publication',
+    ],
+    coverage: 'Published 29 January 2026',
   },
   // TIER 3: SLC
   {
@@ -167,6 +224,25 @@ export const DATA_SOURCES: DataSourceDef[] = [
       'Sector-level analysis published by OfS — institution figures from HESA/annual reports',
     ],
     coverage: '2018-19 to 2023-24 (AFR concept framework)',
+  },
+  {
+    id: 'ofs-financial-sustainability',
+    tier: 4,
+    publisher: 'Office for Students',
+    publisher_url: 'https://www.officeforstudents.org.uk',
+    dataset: 'Financial sustainability of higher education providers in England',
+    dataset_url: 'https://www.officeforstudents.org.uk/publications/financial-sustainability-of-higher-education-providers-in-england-2026/',
+    description: 'Annual OfS assessment of the financial condition of higher education providers in England and their resilience to financial challenge.',
+    licence: 'OGL-3.0',
+    licence_url: 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
+    update_frequency: 'Annual, with interim updates where published',
+    methodology_url: 'https://www.officeforstudents.org.uk/for-providers/finance-and-funding/financial-pressures-and-financial-sustainability/',
+    known_limitations: [
+      'OfS coverage is England only',
+      'Sector-level analysis should not be interpreted as provider-level audited results',
+      'The 2026 report and Annex E were republished in June 2026 after typology corrections',
+    ],
+    coverage: 'Latest report published 14 May 2026; corrected 15 June 2026',
   },
   // TIER 5: UCAS
   {
@@ -246,6 +322,78 @@ export const DATA_SOURCES: DataSourceDef[] = [
     ],
     coverage: '2015 to present',
   },
+  {
+    id: 'wef-future-jobs-2025',
+    tier: 9,
+    publisher: 'World Economic Forum',
+    publisher_url: 'https://www.weforum.org',
+    dataset: 'The Future of Jobs Report 2025',
+    dataset_url: 'https://www.weforum.org/publications/the-future-of-jobs-report-2025/',
+    description: 'Employer survey and analysis on global labour-market transformation, technology adoption, job change and skills demand for 2025 to 2030.',
+    licence: 'External-Copyright',
+    licence_url: 'https://www.weforum.org/about/privacy-and-terms-of-use/',
+    update_frequency: 'Periodic report series',
+    methodology_url: 'https://www.weforum.org/publications/the-future-of-jobs-report-2025/',
+    known_limitations: [
+      'External analysis, not a UK official statistical source',
+      'Employer expectations should be treated as survey-based outlook rather than observed outcomes',
+    ],
+    coverage: 'Published 7 January 2025; survey spans 22 industry clusters and 55 economies',
+  },
+  {
+    id: 'mckinsey-superagency-2025',
+    tier: 9,
+    publisher: 'McKinsey & Company',
+    publisher_url: 'https://www.mckinsey.com',
+    dataset: 'Superagency in the workplace',
+    dataset_url: 'https://www.mckinsey.com/capabilities/tech-and-ai/our-insights/superagency-in-the-workplace-empowering-people-to-unlock-ais-full-potential-at-work',
+    description: 'Consultancy research on workplace AI investment, deployment maturity, leadership readiness and enterprise adoption risks.',
+    licence: 'External-Copyright',
+    licence_url: 'https://www.mckinsey.com/terms-of-use',
+    update_frequency: 'One-off report',
+    methodology_url: 'https://www.mckinsey.com/capabilities/tech-and-ai/our-insights/superagency-in-the-workplace-empowering-people-to-unlock-ais-full-potential-at-work',
+    known_limitations: [
+      'External consultancy analysis, not an official statistical source',
+      'Findings should be shown as source-backed external analysis and excluded from official aggregates',
+    ],
+    coverage: 'Published 28 January 2025',
+  },
+  {
+    id: 'ilo-genai-jobs-2025',
+    tier: 9,
+    publisher: 'International Labour Organization',
+    publisher_url: 'https://www.ilo.org',
+    dataset: 'Generative AI and Jobs: A Refined Global Index of Occupational Exposure',
+    dataset_url: 'https://www.ilo.org/publications/generative-ai-and-jobs-refined-global-index-occupational-exposure',
+    description: 'ILO working paper estimating occupational exposure to generative AI using task-level data, expert input and AI-assisted classification.',
+    licence: 'External-Copyright',
+    licence_url: 'https://www.ilo.org/copyright-and-permissions',
+    update_frequency: 'Research paper series',
+    methodology_url: 'https://webapps.ilo.org/static/english/intserv/working-papers/wp140/index.html',
+    known_limitations: [
+      'External labour-market research, not a UK official statistical source',
+      'Exposure estimates identify tasks affected by generative AI and do not directly estimate job losses',
+    ],
+    coverage: 'Published 20 May 2025',
+  },
+  {
+    id: 'natural-earth-gbr-outline',
+    tier: 9,
+    publisher: 'Natural Earth',
+    publisher_url: 'https://www.naturalearthdata.com',
+    dataset: 'Admin 0 country boundary for United Kingdom',
+    dataset_url: 'https://www.naturalearthdata.com/downloads/',
+    description: 'Public-domain geospatial boundary data used to render the UK outline behind institution map points.',
+    licence: 'Public-Domain',
+    licence_url: 'https://www.naturalearthdata.com/about/terms-of-use/',
+    update_frequency: 'Periodic geospatial release',
+    methodology_url: 'https://www.naturalearthdata.com/about/',
+    known_limitations: [
+      'Small islands and coastlines are simplified for web rendering',
+      'Institution points use campus/city coordinates and are not official estate boundaries',
+    ],
+    coverage: 'Great Britain, Northern Ireland and major islands used in the app SVG map',
+  },
 ]
 
 // ─── Source lookup helpers ────────────────────────────────────────────────────
@@ -289,7 +437,7 @@ export const CONFIDENCE_META: Record<Confidence, { label: string; color: string;
   awaiting: {
     label: 'Awaiting official publication',
     color: 'var(--muted)',
-    description: 'Official figures have not yet been published for this year and institution. No estimated values are displayed — this cell will be populated automatically when the official source is released.',
+    description: 'Official figures have not yet been published for this year and institution. No unverified values are displayed; this cell will be populated automatically when the official source is released.',
   },
 }
 
@@ -321,4 +469,6 @@ export const LICENCE_DISPLAY: Record<Licence, { name: string; url: string }> = {
   'Institutional-Copyright': { name: 'Institutional Copyright — linked under fair use', url: '' },
   'Companies-House': { name: 'Companies House — Public Register', url: 'https://www.gov.uk/guidance/companies-house-data-products' },
   'Charity-Commission': { name: 'Charity Commission Public Register', url: 'https://www.charitycommission.gov.uk' },
+  'Public-Domain': { name: 'Public domain', url: 'https://www.naturalearthdata.com/about/terms-of-use/' },
+  'External-Copyright': { name: 'External copyright — linked for provenance only', url: '' },
 }

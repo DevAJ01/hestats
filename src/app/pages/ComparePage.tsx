@@ -121,17 +121,6 @@ function buildRadarData(
   })
 }
 
-const AI_INSIGHTS: Record<string, string> = {
-  oxford: 'Oxford maintains exceptional research intensity (top 2%) and strong liquidity. Borrowing is elevated but well-covered by assets. Operational surplus consistent at ~5%. High international exposure provides income diversity.',
-  cambridge: 'Cambridge shows the highest research income in the sector. Endowment income provides significant balance sheet strength. Conservative borrowing policy. Financial resilience rated Excellent.',
-  imperial: 'Imperial is research-dominant with 42% income from grants and contracts. High staff cost ratio (66%) reflects research intensity. Strong international student pipeline. Capital investment ramping.',
-  ucl: 'UCL shows rapid income growth (+18% over 5 years) driven by student growth. Staff costs are the key pressure point. Borrowing increased to fund estate strategy. Surplus margin has compressed.',
-  lse: 'LSE is highly concentrated in social sciences; international student dependency is the highest in the sector at ~70%. Strong surplus margin. Minimal capital expenditure reflects campus strategy.',
-  manchester: 'Manchester demonstrates balanced income diversification. Research income growing steadily. Estate investment underway. Liquidity days comfortable at 120+.',
-}
-
-
-
 function ExportModal({ onClose, tableRef, selectedInstitutions }: { onClose: () => void; tableRef: React.RefObject<HTMLDivElement | null>; selectedInstitutions: { inst: Institution; fin: FinancialYear; color: string }[] }) {
   const [exporting, setExporting] = useState(false)
   const [done, setDone] = useState(false)
@@ -696,9 +685,9 @@ export function ComparePage() {
         </div>
       )}
 
-      {/* AI Executive Summary */}
+      {/* Verified financial summary */}
       {selectedInstitutions.length >= 1 && (
-        <Panel title="Executive Intelligence Summary" subtitle="AI-generated financial assessment">
+        <Panel title="Financial Data Summary" subtitle="Generated only from selected verified finance rows">
           <div className="space-y-3">
             <div
               className="px-3 py-1.5"
@@ -710,21 +699,25 @@ export function ComparePage() {
               }}
             >
               <p style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>
-                Disclaimer
+                Scope
               </p>
               <p style={{ color: 'var(--text-2)', fontSize: 11 }}>
-                This summary is generated from structured financial data and is illustrative only. It does not constitute financial advice or a complete assessment of institutional health.
+                This panel does not infer unsupported institutional context. It repeats only fields present in the selected
+                financial rows and leaves missing values as pending.
               </p>
             </div>
-            {selectedInstitutions.map(({ inst, color }) => {
-              const insight = AI_INSIGHTS[inst.id]
+            {selectedInstitutions.map(({ inst, fin, color }) => {
+              const income = METRICS.find((metric) => metric.key === 'revenue_gbp_m')?.format(fin.revenue_gbp_m) ?? 'Pending'
+              const surplus = METRICS.find((metric) => metric.key === 'surplus_gbp_m')?.format(fin.surplus_gbp_m) ?? 'Pending'
+              const margin = isKnownNumber(fin.surplus_margin_pct) ? `${fin.surplus_margin_pct.toFixed(1)}%` : 'Pending'
+              const research = METRICS.find((metric) => metric.key === 'research_income_gbp_m')?.format(fin.research_income_gbp_m) ?? 'Pending'
               return (
                 <div key={inst.id} className="flex gap-3">
                   <div className="w-1 flex-shrink-0 rounded" style={{ backgroundColor: color }} />
                   <div>
                     <p style={{ color, fontSize: 12, fontWeight: 600, marginBottom: 3 }}>{inst.canonical_name}</p>
                     <p style={{ color: 'var(--text-2)', fontSize: 12.5, lineHeight: 1.55 }}>
-                      {insight ?? 'Detailed financial intelligence summary available once verified data is loaded for this institution.'}
+                      FY{fin.fiscal_year}: total income {income}; operating surplus {surplus}; margin {margin}; research income {research}; risk flag {fin.risk_flag}.
                     </p>
                   </div>
                 </div>

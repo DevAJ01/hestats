@@ -4,7 +4,6 @@ import { TrendingUp, TrendingDown, Download, ArrowUpDown } from 'lucide-react'
 import { institutions } from '../data/institutions'
 import { getFinancialsByInstitution, getAllLatestFinancials, financials, AVAILABLE_YEARS, isKnownNumber, ratioPct } from '../data/financials'
 import { computeHealthScore } from '../data/health'
-import { getOutcomesByInstitution } from '../data/outcomes'
 import { NationBadge } from '../components/institutions/NationBadge'
 import { RiskBadge } from '../components/institutions/RiskBadge'
 import { HealthBadge } from '../components/institutions/HealthBadge'
@@ -16,12 +15,6 @@ type SortKey =
   | 'staff_cost_ratio' | 'cash' | 'borrowing' | 'borrowing_ratio'
   | 'liquidity' | 'international' | 'students' | 'capex'
   | 'net_assets' | 'income_per_student' | 'health'
-  // Employment
-  | 'employment_rate' | 'avg_salary' | 'graduate_role_pct' | 'placement_pct' | 'months_to_job'
-  // Education
-  | 'nss_score' | 'further_study' | 'tef_rating'
-  // AI
-  | 'ai_resilience'
 
 interface TabDef {
   id: string
@@ -84,37 +77,6 @@ const TABS: TabDef[] = [
     ],
   },
   {
-    id: 'employment',
-    label: 'Employment',
-    defaultSort: 'employment_rate',
-    metrics: [
-      { key: 'employment_rate', label: 'Graduate Employment' },
-      { key: 'avg_salary', label: 'Avg Graduate Salary' },
-      { key: 'graduate_role_pct', label: 'Graduate-Level Roles' },
-      { key: 'placement_pct', label: 'Placement Rate' },
-      { key: 'months_to_job', label: 'Months to Job' },
-    ],
-  },
-  {
-    id: 'education',
-    label: 'Education Quality',
-    defaultSort: 'nss_score',
-    metrics: [
-      { key: 'nss_score', label: 'NSS Satisfaction' },
-      { key: 'further_study', label: 'Further Study %' },
-    ],
-  },
-  {
-    id: 'ai-resilience',
-    label: 'AI Resilience',
-    defaultSort: 'ai_resilience',
-    metrics: [
-      { key: 'ai_resilience', label: 'AI Resilience Score' },
-      { key: 'employment_rate', label: 'Graduate Employment' },
-      { key: 'avg_salary', label: 'Avg Graduate Salary' },
-    ],
-  },
-  {
     id: 'borrowing',
     label: 'Borrowing',
     defaultSort: 'borrowing',
@@ -131,9 +93,7 @@ const SORT_KEYS = new Set<SortKey>(TABS.flatMap((tab) => tab.metrics.map((metric
 function resolveRankingParams(params: URLSearchParams): { tab: TabDef; sortKey: SortKey } {
   const category = params.get('category')
   const sort = params.get('sort') as SortKey | null
-  const categoryTab = category === 'outcomes'
-    ? TABS.find((tab) => tab.id === 'employment')
-    : TABS.find((tab) => tab.id === category)
+  const categoryTab = TABS.find((tab) => tab.id === category)
   const sortTab = sort && SORT_KEYS.has(sort)
     ? TABS.find((tab) => tab.metrics.some((metric) => metric.key === sort) || (sort === 'health' && tab.id === 'health'))
     : undefined
@@ -149,25 +109,15 @@ function fmt(key: SortKey, val: number | null): string {
     case 'international':
     case 'staff_cost_ratio':
     case 'borrowing_ratio':
-    case 'employment_rate':
-    case 'graduate_role_pct':
-    case 'placement_pct':
-    case 'nss_score':
-    case 'further_study':
       return `${val.toFixed(1)}%`
     case 'liquidity':
       return `${Math.round(val)}d`
     case 'students':
       return val >= 1000 ? `${(val / 1000).toFixed(1)}k` : String(Math.round(val))
     case 'health':
-    case 'ai_resilience':
       return `${Math.round(val)}/100`
     case 'income_per_student':
       return `£${val.toFixed(0)}k`
-    case 'avg_salary':
-      return `£${val.toFixed(0)}k`
-    case 'months_to_job':
-      return `${val.toFixed(1)} mo`
     default:
       return val >= 1000 ? `£${(val / 1000).toFixed(2)}bn` : `£${val.toLocaleString()}m`
   }
@@ -177,24 +127,6 @@ type FinRow = ReturnType<typeof getAllLatestFinancials>[0]
 type HealthRow = ReturnType<typeof computeHealthScore>
 
 function getValue(key: SortKey, fin: FinRow, health: HealthRow): number | null {
-  // Outcome-based metrics: look up from outcomes data
-  if (['employment_rate', 'avg_salary', 'graduate_role_pct', 'placement_pct', 'months_to_job', 'nss_score', 'further_study', 'ai_resilience'].includes(key)) {
-    const outcome = getOutcomesByInstitution(fin.institution_id)
-    if (!outcome) return null
-    switch (key) {
-      case 'employment_rate': return outcome.employment_rate_15mo
-      case 'avg_salary': return outcome.avg_salary_k
-      case 'graduate_role_pct': return outcome.graduate_role_pct
-      case 'placement_pct': return outcome.placement_participation_pct
-      case 'months_to_job': return outcome.avg_months_to_job
-      case 'nss_score': return outcome.nss_overall_pct
-      case 'further_study': return outcome.further_study_pct
-      case 'ai_resilience': {
-        return null
-      }
-      default: return null
-    }
-  }
   switch (key) {
     case 'revenue': return fin.revenue_gbp_m
     case 'surplus': return fin.surplus_gbp_m
@@ -217,7 +149,7 @@ function getValue(key: SortKey, fin: FinRow, health: HealthRow): number | null {
 }
 
 function isLowerBetter(key: SortKey): boolean {
-  return key === 'borrowing' || key === 'borrowing_ratio' || key === 'staff_cost_ratio' || key === 'months_to_job'
+  return key === 'borrowing' || key === 'borrowing_ratio' || key === 'staff_cost_ratio'
 }
 
 export function RankingsPage() {

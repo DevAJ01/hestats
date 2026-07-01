@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router'
-import { ArrowLeft, FileText, Globe, CheckCircle, Clock, AlertCircle, ArrowUpRight, GitCompare, TrendingUp, Star } from 'lucide-react'
+import { ArrowLeft, FileText, Globe, CheckCircle, Clock, AlertCircle, ArrowUpRight, GitCompare, Star, Users } from 'lucide-react'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { getInstitutionById } from '../data/institutions'
 import { formatCurrencyM, formatDays, formatNumber, formatPct, getFinancialsByInstitution, getAllLatestFinancials, AVAILABLE_YEARS, isKnownNumber, ratioPct } from '../data/financials'
+import { formatStudentCount, getLatestStudentEnrolment } from '../data/students'
 import { FinancialYear } from '../data/types'
 import { computeHealthScore, getGradeColor } from '../data/health'
 import { getInstitutionProvenance, getProvenance, getSourceById, CONFIDENCE_META, DATA_SOURCES } from '../data/sources'
-import { getOutcomesByInstitution, getSectorOutcomes } from '../data/outcomes'
-import { getTopEmployersForInstitution } from '../data/employers'
 import { RiskBadge } from '../components/institutions/RiskBadge'
 import { NationBadge } from '../components/institutions/NationBadge'
 import { DataSourceBadge } from '../components/institutions/DataSourceBadge'
@@ -17,7 +16,7 @@ import { MetricTrendChart } from '../components/charts/MetricTrendChart'
 import { IncomeBreakdownChart } from '../components/charts/IncomeBreakdownChart'
 import { Sparkline } from '../components/charts/Sparkline'
 
-const TABS = ['Overview', 'Financials', 'Trends', 'DNA', 'Research', 'Borrowing', 'Outcomes', 'Staff', 'Timeline', 'Estates', 'Sources'] as const
+const TABS = ['Overview', 'Financials', 'Students', 'Trends', 'DNA', 'Research', 'Borrowing', 'Outcomes', 'Staff', 'Timeline', 'Estates', 'Sources'] as const
 type Tab = (typeof TABS)[number]
 
 const DNA_DIMENSIONS: { key: keyof FinancialYear; label: string; description: string; higherBetter: boolean }[] = [
@@ -189,6 +188,7 @@ export function InstitutionProfilePage() {
   const institution = getInstitutionById(id ?? '')
   const financials = id ? getFinancialsByInstitution(id) : []
   const latest = financials[0]
+  const latestStudent = id ? getLatestStudentEnrolment(id) : undefined
   const [activeTab, setActiveTab] = useState<Tab>('Overview')
   const { isWatched, toggleWatch, recordView } = useWorkspace()
 
@@ -302,7 +302,7 @@ export function InstitutionProfilePage() {
       {activeTab === 'Overview' && (
         <>
           <div
-            className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 border-l border-t mb-3"
+            className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 border-l border-t mb-3"
             style={{ borderColor: 'var(--border)' }}
           >
             <MetricCell label="Total Income" value={formatCurrencyM(latest.revenue_gbp_m)} sub={`FY${latest.fiscal_year}`} />
@@ -318,6 +318,11 @@ export function InstitutionProfilePage() {
             <MetricCell label="Cash" value={formatCurrencyM(latest.cash_gbp_m)} sub={`${formatDays(latest.liquidity_days)} liquidity`} />
             <MetricCell label="Borrowing" value={formatCurrencyM(latest.borrowing_gbp_m)} />
             <MetricCell label="Intl. Students" value={isKnownNumber(latest.international_fte_pct) ? `${latest.international_fte_pct.toFixed(1)}%` : 'Pending'} sub={`${formatNumber(latest.student_fte_total)} FTE`} />
+            <MetricCell
+              label="HESA Enrolments"
+              value={formatStudentCount(latestStudent?.total_enrolments)}
+              sub={latestStudent?.source_status === 'verified' ? 'HESA Student Figure 7' : 'Figure 7 pending'}
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -414,6 +419,74 @@ export function InstitutionProfilePage() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'Students' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="lg:col-span-2">
+            <Panel
+              title="Student Enrolment"
+              subtitle={latestStudent ? `Academic year ${latestStudent.academic_year}` : 'Awaiting source row'}
+            >
+              {latestStudent?.source_status === 'verified' ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <tbody>
+                      {[
+                        { label: 'Total enrolments', value: formatStudentCount(latestStudent.total_enrolments) },
+                        { label: 'UK permanent address', value: formatStudentCount(latestStudent.uk_enrolments) },
+                        { label: 'Non-UK permanent address', value: formatStudentCount(latestStudent.non_uk_enrolments) },
+                        { label: 'Unknown domicile', value: formatStudentCount(latestStudent.unknown_domicile_enrolments) },
+                      ].map(({ label, value }) => (
+                        <tr key={label} style={{ borderBottom: '1px solid var(--border)' }}>
+                          <td className="px-3 py-2" style={{ color: 'var(--text-2)', fontSize: 12 }}>{label}</td>
+                          <td className="px-3 py-2 text-right font-num tabular-nums" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 500 }}>{value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 px-3 py-5">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
+                  <div style={{ color: 'var(--text-2)', fontSize: 12.5, lineHeight: 1.6 }}>
+                    <p style={{ marginBottom: 6 }}>HESA Student Statistics Figure 7 has not yet been attached for {institution.short_name}.</p>
+                    <p style={{ color: 'var(--muted)', fontSize: 11 }}>No enrolment value is displayed until the official provider row is ingested with source URL, table reference, retrieved date, last verified date and confidence metadata.</p>
+                  </div>
+                </div>
+              )}
+            </Panel>
+          </div>
+          <Panel title="Student Source" subtitle="Official HESA source">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" style={{ color: latestStudent?.source_status === 'verified' ? 'var(--positive)' : 'var(--warning)' }} />
+                <span style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>
+                  {latestStudent?.source_status === 'verified' ? 'Verified source row' : 'Pending source row'}
+                </span>
+              </div>
+              <div>
+                <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>Reference</p>
+                <p style={{ color: 'var(--text-2)', fontSize: 11.5, lineHeight: 1.5 }}>{latestStudent?.source_reference ?? 'HESA Student Statistics Figure 7'}</p>
+              </div>
+              <div>
+                <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>Last verified</p>
+                <p className="font-num" style={{ color: 'var(--text-2)', fontSize: 11.5 }}>{latestStudent?.last_verified ?? 'Pending'}</p>
+              </div>
+              {latestStudent?.source_url && (
+                <a
+                  href={latestStudent.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5"
+                  style={{ border: '1px solid var(--border)', borderRadius: 3, color: 'var(--link)', fontSize: 11.5 }}
+                >
+                  Open source <ArrowUpRight className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+          </Panel>
         </div>
       )}
 
@@ -657,174 +730,17 @@ export function InstitutionProfilePage() {
         </div>
       )}
 
-      {activeTab === 'Outcomes' && (() => {
-        const outcome = getOutcomesByInstitution(institution.id)
-        const sector = getSectorOutcomes()
-        const topEmployers = getTopEmployersForInstitution(institution.id, 5)
-        const seed = institution.id.split('').reduce((s, c) => s + c.charCodeAt(0), 0)
-        const rng = (min: number, max: number, offset = 0) => min + ((seed + offset) % (max - min + 1))
-        const employability = outcome?.employment_rate_15mo ?? rng(72, 98, 1)
-        const gradSalaryK = outcome?.avg_salary_k ?? rng(24, 42, 2)
-        const nssOverall = outcome?.nss_overall_pct ?? rng(74, 95, 3)
-        const completion = rng(82, 97, 4)
-        const pgProgression = outcome?.further_study_pct ?? rng(18, 45, 5)
-        const gradUkProf = rng(55, 85, 6)
-        const gradIntlProf = rng(48, 78, 7)
-        const tef = outcome?.tef_rating ?? (['Gold', 'Silver', 'Bronze'][(seed % 3)] as string)
-        const ref2021 = rng(45, 92, 8)
-        const researchPower = rng(100, 3800, 9)
-        const placementPct = outcome?.placement_participation_pct ?? rng(18, 36, 10)
-        const monthsToJob = outcome?.avg_months_to_job ?? rng(2, 7, 11)
-
-        const outcomesYears = AVAILABLE_YEARS.slice(0, 5).reverse()
-        const empTrend = outcomesYears.map((_, i) => Math.max(65, employability - 6 + i * 1.5 + (seed % 3)))
-        const nssTrend = outcomesYears.map((_, i) => Math.max(68, nssOverall - 8 + i * 1.5 + (seed % 2)))
-
-        return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <Panel title="Graduate Outcomes" subtitle={`FY${latest.fiscal_year} · Graduate Outcomes Survey`}>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                {[
-                  { label: 'Employment Rate', value: `${employability}%`, color: employability >= 85 ? 'var(--positive)' : 'var(--warning)', desc: '15 months post-grad', sectorVal: `${sector.avg_employment_rate}%` },
-                  { label: 'Avg Graduate Salary', value: `£${typeof gradSalaryK === 'number' ? gradSalaryK.toFixed(0) : gradSalaryK}k`, color: 'var(--text)', desc: '15 months post-grad', sectorVal: `£${sector.avg_salary_k}k` },
-                  { label: 'Further Study', value: `${pgProgression}%`, color: 'var(--link)', desc: 'Postgraduate progression', sectorVal: `${sector.avg_further_study_pct}%` },
-                  { label: 'Placement Rate', value: `${placementPct}%`, color: 'var(--text-2)', desc: 'Year in industry participation', sectorVal: '26%' },
-                  { label: 'Time to First Job', value: `${typeof monthsToJob === 'number' ? monthsToJob.toFixed(1) : monthsToJob} mo`, color: 'var(--text)', desc: 'Avg months to graduate job', sectorVal: `${sector.avg_months_to_job} mo` },
-                  { label: 'Completion Rate', value: `${completion}%`, color: completion >= 90 ? 'var(--positive)' : 'var(--warning)', desc: 'Programme completion', sectorVal: '91%' },
-                ].map(({ label, value, color, desc, sectorVal }) => (
-                  <div key={label} className="px-3 py-2.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
-                    <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>{label}</p>
-                    <p className="font-num" style={{ color, fontSize: 20, fontWeight: 700, lineHeight: 1.1 }}>{value}</p>
-                    <p style={{ color: 'var(--muted)', fontSize: 10, marginTop: 2 }}>{desc} · <span style={{ color: 'var(--border-strong)' }}>sector: {sectorVal}</span></p>
-                  </div>
-                ))}
-              </div>
-              <div>
-                <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Employability trend</p>
-                <div className="flex items-end gap-1.5" style={{ height: 64 }}>
-                  {empTrend.map((v, i) => (
-                    <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                      <span style={{ color: 'var(--muted)', fontSize: 9 }}>{v.toFixed(0)}%</span>
-                      <div style={{ height: 40, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
-                        <div style={{ height: `${((v - 65) / 35) * 100}%`, width: '100%', backgroundColor: 'var(--positive)', borderRadius: '2px 2px 0 0', opacity: 0.7 }} />
-                      </div>
-                      <span style={{ color: 'var(--muted)', fontSize: 8 }}>{outcomesYears[i].slice(-2)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Panel>
-
-            <Panel title="Teaching Excellence" subtitle="NSS scores and TEF rating">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="px-4 py-3 border text-center" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3, minWidth: 80 }}>
-                    <p style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>TEF Rating</p>
-                    <p style={{ color: tef === 'Gold' ? 'var(--warning)' : tef === 'Silver' ? 'var(--muted)' : 'var(--text-2)', fontSize: 18, fontWeight: 700 }}>{tef}</p>
-                  </div>
-                  <div className="flex-1">
-                    <p style={{ color: 'var(--muted)', fontSize: 10, marginBottom: 4 }}>
-                      Teaching Excellence Framework ({tef === 'Gold' ? 'Outstanding' : tef === 'Silver' ? 'Excellent' : 'Good'} quality teaching, learning environment, and student outcomes)
-                    </p>
-                    <p style={{ color: 'var(--muted)', fontSize: 10 }}>NSS overall satisfaction: <span style={{ color: 'var(--text)', fontWeight: 600 }}>{nssOverall}%</span></p>
-                  </div>
-                </div>
-                <div>
-                  <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>NSS satisfaction trend</p>
-                  <div className="flex items-end gap-1.5" style={{ height: 64 }}>
-                    {nssTrend.map((v, i) => (
-                      <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                        <span style={{ color: 'var(--muted)', fontSize: 9 }}>{v.toFixed(0)}%</span>
-                        <div style={{ height: 40, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
-                          <div style={{ height: `${((v - 65) / 35) * 100}%`, width: '100%', backgroundColor: 'var(--link)', borderRadius: '2px 2px 0 0', opacity: 0.7 }} />
-                        </div>
-                        <span style={{ color: 'var(--muted)', fontSize: 8 }}>{outcomesYears[i].slice(-2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Panel>
-
-            <Panel title="Research Excellence Framework 2021" subtitle="REF 2021 results">
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                {[
-                  { label: '4* & 3* Rated Output', value: `${ref2021}%`, color: ref2021 >= 75 ? 'var(--positive)' : 'var(--warning)' },
-                  { label: 'Research Power Score', value: researchPower.toLocaleString(), color: 'var(--link)' },
-                  { label: 'UK Pro. Grad. Employment', value: `${gradUkProf}%`, color: 'var(--text)' },
-                  { label: 'Intl. Pro. Employment', value: `${gradIntlProf}%`, color: 'var(--text)' },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="px-3 py-2.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
-                    <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>{label}</p>
-                    <p className="font-num" style={{ color, fontSize: 20, fontWeight: 700 }}>{value}</p>
-                  </div>
-                ))}
-              </div>
-              <p style={{ color: 'var(--muted)', fontSize: 11, lineHeight: 1.5 }}>
-                REF 2021 assessed research quality across Units of Assessment. Higher 4* and 3* submissions correlate with UKRI funding allocation.
-                Figures shown are indicative based on publicly available REF outcomes data.
-              </p>
-            </Panel>
-
-            <Panel title="Graduate Employment by Sector" subtitle="15 months post-graduation breakdown">
-              <div className="space-y-2.5">
-                {[
-                  { sector: 'Professional services', pct: rng(22, 38, 10), color: 'var(--link)' },
-                  { sector: 'Education & research', pct: rng(14, 28, 11), color: 'var(--positive)' },
-                  { sector: 'Healthcare & social', pct: rng(8, 20, 12), color: 'var(--warning)' },
-                  { sector: 'Technology & digital', pct: rng(6, 18, 13), color: '#b18ab8' },
-                  { sector: 'Finance & banking', pct: rng(4, 14, 14), color: '#6fb5b5' },
-                  { sector: 'Other', pct: rng(8, 16, 15), color: 'var(--muted)' },
-                ].map(({ sector, pct, color }) => (
-                  <div key={sector} className="flex items-center gap-3">
-                    <span style={{ color: 'var(--text-2)', fontSize: 11.5, width: 160, flexShrink: 0 }}>{sector}</span>
-                    <div className="flex-1 h-1.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
-                      <div style={{ height: '100%', width: `${pct * 2.5}%`, backgroundColor: color, borderRadius: 1, opacity: 0.8 }} />
-                    </div>
-                    <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 11, width: 28, textAlign: 'right', flexShrink: 0 }}>{pct}%</span>
-                  </div>
-                ))}
-              </div>
-            </Panel>
-
-            {topEmployers.length > 0 && (
-              <Panel title="Top Employers" subtitle={`Major employers recruiting ${institution.short_name} graduates`}>
-                <div className="space-y-2">
-                  {topEmployers.map((emp) => {
-                    const hires = emp.top_universities.find((u) => u.id === institution.id)?.annual_hires ?? 0
-                    const maxHires = topEmployers[0].top_universities.find((u) => u.id === institution.id)?.annual_hires ?? 1
-                    return (
-                      <div key={emp.id} className="flex items-center gap-2">
-                        <div className="w-7 h-7 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 3, border: '1px solid var(--border)' }}>
-                          <span style={{ color: 'var(--accent)', fontSize: 11, fontWeight: 800 }}>{emp.name[0]}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p style={{ color: 'var(--text)', fontSize: 12, fontWeight: 500 }}>{emp.name}</p>
-                          <p style={{ color: 'var(--muted)', fontSize: 10 }}>{emp.sector} · £{emp.avg_starting_salary_k}k avg</p>
-                        </div>
-                        <div style={{ width: 80, height: 4, backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
-                          <div style={{ height: '100%', width: `${(hires / maxHires) * 100}%`, backgroundColor: 'var(--accent)', borderRadius: 1 }} />
-                        </div>
-                        <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 11, width: 52, textAlign: 'right', flexShrink: 0 }}>{hires} hires/yr</span>
-                      </div>
-                    )
-                  })}
-                </div>
-                <Link to="/employers" className="mt-3 flex items-center gap-1 text-xs hover:underline" style={{ color: 'var(--link)', fontSize: 11 }}>
-                  <TrendingUp className="w-3 h-3" /> View all employer intelligence
-                </Link>
-              </Panel>
-            )}
-
-            <div className="lg:col-span-2 flex justify-center">
-              <Link to="/graduate-outcomes" className="flex items-center gap-2 px-4 py-2.5"
-                style={{ backgroundColor: 'var(--accent)', color: '#fff', borderRadius: 4, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-                Explore full sector outcomes data <ArrowUpRight className="w-4 h-4" />
-              </Link>
+      {activeTab === 'Outcomes' && (
+        <Panel title="Outcomes" subtitle="Awaiting official outcome-source rows">
+          <div className="flex items-start gap-3 px-3 py-5">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
+            <div style={{ color: 'var(--text-2)', fontSize: 12.5, lineHeight: 1.6 }}>
+              <p style={{ marginBottom: 6 }}>Graduate outcomes, NSS, TEF, REF-derived claims, employer destinations and subject-level metrics are pending verification for {institution.short_name}.</p>
+              <p style={{ color: 'var(--muted)', fontSize: 11 }}>No institution-specific outcome values are displayed until each metric has official source provenance, URL, table reference, retrieved date, last verified date and confidence metadata.</p>
             </div>
           </div>
-        )
-      })()}
+        </Panel>
+      )}
 
       {activeTab === 'Staff' && (
         <Panel title="Staff" subtitle="Awaiting official staff-source rows">

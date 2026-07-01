@@ -13,7 +13,15 @@ import {
   sumKnown,
 } from '../data/financials'
 import { computeHealthScore, getAllHealthScores, getSectorAverageScore, scoreToGrade } from '../data/health'
+import { INTELLIGENCE_RECORDS, IntelligenceRecord } from '../data/intelligence'
 import { getProvenance } from '../data/sources'
+import {
+  STUDENT_YEARS,
+  getStudentCoverage,
+  getStudentEnrolmentsByInstitution,
+  isVerifiedStudentRecord,
+  studentEnrolments,
+} from '../data/students'
 import { FinancialYear } from '../data/types'
 
 export interface ApiResponse {
@@ -98,6 +106,56 @@ function buildFin(f: FinancialYear) {
           notes: provenance.notes ?? null,
         }]
       : [],
+  }
+}
+
+function buildStudent(row: (typeof studentEnrolments)[number]) {
+  return {
+    institution_id: row.institution_id,
+    ukprn: row.ukprn,
+    academic_year: row.academic_year,
+    total_enrolments: row.total_enrolments,
+    uk_enrolments: row.uk_enrolments,
+    non_uk_enrolments: row.non_uk_enrolments,
+    unknown_domicile_enrolments: row.unknown_domicile_enrolments,
+    source_status: row.source_status,
+    confidence: row.confidence,
+    included_in_aggregates: row.included_in_aggregates,
+    source_documents: [{
+      source_id: row.source_id,
+      source_url: row.source_url,
+      source_reference: row.source_reference,
+      retrieved_date: row.retrieved_date,
+      last_verified: row.last_verified,
+      confidence: row.confidence,
+      notes: row.notes ?? null,
+    }],
+  }
+}
+
+function buildIntelligence(row: IntelligenceRecord) {
+  return {
+    id: row.id,
+    title: row.title,
+    summary: row.summary,
+    category: row.category,
+    claim_type: row.claim_type,
+    source_status: row.source_status,
+    confidence: row.confidence,
+    geography: row.geography,
+    period: row.period,
+    published_date: row.published_date,
+    retrieved_date: row.retrieved_date,
+    last_verified: row.last_verified,
+    source_documents: [{
+      source_id: row.source_id,
+      publisher: row.publisher,
+      source_url: row.source_url,
+      source_reference: row.source_reference,
+      confidence: row.confidence,
+    }],
+    metrics: row.metrics,
+    notes: row.notes ?? null,
   }
 }
 
@@ -190,6 +248,26 @@ export async function dispatchRequest(method: string, path: string, search: stri
     if (params.from) fins = fins.filter((f) => f.fiscal_year >= params.from)
     if (params.to) fins = fins.filter((f) => f.fiscal_year <= params.to)
     return respond(ok(fins.map(buildFin), { institution_id: inst.id, years_available: fins.length, data_sources: [...new Set(fins.map((f) => f.data_source))] }))
+  }
+
+  // ── GET /institutions/:id/students ───────────────────────────────────────────
+  if (segments[0] === 'institutions' && segments[1] && segments[2] === 'students') {
+    const inst = getInstitutionById(segments[1]) ?? institutions.find((i) => i.ukprn === segments[1])
+    if (!inst) return err(404, `Institution '${segments[1]}' not found.`)
+    let rows = getStudentEnrolmentsByInstitution(inst.id)
+    if (params.academic_year) {
+      if (!(STUDENT_YEARS as readonly string[]).includes(params.academic_year)) return err(422, `Unknown academic_year '${params.academic_year}'. Available: ${STUDENT_YEARS.join(', ')}.`)
+      rows = rows.filter((row) => row.academic_year === params.academic_year)
+    }
+    return respond(ok(rows.map(buildStudent), {
+      institution_id: inst.id,
+      years_available: rows.length,
+      coverage: {
+        verified: rows.filter(isVerifiedStudentRecord).length,
+        pending: rows.filter((row) => row.source_status === 'pending').length,
+        included_in_aggregates: rows.filter((row) => row.included_in_aggregates).length,
+      },
+    }))
   }
 
   // ── GET /institutions/:id/health ─────────────────────────────────────────────
@@ -302,6 +380,53 @@ export async function dispatchRequest(method: string, path: string, search: stri
       }
     })
     return respond(ok(items, { metric, fiscal_year: year, order, total: sorted.length, limit, offset, coverage: { included: sorted.length, total_rows: yearFins.length, excluded_pending: yearFins.length - sorted.length } }))
+  }
+
+  // ── GET /student-enrolments ──────────────────────────────────────────────────
+  if (segments[0] === 'student-enrolments') {
+    const requestedYear = params.academic_year ?? STUDENT_YEARS[0]
+    if (!(STUDENT_YEARS as readonly string[]).includes(requestedYear)) return err(422, `Unknown academic_year '${requestedYear}'. Available: ${STUDENT_YEARS.join(', ')}.`)
+    const year = requestedYear as (typeof STUDENT_YEARS)[number]
+    let rows = studentEnrolments.filter((row) => row.academic_year === year)
+    if (params.source_status) rows = rows.filter((row) => row.source_status === params.source_status)
+    if (params.nation) {
+      const nationInsts = new Set(institutions.filter((i) => i.nation.toLowerCase() === params.nation.toLowerCase()).map((i) => i.id))
+      rows = rows.filter((row) => nationInsts.has(row.institution_id))
+    }
+    const limit = Math.min(Number(params.limit ?? 50), 200)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(rows, limit, offset)
+    return respond(ok(items.map(buildStudent), {
+      total,
+      limit,
+      offset,
+      coverage: getStudentCoverage(year),
+    }))
+  }
+
+  // ── GET /intelligence ───────────────────────────────────────────────────────
+  if (segments[0] === 'intelligence') {
+    let list = [...INTELLIGENCE_RECORDS]
+    if (params.category) list = list.filter((row) => row.category === params.category)
+    if (params.claim_type) list = list.filter((row) => row.claim_type === params.claim_type)
+    if (params.source_status) list = list.filter((row) => row.source_status === params.source_status)
+    if (params.publisher) list = list.filter((row) => row.publisher.toLowerCase().includes(params.publisher.toLowerCase()))
+    list = list.sort((a, b) => b.published_date.localeCompare(a.published_date))
+    const limit = Math.min(Number(params.limit ?? 50), 200)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(list, limit, offset)
+    return respond(ok(items.map(buildIntelligence), {
+      total,
+      limit,
+      offset,
+      coverage: {
+        total_records: INTELLIGENCE_RECORDS.length,
+        official_or_regulator_records: INTELLIGENCE_RECORDS.filter((row) => row.claim_type !== 'external-analysis').length,
+        external_analysis_records: INTELLIGENCE_RECORDS.filter((row) => row.claim_type === 'external-analysis').length,
+        metric_count: INTELLIGENCE_RECORDS.reduce((sum, row) => sum + row.metrics.length, 0),
+        included_in_aggregates: INTELLIGENCE_RECORDS.reduce((sum, row) => sum + row.metrics.filter((metric) => metric.included_in_aggregates).length, 0),
+      },
+    }))
   }
 
   // ── GET /health-scores ────────────────────────────────────────────────────────

@@ -1,11 +1,13 @@
 import { Heart, Github, ArrowUpRight, Mail, Code, Database, Server, Users, Star, GitBranch, TrendingUp, Shield, Globe, Coffee } from 'lucide-react'
 import { Panel } from '../components/layout/Panel'
 import { SUPPORT_LINKS } from '../data/links'
+import { institutions } from '../data/institutions'
+import { AVAILABLE_YEARS, financials } from '../data/financials'
 
 const IMPACT_STATS = [
-  { value: '~140', label: 'institutions tracked', icon: <Globe className="w-4 h-4" /> },
-  { value: '141', label: 'seeded verified rows', icon: <Shield className="w-4 h-4" /> },
-  { value: '10', label: 'modelled fiscal years', icon: <TrendingUp className="w-4 h-4" /> },
+  { value: String(institutions.length), label: 'institutions tracked', icon: <Globe className="w-4 h-4" /> },
+  { value: String(financials.filter((row) => row.data_source === 'verified').length), label: 'verified finance rows', icon: <Shield className="w-4 h-4" /> },
+  { value: String(AVAILABLE_YEARS.length), label: 'verified fiscal years', icon: <TrendingUp className="w-4 h-4" /> },
   { value: 'Free', label: 'forever · no paywalls', icon: <Heart className="w-4 h-4" /> },
 ]
 
@@ -34,8 +36,8 @@ const RECOGNITION_TIERS = [
 ]
 
 const ROADMAP = [
-  { status: 'available', label: '~140 institutions with prototype financial coverage' },
-  { status: 'available', label: '141 seeded verified rows plus clearly labelled modelled estimates' },
+  { status: 'available', label: `${institutions.length} institutions with verified-or-pending decade finance coverage` },
+  { status: 'available', label: `${financials.filter((row) => row.data_source === 'verified').length} verified HESA finance rows plus explicit pending gaps` },
   { status: 'available', label: 'Institution comparison engine (up to 6)' },
   { status: 'available', label: 'League tables sortable by 12+ metrics' },
   { status: 'building', label: 'Balance sheet & cash flow statement views' },

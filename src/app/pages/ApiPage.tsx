@@ -132,6 +132,21 @@ const ENDPOINTS: EndpointDef[] = [
     exampleQuery: 'ids=oxford,cambridge,imperial,ucl&fiscal_year=2024-25',
   },
   {
+    group: 'Intelligence',
+    method: 'GET', path: '/intelligence',
+    summary: 'Source-backed intelligence',
+    description: 'Official statistics, regulator publications, government policy records and external AI-risk analysis. Every record includes source documents, confidence and verification dates.',
+    params: [
+      { name: 'category', in: 'query', type: 'string', required: false, description: 'Filter by category: he-finance, students, graduate-outcomes, labour-market, ai-exposure, policy, map-data', example: 'ai-exposure' },
+      { name: 'claim_type', in: 'query', type: 'string', required: false, description: 'Filter by claim type, e.g. official-statistic or external-analysis', example: 'external-analysis' },
+      { name: 'source_status', in: 'query', type: 'string', required: false, description: 'Filter by verified, external_analysis, pending, or archived', example: 'verified' },
+      { name: 'limit', in: 'query', type: 'integer', required: false, description: 'Results per page (1-200, default 50)', example: '10' },
+      { name: 'offset', in: 'query', type: 'integer', required: false, description: 'Pagination offset', example: '0' },
+    ],
+    examplePath: '/intelligence',
+    exampleQuery: 'claim_type=external-analysis&limit=5',
+  },
+  {
     group: 'Reference',
     method: 'GET', path: '/years',
     summary: 'Available years',
@@ -351,7 +366,7 @@ function Playground() {
           {/* Access row */}
           <div className="flex items-center gap-2 mb-3 p-2 rounded" style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}>
             <Shield className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--warning)' }} />
-            <span style={{ color: 'var(--muted)', fontSize: 10, flexShrink: 0 }}>Prototype access</span>
+            <span style={{ color: 'var(--muted)', fontSize: 10, flexShrink: 0 }}>Local access</span>
             <code className="flex-1 truncate font-num" style={{ color: 'var(--warning)', fontSize: 10 }}>No API key · local read-only simulator</code>
           </div>
 
@@ -630,6 +645,22 @@ const SCHEMAS: { name: string; description: string; fields: { name: string; type
     ],
   },
   {
+    name: 'IntelligenceRecord',
+    description: 'A public intelligence claim with source provenance and optional numeric metrics.',
+    fields: [
+      { name: 'id', type: 'string', description: 'Stable intelligence record id' },
+      { name: 'title', type: 'string', description: 'Display title for the source-backed claim' },
+      { name: 'summary', type: 'string', description: 'Short source-backed summary' },
+      { name: 'category', type: 'string', description: 'Claim category such as he-finance, labour-market, ai-exposure or policy' },
+      { name: 'claim_type', type: '"official-statistic"|"regulator-publication"|"government-policy"|"external-analysis"', description: 'Whether the record is official, regulatory, policy, or external analysis' },
+      { name: 'source_status', type: '"verified"|"external_analysis"|"pending"|"archived"', description: 'Verification/source display status' },
+      { name: 'confidence', type: '"high"|"medium"|"provisional"|"awaiting"', description: 'HEStats confidence label; external analysis cannot be high confidence' },
+      { name: 'source_documents', type: 'array', description: 'Publisher, source id, source URL, source reference and confidence' },
+      { name: 'metrics', type: 'array', description: 'Nullable numeric metrics with units, period, source reference and aggregate inclusion flag' },
+      { name: 'last_verified', type: 'string', description: 'Date the source was last checked by HEStats' },
+    ],
+  },
+  {
     name: 'ApiResponse (envelope)',
     description: 'All API responses share this envelope structure.',
     fields: [
@@ -685,9 +716,10 @@ function SchemaBlock({ s }: { s: typeof SCHEMAS[0] }) {
 // ─── Changelog ────────────────────────────────────────────────────────────────
 
 const CHANGELOG = [
-  { version: 'prototype-2026.1', date: 'Jun 2026', tag: 'New', color: 'var(--positive)', changes: ['Bundled read-only API simulator aligned with the React runtime', 'Added /compare endpoint supporting up to 6 institutions', 'Health score components included in /institutions/{id}/health', 'Export examples no longer require authentication headers'] },
-  { version: 'prototype-2025.2', date: 'Mar 2026', tag: 'Update', color: 'var(--link)', changes: ['Added /years endpoint listing available fiscal years', 'Added /metrics catalogue endpoint', 'Pagination offset/limit added to /institutions and /health-scores', 'source_pdf field exposed where a source document is known'] },
-  { version: 'prototype-2025.1', date: 'Jan 2026', tag: 'Baseline', color: 'var(--warning)', changes: ['Initial local API catalogue for the frontend prototype', 'Endpoints: /institutions, /sector/summary, /rankings', 'REST + JSON examples backed by bundled app data', 'Verified and pending records are labelled in response payloads'] },
+  { version: 'verified-2026.2', date: 'Jul 2026', tag: 'New', color: 'var(--positive)', changes: ['Added /intelligence endpoint with official and external-analysis records', 'Open-data exports now include source-backed intelligence metadata', 'External AI-risk analysis is labelled separately and excluded from official aggregates'] },
+  { version: 'verified-2026.1', date: 'Jun 2026', tag: 'New', color: 'var(--positive)', changes: ['Bundled read-only API simulator aligned with the React runtime', 'Added /compare endpoint supporting up to 6 institutions', 'Health score components included in /institutions/{id}/health', 'Export examples no longer require authentication headers'] },
+  { version: 'verified-2025.2', date: 'Mar 2026', tag: 'Update', color: 'var(--link)', changes: ['Added /years endpoint listing available fiscal years', 'Added /metrics catalogue endpoint', 'Pagination offset/limit added to /institutions and /health-scores', 'source_pdf field exposed where a source document is known'] },
+  { version: 'verified-2025.1', date: 'Jan 2026', tag: 'Baseline', color: 'var(--warning)', changes: ['Initial local API catalogue for the frontend verified dataset', 'Endpoints: /institutions, /sector/summary, /rankings', 'REST + JSON examples backed by bundled app data', 'Verified and pending records are labelled in response payloads'] },
 ]
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
@@ -733,7 +765,7 @@ export function ApiPage() {
           <p style={{ color: 'var(--text-2)', fontSize: 13, lineHeight: 1.7, marginBottom: 14 }}>
             Programmatic shape for HEStats financial metrics, health scores, and institution profiles. This build exposes
             a local read-only simulator backed by the bundled verified dataset, with pending source gaps explicitly labelled.
-            <strong style={{ color: 'var(--text)' }}> No authentication is required in the prototype.</strong>
+            <strong style={{ color: 'var(--text)' }}> No authentication is required for the local simulator.</strong>
           </p>
           <div className="flex flex-wrap gap-2">
             {[
@@ -798,7 +830,7 @@ export function ApiPage() {
           <div className="px-3 py-2 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--accent)', borderRadius: 3, borderLeft: '3px solid var(--accent)' }}>
             <p style={{ color: 'var(--text)', fontSize: 12.5, fontWeight: 600, marginBottom: 2 }}>Interactive API Console</p>
             <p style={{ color: 'var(--text-2)', fontSize: 12, lineHeight: 1.55 }}>
-              Select an endpoint, fill in parameters, and click <strong style={{ color: 'var(--text)' }}>Run</strong> to execute a local query against the bundled HEStats prototype dataset.
+              Select an endpoint, fill in parameters, and click <strong style={{ color: 'var(--text)' }}>Run</strong> to execute a local query against the bundled HEStats verified dataset.
               Responses are generated by the same in-browser runtime that powers this page.
             </p>
           </div>
@@ -905,7 +937,7 @@ export function ApiPage() {
           {/* Access */}
           <div className="border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
             <div className="px-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
-              <p style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600 }}>Prototype Access</p>
+              <p style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600 }}>Local Access</p>
             </div>
             <div className="p-4 space-y-4">
               <div>
@@ -935,7 +967,7 @@ curl "${BASE}/institutions/oxford" \\
             <h2 style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Access Model</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
               {[
-                { tier: 'Prototype', rate: 'Local', unit: 'runtime', price: 'Bundled', color: 'var(--muted)', features: ['Read-only responses', 'No account required', 'JSON response examples', 'Verified and pending rows labelled', 'Runs from app data'] },
+                { tier: 'Local', rate: 'Local', unit: 'runtime', price: 'Bundled', color: 'var(--muted)', features: ['Read-only responses', 'No account required', 'JSON response examples', 'Verified and pending rows labelled', 'Runs from app data'] },
                 { tier: 'Open data', rate: 'CSV/JSON', unit: 'exports', price: 'Public', color: 'var(--link)', features: ['Institution directory', 'Financial rows', 'Health scores', 'Source and confidence fields', 'Versioned files planned'] },
                 { tier: 'Hosted API', rate: 'Planned', unit: 'surface', price: 'Not launched', color: 'var(--warning)', features: ['Service status needed', 'Quotas not implemented', 'Authentication undecided', 'Bulk feeds to be designed', 'Methodology versioning required'] },
               ].map((t) => (
@@ -993,7 +1025,7 @@ curl "${BASE}/institutions/oxford" \\
               {[
                 { step: '1', title: 'Choose an endpoint', desc: 'Start with institutions, rankings, sector summary, or a single university profile.' },
                 { step: '2', title: 'Make your first request', code: `curl "${BASE}/institutions/oxford" \\\n  -H "Accept: application/json"` },
-                { step: '3', title: 'Explore with the Playground', desc: 'Use the Playground tab above to run endpoint-shaped requests against the bundled prototype data.' },
+                { step: '3', title: 'Explore with the Playground', desc: 'Use the Playground tab above to run endpoint-shaped requests against the bundled verified data.' },
               ].map((s) => (
                 <div key={s.step} className="flex gap-3">
                   <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full" style={{ backgroundColor: 'var(--accent)' }}>

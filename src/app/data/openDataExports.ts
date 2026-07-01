@@ -1,7 +1,9 @@
 import { computeHealthScore } from './health'
+import { INTELLIGENCE_RECORDS } from './intelligence'
 import { financials, getAllLatestFinancials } from './financials'
 import { institutions } from './institutions'
 import { getProvenance } from './sources'
+import { studentEnrolments } from './students'
 
 export type Format = 'csv' | 'json'
 
@@ -115,10 +117,68 @@ export function generateHealthScoresJson() {
   }), null, 2)
 }
 
+export function generateStudentEnrolmentsCsv() {
+  const header = 'institution_id,ukprn,academic_year,total_enrolments,uk_enrolments,non_uk_enrolments,unknown_domicile_enrolments,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates,notes'
+  const rows = studentEnrolments.map((row) => [
+    row.institution_id,
+    row.ukprn ?? '',
+    row.academic_year,
+    csvNullable(row.total_enrolments),
+    csvNullable(row.uk_enrolments),
+    csvNullable(row.non_uk_enrolments),
+    csvNullable(row.unknown_domicile_enrolments),
+    row.source_status,
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    row.included_in_aggregates,
+    csvText(row.notes),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateStudentEnrolmentsJson() {
+  return JSON.stringify(studentEnrolments, null, 2)
+}
+
+export function generateIntelligenceCsv() {
+  const header = 'id,title,category,claim_type,source_status,confidence,publisher,source_id,source_url,source_reference,published_date,retrieved_date,last_verified,geography,period,metric_count,metrics_json,notes'
+  const rows = INTELLIGENCE_RECORDS.map((row) => [
+    row.id,
+    csvText(row.title),
+    row.category,
+    row.claim_type,
+    row.source_status,
+    row.confidence,
+    csvText(row.publisher),
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.published_date,
+    row.retrieved_date,
+    row.last_verified,
+    csvText(row.geography),
+    csvText(row.period),
+    row.metrics.length,
+    csvText(JSON.stringify(row.metrics)),
+    csvText(row.notes),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateIntelligenceJson() {
+  return JSON.stringify(INTELLIGENCE_RECORDS, null, 2)
+}
+
 export function getDataset(id: string, fmt: Format): string {
   if (id === 'institutions') return fmt === 'csv' ? generateInstitutionsCsv() : generateInstitutionsJson()
   if (id === 'all-financials') return fmt === 'csv' ? generateAllFinancialsCsv() : generateAllFinancialsJson()
   if (id === 'latest-snapshot') return fmt === 'csv' ? generateLatestSnapshotCsv() : generateLatestSnapshotJson()
   if (id === 'health-scores') return fmt === 'csv' ? generateHealthScoresCsv() : generateHealthScoresJson()
+  if (id === 'student-enrolments') return fmt === 'csv' ? generateStudentEnrolmentsCsv() : generateStudentEnrolmentsJson()
+  if (id === 'intelligence') return fmt === 'csv' ? generateIntelligenceCsv() : generateIntelligenceJson()
   return ''
 }

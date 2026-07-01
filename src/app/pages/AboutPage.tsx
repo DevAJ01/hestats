@@ -15,6 +15,7 @@ const TIER_LABELS: Record<number, string> = {
   6: 'Institutional — Annual Reports & Accounts',
   7: 'Corporate — Companies House',
   8: 'Charity — Charity Commission',
+  9: 'External — Analysis & Geospatial',
 }
 
 const TIER_COLORS: Record<number, string> = {
@@ -26,6 +27,7 @@ const TIER_COLORS: Record<number, string> = {
   6: 'var(--accent)',
   7: 'var(--muted)',
   8: 'var(--muted)',
+  9: 'var(--text-2)',
 }
 
 function SourceCard({ source }: { source: DataSourceDef }) {
@@ -139,7 +141,7 @@ export function AboutPage() {
         <Shield className="w-3 h-3" style={{ color: 'var(--accent)' }} />
         <span style={{ color: 'var(--muted)', letterSpacing: '0.06em' }}>METHODOLOGY · DATA SOURCES · PROVENANCE · LEGAL</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}>{DATA_SOURCES.length} official data sources registered</span>
+        <span style={{ color: 'var(--text-2)' }}>{DATA_SOURCES.length} registered source definitions</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>Verified rows · pending gaps explicitly labelled</span>
       </div>
@@ -194,7 +196,7 @@ export function AboutPage() {
                   </p>
                   <p>
                     The current public build uses verified HESA Finance Open Data rows where official source records are
-                    available. Source gaps remain pending rather than being filled with modelled or inferred values.
+                    available. Source gaps remain pending rather than being filled with unverified inferred values.
                   </p>
                   <p>
                     The production standard is stricter: where provenance cannot be established for a metric, HEStats

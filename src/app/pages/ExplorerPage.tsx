@@ -12,6 +12,7 @@ import { institutions } from '../data/institutions'
 import { compareNullableDesc, formatCurrencyM, formatDays, formatPct, getAllLatestFinancials, isKnownNumber } from '../data/financials'
 import { computeHealthScore, getGradeColor } from '../data/health'
 import { INSTITUTION_COORDS, projectToSvg } from '../data/coordinates'
+import { UK_OUTLINE_PATH, UK_OUTLINE_SOURCE } from '../data/ukOutline'
 import { Institution } from '../data/types'
 import { InstitutionCard } from '../components/institutions/InstitutionCard'
 import { InstitutionRow } from '../components/institutions/InstitutionRow'
@@ -33,7 +34,6 @@ const SELECT_STYLE: React.CSSProperties = {
 
 const SVG_W = 520
 const SVG_H = 720
-const UK_PATH = `M 285,10 L 300,18 L 310,30 L 298,40 L 310,55 L 320,65 L 315,80 L 305,90 L 310,105 L 295,115 L 288,130 L 295,145 L 290,158 L 278,162 L 272,175 L 268,188 L 275,200 L 270,212 L 260,220 L 265,232 L 258,245 L 252,260 L 245,272 L 238,285 L 235,300 L 242,312 L 238,325 L 230,335 L 222,348 L 215,362 L 218,375 L 212,388 L 205,400 L 198,413 L 192,426 L 185,440 L 178,453 L 175,466 L 182,478 L 178,490 L 170,502 L 165,515 L 168,528 L 162,540 L 155,552 L 148,564 L 145,576 L 150,585 L 158,592 L 170,598 L 182,604 L 195,608 L 208,610 L 220,607 L 230,600 L 238,592 L 245,583 L 252,574 L 255,563 L 260,552 L 266,541 L 272,530 L 275,518 L 280,507 L 285,496 L 290,485 L 295,474 L 298,462 L 302,450 L 306,438 L 310,426 L 312,414 L 316,402 L 320,390 L 322,378 L 325,366 L 326,354 L 328,342 L 330,330 L 328,318 L 326,306 L 325,294 L 326,282 L 328,270 L 325,258 L 322,246 L 318,234 L 315,222 L 312,210 L 310,198 L 308,186 L 305,174 L 302,162 L 300,150 L 298,138 L 295,126 L 293,114 L 291,102 L 290,90 L 291,78 L 294,66 L 293,54 L 289,42 L 285,30 Z`
 
 export function ExplorerPage() {
   const [params, setParams] = useSearchParams()
@@ -237,8 +237,16 @@ export function ExplorerPage() {
       {view === 'map' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <div className="lg:col-span-2 border overflow-hidden" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
-            <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ width: '100%', maxHeight: 620, display: 'block' }}>
-              <path d={UK_PATH} fill="var(--bg-2)" stroke="var(--border)" strokeWidth={1.5} />
+            <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet" style={{ width: '100%', maxHeight: 640, display: 'block' }}>
+              <path
+                d={UK_OUTLINE_PATH}
+                fill="var(--bg-2)"
+                fillRule="evenodd"
+                stroke="var(--border)"
+                strokeWidth={1.2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
               {[...bubbles].sort((a, b) => compareNullableDesc(a.fin.revenue_gbp_m, b.fin.revenue_gbp_m)).map(({ inst, fin, x, y }) => {
                 const r = isKnownNumber(fin.revenue_gbp_m) ? Math.max(3, Math.sqrt(fin.revenue_gbp_m / maxRev) * 22) : 4
                 const h = computeHealthScore(fin)
@@ -254,6 +262,14 @@ export function ExplorerPage() {
                 )
               })}
             </svg>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5" style={{ borderTop: '1px solid var(--border)' }}>
+              <span style={{ color: 'var(--muted)', fontSize: 10 }}>
+                Boundary: {UK_OUTLINE_SOURCE.publisher} · {UK_OUTLINE_SOURCE.source_reference}
+              </span>
+              <a href={UK_OUTLINE_SOURCE.source_url} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--link)', fontSize: 10 }}>
+                Source
+              </a>
+            </div>
           </div>
           <div className="border p-3" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
             <p style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>

@@ -33,7 +33,7 @@ function NotFoundPage() {
         </p>
         <h1 style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, marginTop: 8 }}>HEStats route not found</h1>
         <p style={{ color: 'var(--text-2)', fontSize: 13, lineHeight: 1.6, marginTop: 8 }}>
-          The requested workspace is not part of the current public prototype.
+          The requested workspace is not part of the current verified public build.
         </p>
         <div className="flex flex-wrap gap-2 mt-4">
           <Link to="/universities" style={{ backgroundColor: 'var(--accent)', color: '#fff', borderRadius: 3, fontSize: 12, fontWeight: 600, padding: '7px 10px' }}>Browse universities</Link>

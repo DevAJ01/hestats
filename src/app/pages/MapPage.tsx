@@ -2,40 +2,20 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router'
 import { Map as MapIcon, TrendingUp } from 'lucide-react'
 import { institutions } from '../data/institutions'
-import { compareNullableDesc, formatCurrencyM, formatDays, formatNumber, formatPct, getAllLatestFinancials, isKnownNumber } from '../data/financials'
+import { compareNullableDesc, formatCurrencyM, formatDays, formatPct, getAllLatestFinancials, isKnownNumber } from '../data/financials'
 import { computeHealthScore, getGradeColor } from '../data/health'
 import { INSTITUTION_COORDS, projectToSvg } from '../data/coordinates'
+import { formatStudentCount, getLatestStudentEnrolment } from '../data/students'
+import { UK_OUTLINE_PATH, UK_OUTLINE_SOURCE } from '../data/ukOutline'
 import { HealthBadge } from '../components/institutions/HealthBadge'
 import { NationBadge } from '../components/institutions/NationBadge'
 import { RiskBadge } from '../components/institutions/RiskBadge'
 
-type BubbleSize = 'revenue' | 'research' | 'students' | 'borrowing'
+type BubbleSize = 'revenue' | 'research' | 'cash' | 'borrowing'
 type BubbleColor = 'health' | 'risk' | 'nation' | 'surplus'
 
 const SVG_W = 520
 const SVG_H = 720
-
-// Simplified UK outline path (approximated for visualization)
-const UK_PATH = `
-  M 285,10 L 300,18 L 310,30 L 298,40 L 310,55 L 320,65 L 315,80 L 305,90
-  L 310,105 L 295,115 L 288,130 L 295,145 L 290,158 L 278,162 L 272,175
-  L 268,188 L 275,200 L 270,212 L 260,220 L 265,232 L 258,245 L 252,260
-  L 245,272 L 238,285 L 235,300 L 242,312 L 238,325 L 230,335 L 222,348
-  L 215,362 L 218,375 L 212,388 L 205,400 L 198,413 L 192,426 L 185,440
-  L 178,453 L 175,466 L 182,478 L 178,490 L 170,502 L 165,515 L 168,528
-  L 162,540 L 155,552 L 148,564 L 145,576 L 150,585 L 158,592 L 170,598
-  L 182,604 L 195,608 L 208,610 L 220,607 L 230,600 L 238,592 L 245,583
-  L 252,574 L 255,563 L 260,552 L 266,541 L 272,530 L 275,518 L 280,507
-  L 285,496 L 290,485 L 295,474 L 298,462 L 302,450 L 306,438 L 310,426
-  L 312,414 L 316,402 L 320,390 L 322,378 L 325,366 L 326,354 L 328,342
-  L 330,330 L 328,318 L 326,306 L 325,294 L 326,282 L 328,270 L 325,258
-  L 322,246 L 318,234 L 315,222 L 312,210 L 310,198 L 308,186 L 305,174
-  L 302,162 L 300,150 L 298,138 L 295,126 L 293,114 L 291,102 L 290,90
-  L 291,78 L 294,66 L 293,54 L 289,42 L 285,30 Z
-  M 100,400 L 108,390 L 115,380 L 120,370 L 125,360 L 120,350 L 112,360
-  L 105,370 L 100,380 L 98,390 Z
-  M 80,450 L 88,440 L 95,430 L 98,420 L 92,412 L 84,420 L 78,432 L 74,442 L 78,452 Z
-`
 
 const NATION_COLORS: Record<string, string> = {
   England: '#7396c2',
@@ -75,12 +55,13 @@ export function MapPage() {
         const fin = finLookup[inst.id]
         if (!coords || !fin) return null
         const [x, y] = projectToSvg(coords[0], coords[1], SVG_W, SVG_H)
+        const student = getLatestStudentEnrolment(inst.id)
         const rawSize =
           bubbleSize === 'revenue' ? fin.revenue_gbp_m :
           bubbleSize === 'research' ? fin.research_income_gbp_m :
-          bubbleSize === 'students' && isKnownNumber(fin.student_fte_total) ? fin.student_fte_total / 1000 :
+          bubbleSize === 'cash' ? fin.cash_gbp_m :
           fin.borrowing_gbp_m
-        return { inst, fin, x, y, rawSize, color: getBubbleColor(bubbleColor, fin, inst) }
+        return { inst, fin, student, x, y, rawSize, metricKnown: isKnownNumber(rawSize), color: getBubbleColor(bubbleColor, fin, inst) }
       })
       .filter((b): b is NonNullable<typeof b> => b !== null)
       .filter((b) => nationFilter === 'All' || b.inst.nation === nationFilter)
@@ -125,7 +106,7 @@ export function MapPage() {
               Bubble size
             </p>
             <div className="space-y-1">
-              {([['revenue', 'Total Income'], ['research', 'Research Income'], ['students', 'Student FTE'], ['borrowing', 'Borrowing']] as [BubbleSize, string][]).map(([val, label]) => (
+              {([['revenue', 'Total Income'], ['research', 'Research Income'], ['cash', 'Cash'], ['borrowing', 'Borrowing']] as [BubbleSize, string][]).map(([val, label]) => (
                 <button
                   key={val}
                   onClick={() => setBubbleSize(val)}
@@ -229,13 +210,22 @@ export function MapPage() {
           >
             <svg
               viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-              style={{ width: '100%', maxHeight: 600, display: 'block' }}
+              preserveAspectRatio="xMidYMid meet"
+              style={{ width: '100%', maxHeight: 640, display: 'block' }}
             >
               {/* UK outline */}
-              <path d={UK_PATH} fill="var(--bg-2)" stroke="var(--border)" strokeWidth={1.5} />
+              <path
+                d={UK_OUTLINE_PATH}
+                fill="var(--bg-2)"
+                fillRule="evenodd"
+                stroke="var(--border)"
+                strokeWidth={1.2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
 
               {/* Institution bubbles — render in order of size (large underneath) */}
-              {[...bubbles].sort((a, b) => compareNullableDesc(a.rawSize, b.rawSize)).map(({ inst, fin, x, y, rawSize, color }) => {
+              {[...bubbles].sort((a, b) => compareNullableDesc(a.rawSize, b.rawSize)).map(({ inst, x, y, rawSize, metricKnown, color }) => {
                 const r = getBubbleR(rawSize)
                 const isHovered = hovered === inst.id
                 const isSelected = selected === inst.id
@@ -246,7 +236,7 @@ export function MapPage() {
                       cy={y}
                       r={r}
                       fill={color}
-                      fillOpacity={isHovered || isSelected ? 0.85 : 0.55}
+                      fillOpacity={isHovered || isSelected ? 0.85 : metricKnown ? 0.55 : 0.22}
                       stroke={isHovered || isSelected ? color : 'transparent'}
                       strokeWidth={isSelected ? 2 : 1}
                       style={{ cursor: 'pointer', transition: 'r 0.2s, fill-opacity 0.15s' }}
@@ -271,6 +261,14 @@ export function MapPage() {
                 )
               })}
             </svg>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5" style={{ borderTop: '1px solid var(--border)' }}>
+              <span style={{ color: 'var(--muted)', fontSize: 10 }}>
+                Boundary: {UK_OUTLINE_SOURCE.publisher} · {UK_OUTLINE_SOURCE.source_reference}
+              </span>
+              <a href={UK_OUTLINE_SOURCE.source_url} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--link)', fontSize: 10 }}>
+                Source
+              </a>
+            </div>
           </div>
 
           {/* Institution detail card */}
@@ -305,7 +303,7 @@ export function MapPage() {
                   { label: 'Total Income', value: formatCurrencyM(displayInst.fin.revenue_gbp_m) },
                   { label: 'Surplus Margin', value: formatPct(displayInst.fin.surplus_margin_pct), color: isKnownNumber(displayInst.fin.surplus_margin_pct) && displayInst.fin.surplus_margin_pct >= 0 ? 'var(--positive)' : isKnownNumber(displayInst.fin.surplus_margin_pct) ? 'var(--negative)' : 'var(--muted)' },
                   { label: 'Research Income', value: formatCurrencyM(displayInst.fin.research_income_gbp_m) },
-                  { label: 'Student FTE', value: formatNumber(displayInst.fin.student_fte_total) },
+                  { label: 'HESA Enrolments', value: formatStudentCount(displayInst.student?.total_enrolments) },
                   { label: 'Cash', value: formatCurrencyM(displayInst.fin.cash_gbp_m) },
                   { label: 'Borrowing', value: formatCurrencyM(displayInst.fin.borrowing_gbp_m) },
                   { label: 'Liquidity Days', value: formatDays(displayInst.fin.liquidity_days) },

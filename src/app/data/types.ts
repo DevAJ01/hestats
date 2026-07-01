@@ -37,7 +37,7 @@ export interface FinancialYear {
   source_pdf?: string
   source_page?: string
   status: 'found' | 'archived' | 'missing'
-  data_source: 'verified' | 'estimated' | 'pending'
+  data_source: 'verified' | 'pending'
   confidence: 'high' | 'medium' | 'provisional' | 'awaiting'
   included_in_aggregates: boolean
 }

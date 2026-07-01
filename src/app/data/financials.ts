@@ -60,7 +60,7 @@ function pendingFinancialYear(institution_id: string, fiscal_year: string): Fina
   }
 }
 
-// The official primary dataset deliberately contains no modelled estimates.
+// The official primary dataset deliberately contains no unverified generated values.
 // Populate verified rows only from official source extracts with metric-level
 // provenance. Until those extracts are available, each institution/year is kept
 // as an explicit pending row so the decade coverage matrix is complete without

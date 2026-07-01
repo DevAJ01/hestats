@@ -1,6 +1,6 @@
 import { FinancialYear } from './types'
 
-export type DataConfidence = 'verified' | 'estimated' | 'pending'
+export type DataConfidence = 'verified' | 'pending'
 export type ProvenanceConfidence = 'high' | 'medium' | 'provisional' | 'awaiting'
 export type DataQualitySeverity = 'error' | 'warning'
 
@@ -32,7 +32,7 @@ export interface DatasetVersion {
   fiscal_years: string[]
   record_count: number
   verified_record_count: number
-  estimated_record_count: number
+  pending_record_count: number
 }
 
 export interface DataQualityIssue {

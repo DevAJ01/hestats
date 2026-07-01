@@ -6,11 +6,16 @@ import {
   isKnownNumber,
 } from './financials'
 import { institutions } from './institutions'
+import { INSTITUTION_COORDS, UK_BOUNDS } from './coordinates'
+import { INTELLIGENCE_RECORDS, IntelligenceRecord } from './intelligence'
 import { DataQualityIssue, isOfficialUkprn } from './schema'
-import { PROVENANCE } from './sources'
+import { DATA_SOURCES, PROVENANCE } from './sources'
+import { STUDENT_YEARS, StudentEnrolmentRecord, isKnownStudentNumber, studentEnrolments } from './students'
 import { FinancialYear, Institution } from './types'
+import { UK_OUTLINE_PATH, UK_OUTLINE_SOURCE } from './ukOutline'
 
 const FISCAL_YEAR = /^\d{4}-\d{2}$/
+const DATE = /^\d{4}-\d{2}-\d{2}$/
 
 function issue(
   severity: DataQualityIssue['severity'],
@@ -76,10 +81,11 @@ export function validateFinancials(
     if (!FISCAL_YEAR.test(row.fiscal_year) || !AVAILABLE_YEARS.includes(row.fiscal_year)) {
       issues.push(issue('error', 'financial.year_invalid', `Fiscal year '${row.fiscal_year}' is outside the supported range.`, details))
     }
-    if (!['verified', 'estimated', 'pending'].includes(row.data_source)) {
+    const dataSource = row.data_source as string
+    if (!['verified', 'pending'].includes(dataSource)) {
       issues.push(issue('error', 'financial.data_source_invalid', `Invalid data source '${row.data_source}'.`, details))
     }
-    if (row.data_source === 'estimated') {
+    if (dataSource === 'estimated') {
       issues.push(issue('error', 'financial.estimated_in_primary_dataset', 'Estimated rows are not allowed in the official primary dataset.', details))
     }
     if (!['found', 'archived', 'missing'].includes(row.status)) {
@@ -163,8 +169,177 @@ export function validateFinancials(
   return issues
 }
 
+export function validateStudentEnrolments(
+  rows: StudentEnrolmentRecord[] = studentEnrolments,
+  institutionRows: Institution[] = institutions,
+): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const institutionIds = new Set(institutionRows.map((row) => row.id))
+  const seen = new Set<string>()
+  const numericKeys = ['total_enrolments', 'uk_enrolments', 'non_uk_enrolments', 'unknown_domicile_enrolments'] as const
+
+  for (const row of rows) {
+    const details = { institution_id: row.institution_id, fiscal_year: row.academic_year }
+    const key = `${row.institution_id}:${row.academic_year}`
+
+    if (seen.has(key)) issues.push(issue('error', 'student.duplicate_year', `Duplicate student row for ${key}.`, details))
+    seen.add(key)
+
+    if (!institutionIds.has(row.institution_id)) issues.push(issue('error', 'student.orphan_institution', 'Student row references an unknown institution.', details))
+    if (!FISCAL_YEAR.test(row.academic_year) || !(STUDENT_YEARS as readonly string[]).includes(row.academic_year)) {
+      issues.push(issue('error', 'student.year_invalid', `Academic year '${row.academic_year}' is outside the supported range.`, details))
+    }
+    if (!['verified', 'pending'].includes(row.source_status)) {
+      issues.push(issue('error', 'student.source_status_invalid', `Invalid source status '${row.source_status}'.`, details))
+    }
+    if (!['high', 'awaiting'].includes(row.confidence)) {
+      issues.push(issue('error', 'student.confidence_invalid', `Invalid confidence '${row.confidence}'.`, details))
+    }
+    if (row.source_id !== 'hesa-students' || !row.source_url || !row.source_reference || !row.retrieved_date || !row.last_verified) {
+      issues.push(issue('error', 'student.provenance_incomplete', 'Student rows must include source id, URL, reference, retrieved date, and last verified date.', details))
+    }
+
+    if (row.source_status === 'pending') {
+      if (row.included_in_aggregates) issues.push(issue('error', 'student.pending_in_aggregates', 'Pending student rows must be excluded from aggregates.', details))
+      if (numericKeys.some((metric) => row[metric] !== null)) {
+        issues.push(issue('error', 'student.pending_has_value', 'Pending student rows must not contain numeric values.', details))
+      }
+    }
+
+    if (row.source_status === 'verified') {
+      if (!row.included_in_aggregates) issues.push(issue('error', 'student.verified_not_in_aggregates', 'Verified student rows should be included in aggregates.', details))
+      if (!isKnownStudentNumber(row.total_enrolments)) {
+        issues.push(issue('error', 'student.verified_total_missing', 'Verified student rows require a total enrolment count.', details))
+      }
+    }
+
+    for (const metric of numericKeys) {
+      const value = row[metric]
+      if (value !== null && (!Number.isFinite(value) || value < 0)) {
+        issues.push(issue('error', 'student.metric_invalid', `Metric '${metric}' must be a non-negative finite number or null.`, details))
+      }
+    }
+  }
+
+  for (const institution of institutionRows) {
+    for (const year of STUDENT_YEARS) {
+      const key = `${institution.id}:${year}`
+      if (!seen.has(key)) {
+        issues.push(issue('error', 'student.coverage_missing', `Missing student coverage row for ${key}.`, { institution_id: institution.id, fiscal_year: year }))
+      }
+    }
+  }
+
+  const expectedRows = institutionRows.length * STUDENT_YEARS.length
+  if (seen.size !== expectedRows) {
+    issues.push(issue('error', 'student.coverage_count_mismatch', `Expected ${expectedRows} institution-year rows, found ${seen.size}.`))
+  }
+
+  return issues
+}
+
+export function validateInstitutionCoordinates(
+  institutionRows: Institution[] = institutions,
+): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+
+  for (const row of institutionRows) {
+    const coords = INSTITUTION_COORDS[row.id]
+    if (!coords) {
+      issues.push(issue('error', 'coordinates.missing', 'Institution is missing map coordinates.', { institution_id: row.id }))
+      continue
+    }
+
+    const [lat, lng] = coords
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      issues.push(issue('error', 'coordinates.invalid', 'Institution map coordinates must be finite numbers.', { institution_id: row.id }))
+      continue
+    }
+
+    if (lat < UK_BOUNDS.minLat || lat > UK_BOUNDS.maxLat || lng < UK_BOUNDS.minLng || lng > UK_BOUNDS.maxLng) {
+      issues.push(issue('error', 'coordinates.out_of_bounds', 'Institution map coordinates fall outside the supported UK map bounds.', { institution_id: row.id }))
+    }
+  }
+
+  return issues
+}
+
+export function validateMapOutline(): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+
+  if (!UK_OUTLINE_PATH.includes('M ') || !UK_OUTLINE_PATH.includes('L ') || UK_OUTLINE_PATH.length < 5000) {
+    issues.push(issue('error', 'map.outline_invalid', 'UK map outline path is missing or too low-detail.'))
+  }
+  if (!sourceIds.has(UK_OUTLINE_SOURCE.source_id)) {
+    issues.push(issue('error', 'map.outline_source_unknown', `UK outline references unknown source '${UK_OUTLINE_SOURCE.source_id}'.`))
+  }
+  if (!UK_OUTLINE_SOURCE.source_url.startsWith('https://') || !UK_OUTLINE_SOURCE.source_reference || !UK_OUTLINE_SOURCE.retrieved_date || !UK_OUTLINE_SOURCE.last_verified) {
+    issues.push(issue('error', 'map.outline_provenance_incomplete', 'UK outline source requires URL, reference, retrieved date, and last verified date.'))
+  }
+
+  return issues
+}
+
+export function validateIntelligenceRecords(
+  rows: IntelligenceRecord[] = INTELLIGENCE_RECORDS,
+): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+  const seen = new Set<string>()
+
+  for (const row of rows) {
+    if (seen.has(row.id)) issues.push(issue('error', 'intelligence.duplicate_id', `Duplicate intelligence record '${row.id}'.`))
+    seen.add(row.id)
+
+    if (!row.title.trim() || !row.summary.trim()) {
+      issues.push(issue('error', 'intelligence.copy_missing', `Intelligence record '${row.id}' requires title and summary.`))
+    }
+    if (!sourceIds.has(row.source_id)) {
+      issues.push(issue('error', 'intelligence.source_unknown', `Intelligence record '${row.id}' references unknown source '${row.source_id}'.`))
+    }
+    if (!row.publisher.trim() || !row.source_url.startsWith('https://') || !row.source_reference.trim()) {
+      issues.push(issue('error', 'intelligence.provenance_incomplete', `Intelligence record '${row.id}' requires publisher, HTTPS source URL, and source reference.`))
+    }
+    if (!DATE.test(row.published_date) || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
+      issues.push(issue('error', 'intelligence.date_invalid', `Intelligence record '${row.id}' has an invalid provenance date.`))
+    }
+    if (!['high', 'medium', 'provisional', 'awaiting'].includes(row.confidence)) {
+      issues.push(issue('error', 'intelligence.confidence_invalid', `Intelligence record '${row.id}' has invalid confidence '${row.confidence}'.`))
+    }
+    if (!['verified', 'external_analysis', 'pending', 'archived'].includes(row.source_status)) {
+      issues.push(issue('error', 'intelligence.status_invalid', `Intelligence record '${row.id}' has invalid source status '${row.source_status}'.`))
+    }
+    if (row.claim_type === 'external-analysis') {
+      if (row.source_status !== 'external_analysis') {
+        issues.push(issue('error', 'intelligence.external_status_invalid', `External analysis '${row.id}' must use external_analysis source status.`))
+      }
+      if (row.confidence === 'high') {
+        issues.push(issue('error', 'intelligence.external_high_confidence', `External analysis '${row.id}' cannot be labelled high confidence.`))
+      }
+    }
+
+    for (const metric of row.metrics) {
+      if (!metric.key.trim() || !metric.label.trim() || !metric.unit.trim() || !metric.period.trim() || !metric.source_reference.trim()) {
+        issues.push(issue('error', 'intelligence.metric_provenance_incomplete', `Metric '${metric.key}' in '${row.id}' requires key, label, unit, period and source reference.`))
+      }
+      if (metric.value !== null && !Number.isFinite(metric.value)) {
+        issues.push(issue('error', 'intelligence.metric_invalid', `Metric '${metric.key}' in '${row.id}' must be finite or null.`))
+      }
+      if (row.claim_type === 'external-analysis' && metric.included_in_aggregates) {
+        issues.push(issue('error', 'intelligence.external_metric_in_aggregate', `External metric '${metric.key}' in '${row.id}' must be excluded from aggregates.`))
+      }
+      if (row.source_status === 'pending' && metric.value !== null) {
+        issues.push(issue('error', 'intelligence.pending_has_value', `Pending intelligence metric '${metric.key}' in '${row.id}' must be null.`))
+      }
+    }
+  }
+
+  return issues
+}
+
 export function validateData(): DataQualityIssue[] {
-  return [...validateInstitutions(), ...validateFinancials()]
+  return [...validateInstitutions(), ...validateFinancials(), ...validateStudentEnrolments(), ...validateInstitutionCoordinates(), ...validateMapOutline(), ...validateIntelligenceRecords()]
 }
 
 export function blockingIssues(issues: DataQualityIssue[]): DataQualityIssue[] {
