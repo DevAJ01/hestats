@@ -20,6 +20,7 @@ import { StudentJourneyPage } from './pages/StudentJourneyPage'
 import { ExplorerPage } from './pages/ExplorerPage'
 import { IntelligencePage } from './pages/IntelligencePage'
 import { BrandPage } from './pages/BrandPage'
+import { SocialStudioPage } from './pages/SocialStudioPage'
 
 function NotFoundPage() {
   const error = useRouteError()
@@ -68,6 +69,7 @@ export const appRoutes: RouteObject[] = [
 
       // Intelligence — consolidated news, policy, reports & sector centre
       { path: 'intelligence', Component: IntelligencePage },
+      { path: 'social-studio', Component: SocialStudioPage },
       { path: 'sector', Component: SectorPage },
       { path: 'reports', Component: ReportsPage },
       { path: 'graduate-outcomes', Component: GraduateOutcomesPage },

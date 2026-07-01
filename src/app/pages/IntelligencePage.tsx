@@ -5,6 +5,7 @@ import {
   FileText,
   GraduationCap,
   Landmark,
+  Megaphone,
   Newspaper,
   TrendingUp,
 } from 'lucide-react'
@@ -15,6 +16,7 @@ import { useState } from 'react'
 
 const DEEP_DIVES = [
   { label: 'Sector Overview', href: '/sector', icon: TrendingUp, desc: 'HESA finance aggregates and OfS context' },
+  { label: 'Social Studio', href: '/social-studio', icon: Megaphone, desc: 'Source-aware posts from verified metrics' },
   { label: 'Annual Reports', href: '/reports', icon: FileText, desc: 'Institution-level report library' },
   { label: 'Graduate Outcomes', href: '/graduate-outcomes', icon: GraduationCap, desc: 'DfE LEO source-backed records' },
   { label: 'Employer Intelligence', href: '/employers', icon: Building2, desc: 'ONS and external AI-risk analysis' },

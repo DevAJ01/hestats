@@ -4,6 +4,7 @@ import {
   Search, Sun, Moon, Bell, X, Building2, BarChart2, GitCompare,
   Compass, Newspaper, Database, Terminal, Heart, Hash, ChevronDown,
   TrendingUp, FileText, GraduationCap, BookOpen, Briefcase, Route,
+  Megaphone,
 } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
 import { institutions } from '../../data/institutions'
@@ -29,6 +30,7 @@ const INTELLIGENCE_MENU: { title: string; items: { href: string; label: string; 
     title: 'Sector & Market',
     items: [
       { href: '/intelligence', label: 'Intelligence Centre', desc: 'News, policy & alerts feed', icon: Newspaper },
+      { href: '/social-studio', label: 'Social Studio', desc: 'Metric-led post drafts', icon: Megaphone },
       { href: '/sector', label: 'Sector Overview', desc: 'Sector-wide financial trends', icon: TrendingUp },
       { href: '/reports', label: 'Annual Reports', desc: 'Full report library', icon: FileText },
       { href: '/employers', label: 'Employer Intelligence', desc: 'Top graduate employers', icon: Briefcase },
@@ -108,6 +110,7 @@ const COMMANDS: Command[] = [
   { icon: <Compass className="w-3.5 h-3.5" />, label: 'Explore the sector visually', hint: 'Map · graph · timeline · table', type: 'Explorer', href: '/explorer', keywords: 'map visualisation chart' },
   { icon: <Newspaper className="w-3.5 h-3.5" />, label: 'Latest sector intelligence', hint: 'News, policy & reports', type: 'Intelligence', href: '/intelligence', keywords: 'government ofs hesa ucas' },
   { icon: <Newspaper className="w-3.5 h-3.5" />, label: 'Government funding updates', hint: 'Policy feed', type: 'Intelligence', href: '/intelligence?filter=policy' },
+  { icon: <Megaphone className="w-3.5 h-3.5" />, label: 'Create social post from metrics', hint: 'Verified data drafts', type: 'Social Studio', href: '/social-studio', keywords: 'social content share post metrics' },
   { icon: <Database className="w-3.5 h-3.5" />, label: 'Download open data', hint: 'CSV · JSON · API', type: 'Open Data', href: '/open-data' },
   { icon: <Terminal className="w-3.5 h-3.5" />, label: 'API reference', hint: 'Endpoints & keys', type: 'API', href: '/api' },
   { icon: <Hash className="w-3.5 h-3.5" />, label: 'Brand system', hint: 'Logos, colours & social kit', type: 'Identity', href: '/brand' },
