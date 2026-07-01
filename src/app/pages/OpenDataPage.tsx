@@ -3,8 +3,11 @@ import { Download, Copy, CheckCircle, Database, FileJson, FileText, ExternalLink
 import { institutions } from '../data/institutions'
 import { financials, getAllLatestFinancials, AVAILABLE_YEARS } from '../data/financials'
 import { STUDENT_YEARS, studentEnrolments } from '../data/students'
+import { DEGREES } from '../data/degrees'
+import { EMPLOYERS } from '../data/employers'
 import { INTELLIGENCE_RECORDS } from '../data/intelligence'
 import { nationalStudentFinanceRecords } from '../data/nationalStudentFinance'
+import { OUTCOMES } from '../data/outcomes'
 import { providerFinanceCoverage } from '../data/providerFinanceCoverage'
 import { providerSourceCoverage } from '../data/providerSourceCoverage'
 import { providerUniverse } from '../data/providers'
@@ -81,6 +84,39 @@ const DATASETS = [
     years: STUDENT_YEARS.join(', '),
     formats: ['csv', 'json'],
     size: '~30 KB',
+    tier: 'core',
+  },
+  {
+    id: 'graduate-outcomes',
+    name: 'Graduate Outcomes Provider LEO',
+    description: 'DfE LEO 2023-24 provider-level outcome rows for all 304 platform institutions. Suppressed or unavailable values remain null with source metadata.',
+    rows: OUTCOMES.length,
+    columns: 21,
+    years: 'Tax year 2023-24',
+    formats: ['csv', 'json'],
+    size: '~220 KB',
+    tier: 'core',
+  },
+  {
+    id: 'degree-intelligence',
+    name: 'Degree Intelligence',
+    description: 'Source-backed CAH2 subject outcomes, earnings, industry destinations and regional destinations from DfE LEO 2023-24. AI fields are labelled external analysis.',
+    rows: DEGREES.length,
+    columns: 25,
+    years: 'Tax year 2023-24',
+    formats: ['csv', 'json'],
+    size: '~95 KB',
+    tier: 'core',
+  },
+  {
+    id: 'employer-markets',
+    name: 'Employer Markets',
+    description: 'Official DfE LEO industry-section destinations for first-degree graduates, with median earnings and industry-flow context.',
+    rows: EMPLOYERS.length,
+    columns: 18,
+    years: 'Tax year 2023-24',
+    formats: ['csv', 'json'],
+    size: '~40 KB',
     tier: 'core',
   },
   {

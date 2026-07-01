@@ -28,6 +28,24 @@ function AIBadge({ pct }: { pct: number }) {
   )
 }
 
+function isKnown(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function fmtPct(value: number | null | undefined) {
+  return isKnown(value) ? `${value}%` : 'Pending'
+}
+
+function fmtK(value: number | null | undefined) {
+  return isKnown(value) ? `£${value}k` : 'Pending'
+}
+
+function avg(values: (number | null)[]) {
+  const known = values.filter(isKnown)
+  if (!known.length) return null
+  return +(known.reduce((sum, value) => sum + value, 0) / known.length).toFixed(1)
+}
+
 function EmployerCard({ emp, expanded, onToggle }: { emp: Employer; expanded: boolean; onToggle: () => void }) {
   const sectorColor = SECTOR_COLORS[emp.sector] ?? 'var(--accent)'
 
@@ -49,12 +67,12 @@ function EmployerCard({ emp, expanded, onToggle }: { emp: Employer; expanded: bo
         </div>
         <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
           <div className="text-right">
-            <p style={{ color: 'var(--muted)', fontSize: 8.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Graduates/yr</p>
+            <p style={{ color: 'var(--muted)', fontSize: 8.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>LEO count</p>
             <p className="font-num" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 700 }}>{emp.annual_graduate_intake.toLocaleString()}</p>
           </div>
           <div className="text-right">
-            <p style={{ color: 'var(--muted)', fontSize: 8.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Avg salary</p>
-            <p className="font-num" style={{ color: 'var(--positive)', fontSize: 14, fontWeight: 700 }}>£{emp.avg_starting_salary_k}k</p>
+            <p style={{ color: 'var(--muted)', fontSize: 8.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Median earnings</p>
+            <p className="font-num" style={{ color: 'var(--positive)', fontSize: 14, fontWeight: 700 }}>{fmtK(emp.avg_starting_salary_k)}</p>
           </div>
           {expanded ? <ChevronUp className="w-4 h-4" style={{ color: 'var(--muted)' }} /> : <ChevronDown className="w-4 h-4" style={{ color: 'var(--muted)' }} />}
         </div>
@@ -68,22 +86,26 @@ function EmployerCard({ emp, expanded, onToggle }: { emp: Employer; expanded: bo
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* University supply table */}
             <div className="md:col-span-2">
-              <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>University graduate supply</p>
-              <div className="space-y-2">
-                {emp.top_universities.map(({ id, name, annual_hires }, i) => {
-                  const maxH = emp.top_universities[0].annual_hires
-                  return (
-                    <div key={id} className="flex items-center gap-2">
-                      <span className="font-num" style={{ color: 'var(--muted)', fontSize: 10, width: 14, flexShrink: 0 }}>{i + 1}</span>
-                      <Link to={`/universities/${id}`} className="hover:underline flex-shrink-0" style={{ color: 'var(--text)', fontSize: 11.5, width: 120 }}>{name}</Link>
-                      <div className="flex-1 h-2" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
-                        <div style={{ height: '100%', width: `${(annual_hires / maxH) * 100}%`, backgroundColor: sectorColor, borderRadius: 1, opacity: 0.75 }} />
+              <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Provider/company supply</p>
+              {emp.top_universities.length > 0 ? (
+                <div className="space-y-2">
+                  {emp.top_universities.map(({ id, name, annual_hires }, i) => {
+                    const maxH = emp.top_universities[0].annual_hires
+                    return (
+                      <div key={id} className="flex items-center gap-2">
+                        <span className="font-num" style={{ color: 'var(--muted)', fontSize: 10, width: 14, flexShrink: 0 }}>{i + 1}</span>
+                        <Link to={`/universities/${id}`} className="hover:underline flex-shrink-0" style={{ color: 'var(--text)', fontSize: 11.5, width: 120 }}>{name}</Link>
+                        <div className="flex-1 h-2" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
+                          <div style={{ height: '100%', width: `${(annual_hires / maxH) * 100}%`, backgroundColor: sectorColor, borderRadius: 1, opacity: 0.75 }} />
+                        </div>
+                        <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 11, width: 60, textAlign: 'right', flexShrink: 0 }}>{annual_hires} hires/yr</span>
                       </div>
-                      <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 11, width: 60, textAlign: 'right', flexShrink: 0 }}>{annual_hires} hires/yr</span>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p style={{ color: 'var(--text-2)', fontSize: 11.5, lineHeight: 1.6 }}>DfE LEO publishes industry-section destinations, not company hiring pipelines. Company-level supplier figures remain withheld unless a verified source is attached.</p>
+              )}
 
               <div className="mt-3">
                 <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Top subjects hired</p>
@@ -99,12 +121,12 @@ function EmployerCard({ emp, expanded, onToggle }: { emp: Employer; expanded: bo
             <div className="space-y-2">
               <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>Key metrics</p>
               {[
-                { label: 'Annual graduate intake', value: emp.annual_graduate_intake.toLocaleString() },
-                { label: 'Avg starting salary', value: `£${emp.avg_starting_salary_k}k` },
-                { label: '3-year retention', value: `${emp.retention_rate}%` },
+                { label: 'LEO graduates in section', value: emp.annual_graduate_intake.toLocaleString() },
+                { label: 'Median earnings', value: fmtK(emp.avg_starting_salary_k) },
+                { label: 'Same-section flow', value: fmtPct(emp.retention_rate) },
                 { label: 'AI role exposure', value: `${emp.ai_exposure_pct}%` },
-                { label: 'Internship conversion', value: `${emp.internship_pipeline_pct}%` },
-                { label: 'Placement partners', value: emp.placement_partnerships.length > 0 ? `${emp.placement_partnerships.length} unis` : 'None listed' },
+                { label: 'Internship conversion', value: emp.internship_pipeline_pct === null ? 'Pending source' : `${emp.internship_pipeline_pct}%` },
+                { label: 'Placement partners', value: emp.placement_partnerships.length > 0 ? `${emp.placement_partnerships.length} unis` : 'Pending source' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
                   <span style={{ color: 'var(--text-2)', fontSize: 11 }}>{label}</span>
@@ -117,11 +139,11 @@ function EmployerCard({ emp, expanded, onToggle }: { emp: Employer; expanded: bo
           {/* Retention bar */}
           <div className="mt-4">
             <div className="flex items-center justify-between mb-1">
-              <span style={{ color: 'var(--muted)', fontSize: 10.5 }}>3-year retention rate</span>
-              <span className="font-num" style={{ color: emp.retention_rate >= 75 ? 'var(--positive)' : emp.retention_rate >= 60 ? 'var(--warning)' : 'var(--negative)', fontSize: 11, fontWeight: 700 }}>{emp.retention_rate}%</span>
+              <span style={{ color: 'var(--muted)', fontSize: 10.5 }}>Same industry section from YAG1 to YAG3</span>
+              <span className="font-num" style={{ color: (emp.retention_rate ?? 0) >= 75 ? 'var(--positive)' : (emp.retention_rate ?? 0) >= 60 ? 'var(--warning)' : 'var(--negative)', fontSize: 11, fontWeight: 700 }}>{fmtPct(emp.retention_rate)}</span>
             </div>
             <div className="h-1.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
-              <div style={{ height: '100%', width: `${emp.retention_rate}%`, backgroundColor: emp.retention_rate >= 75 ? 'var(--positive)' : 'var(--warning)', borderRadius: 1 }} />
+              <div style={{ height: '100%', width: `${emp.retention_rate ?? 0}%`, backgroundColor: (emp.retention_rate ?? 0) >= 75 ? 'var(--positive)' : 'var(--warning)', borderRadius: 1 }} />
             </div>
           </div>
         </div>
@@ -138,7 +160,7 @@ export function EmployersPage() {
 
   const bySector = getEmployersBySector()
   const totalIntake = EMPLOYERS.reduce((s, e) => s + e.annual_graduate_intake, 0)
-  const avgSalary = +(EMPLOYERS.reduce((s, e) => s + e.avg_starting_salary_k, 0) / EMPLOYERS.length).toFixed(1)
+  const avgSalary = avg(EMPLOYERS.map((e) => e.avg_starting_salary_k))
   const avgAI = +(EMPLOYERS.reduce((s, e) => s + e.ai_exposure_pct, 0) / EMPLOYERS.length).toFixed(0)
 
   const filtered = EMPLOYERS
@@ -146,8 +168,8 @@ export function EmployersPage() {
     .filter((e) => !search || e.name.toLowerCase().includes(search.toLowerCase()) || e.sector.toLowerCase().includes(search.toLowerCase()) || e.hq_city.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
       if (sortBy === 'intake') return b.annual_graduate_intake - a.annual_graduate_intake
-      if (sortBy === 'salary') return b.avg_starting_salary_k - a.avg_starting_salary_k
-      if (sortBy === 'retention') return b.retention_rate - a.retention_rate
+      if (sortBy === 'salary') return (b.avg_starting_salary_k ?? -Infinity) - (a.avg_starting_salary_k ?? -Infinity)
+      if (sortBy === 'retention') return (b.retention_rate ?? -Infinity) - (a.retention_rate ?? -Infinity)
       return b.ai_exposure_pct - a.ai_exposure_pct
     })
 
@@ -158,11 +180,11 @@ export function EmployersPage() {
         <Building2 className="w-3 h-3" style={{ color: 'var(--accent)' }} />
         <span style={{ color: 'var(--muted)', letterSpacing: '0.06em' }}>EMPLOYER INTELLIGENCE</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}><span className="font-num" style={{ color: 'var(--text)' }}>{EMPLOYERS.length}</span> major employers</span>
+        <span style={{ color: 'var(--text-2)' }}><span className="font-num" style={{ color: 'var(--text)' }}>{EMPLOYERS.length}</span> employer markets</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}>Combined intake <span className="font-num" style={{ color: 'var(--text)' }}>{totalIntake.toLocaleString()}</span> graduates/yr</span>
+        <span style={{ color: 'var(--text-2)' }}>Observed LEO graduates <span className="font-num" style={{ color: 'var(--text)' }}>{totalIntake.toLocaleString()}</span></span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}>Avg salary <span className="font-num" style={{ color: 'var(--positive)' }}>£{avgSalary}k</span></span>
+        <span style={{ color: 'var(--text-2)' }}>Median earnings avg <span className="font-num" style={{ color: 'var(--positive)' }}>{fmtK(avgSalary)}</span></span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>Avg AI exposure <span className="font-num" style={{ color: 'var(--warning)' }}>{avgAI}%</span></span>
       </div>
@@ -171,7 +193,7 @@ export function EmployersPage() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative">
           <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--muted)' }} />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search employers…"
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search markets…"
             className="pl-7 pr-3 py-1.5 bg-transparent outline-none"
             style={{ border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text)', fontSize: 11, width: 180 }} />
         </div>

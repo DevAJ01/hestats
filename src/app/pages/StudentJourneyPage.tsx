@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { Map, ArrowRight, ArrowUpRight, Users, GraduationCap, Briefcase, TrendingUp, BookOpen, Microscope, Award } from 'lucide-react'
-import { getSectorOutcomes } from '../data/outcomes'
+import { HESA_GRADUATE_OUTCOMES_HEADLINE, getSectorOutcomes } from '../data/outcomes'
 import { getSectorDegreeStats } from '../data/degrees'
 
 interface JourneyStage {
@@ -35,6 +35,14 @@ function StageCard({ stage, active, onClick }: { stage: JourneyStage; active: bo
       <p style={{ color: active ? 'var(--text)' : 'var(--text-2)', fontSize: 10, fontWeight: active ? 600 : 400, textAlign: 'center', maxWidth: 64 }}>{stage.label}</p>
     </button>
   )
+}
+
+function fmtMetric(value: number | null, suffix = '') {
+  return value === null ? 'Pending' : `${value}${suffix}`
+}
+
+function fmtK(value: number | null) {
+  return value === null ? 'Pending' : `£${value}k`
 }
 
 export function StudentJourneyPage() {
@@ -100,14 +108,14 @@ export function StudentJourneyPage() {
       label: 'Placement Year',
       sublabel: 'Industry experience',
       color: '#b18ab8',
-      description: 'Around 26% of UK students complete a year in industry placement. Placement students earn significantly higher salaries and secure employment faster after graduation. Employers report higher retention rates for placement hires.',
+      description: 'Placement and internship outcomes are useful student decision points, but provider-level placement participation is not yet loaded into the verified HEStats source layer. This stage links to the sourced employer-market and outcomes tools rather than showing unsourced uplift claims.',
       stats: [
-        { label: 'Placement participation', value: '26%', note: 'of full-time UG students' },
-        { label: 'Salary boost', value: '+£2.5k', note: 'vs non-placement grads' },
-        { label: 'Employment boost', value: '+8pp', note: 'employment rate advantage' },
-        { label: 'Employer retention', value: '+14%', note: '3-year retention uplift' },
-        { label: 'Avg placement salary', value: '£19.5k', note: '2024 data' },
-        { label: 'Conversion to grad offer', value: '61%', note: 'placement → grad job' },
+        { label: 'Placement participation', value: 'Pending', note: 'provider source required' },
+        { label: 'Salary uplift', value: 'Pending', note: 'no official row attached' },
+        { label: 'Employment uplift', value: 'Pending', note: 'no official row attached' },
+        { label: 'Employer flow', value: 'LEO', note: 'industry-section movement' },
+        { label: 'Market sections', value: '20', note: 'DfE LEO loaded' },
+        { label: 'Company hiring', value: 'Pending', note: 'company source required' },
       ],
       links: [{ label: 'Graduate Outcomes', href: '/graduate-outcomes' }, { label: 'Employers', href: '/employers' }],
     },
@@ -132,16 +140,16 @@ export function StudentJourneyPage() {
       id: 'employment',
       icon: <Briefcase className="w-5 h-5" />,
       label: 'Employment',
-      sublabel: '15 months post-grad',
+      sublabel: 'HESA survey + LEO YAG1',
       color: '#5fa97b',
-      description: 'The HESA Graduate Outcomes Survey tracks graduates 15 months after graduation. Across the sector, 87% are in employment or further study. Graduate-level employment is 68% — a key measure of degree quality.',
+      description: `The latest HESA Graduate Outcomes survey reports ${HESA_GRADUATE_OUTCOMES_HEADLINE.work_or_further_study_pct}% of respondents in work or further study. Provider comparisons in HEStats use DfE LEO YAG1, which measures sustained employment or further study using administrative records.`,
       stats: [
-        { label: 'Employment rate', value: `${sector.avg_employment_rate}%`, note: '15 months post-graduation' },
-        { label: 'Graduate-level roles', value: `${sector.avg_graduate_role_pct}%`, note: 'of those employed' },
-        { label: 'Avg salary', value: `£${sector.avg_salary_k}k`, note: '15 months post-graduation' },
-        { label: 'Median salary', value: `£${sector.avg_median_salary_k}k`, note: 'across all subjects' },
-        { label: 'Unemployed', value: `${sector.avg_unemployed_pct}%`, note: 'seeking employment' },
-        { label: 'Time to job', value: `${sector.avg_months_to_job} months`, note: 'sector average' },
+        { label: 'HESA work/study', value: `${HESA_GRADUATE_OUTCOMES_HEADLINE.work_or_further_study_pct}%`, note: 'survey respondents' },
+        { label: 'LEO YAG1 outcome', value: fmtMetric(sector.avg_employment_rate, '%'), note: 'sustained emp/study' },
+        { label: 'Sust. employment', value: fmtMetric(sector.avg_graduate_role_pct, '%'), note: 'with or without study' },
+        { label: 'Median earnings', value: fmtK(sector.avg_median_salary_k), note: 'DfE LEO YAG1' },
+        { label: 'No sust. destination', value: fmtMetric(sector.avg_unemployed_pct, '%'), note: 'DfE LEO YAG1' },
+        { label: 'Time to job', value: 'Not in LEO', note: 'pending source' },
       ],
       links: [{ label: 'Graduate Outcomes', href: '/graduate-outcomes' }, { label: 'Employers', href: '/employers' }],
     },
@@ -151,14 +159,14 @@ export function StudentJourneyPage() {
       label: 'Career Progression',
       sublabel: '3–5 years in',
       color: '#c2945a',
-      description: 'By 3–5 years post-graduation, graduate careers diverge significantly. High performers in competitive sectors (finance, tech, law) see rapid salary growth. Many pursue professional qualifications (ACA, CFA, LPC, CEng) at this stage.',
+      description: 'By 3–5 years post-graduation, DfE LEO shows earnings and sustained-destination differences by subject and provider. HEStats now uses observed YAG3/YAG5 LEO earnings where available.',
       stats: [
-        { label: 'Avg salary at 5 years', value: '£42k', note: 'across all graduates' },
-        { label: 'Finance grads (5yr)', value: '£65k+', note: 'qualified accountants/analysts' },
-        { label: 'Tech grads (5yr)', value: '£58k+', note: 'senior software engineers' },
-        { label: 'Healthcare (5yr)', value: '£42k', note: 'specialty registrar level' },
-        { label: 'Professional quals', value: '38%', note: 'studying for prof. quals.' },
-        { label: 'Changed employer', value: '52%', note: 'moved jobs by year 3' },
+        { label: 'YAG3 earnings', value: 'Loaded', note: 'DfE LEO by subject' },
+        { label: 'YAG5 earnings', value: 'Loaded', note: 'DfE LEO by subject' },
+        { label: 'YAG10 earnings', value: 'Partial', note: 'where released' },
+        { label: 'Industry flow', value: '2017/18', note: 'LEO movement file' },
+        { label: 'Professional quals', value: 'Pending', note: 'source required' },
+        { label: 'Employer change', value: 'Pending', note: 'source required' },
       ],
       links: [{ label: 'Career Explorer', href: '/career-explorer' }, { label: 'Employers', href: '/employers' }],
     },
@@ -208,7 +216,7 @@ export function StudentJourneyPage() {
         { label: 'FTSE 350 directors', value: '74%', note: 'are UK university graduates' },
         { label: 'Cabinet ministers', value: '89%', note: 'have UK degrees' },
         { label: 'NHS consultants', value: '38k+', note: 'UK medical graduates' },
-        { label: 'Avg salary (10yr+)', value: '£58k', note: 'degree-holding workers' },
+        { label: 'Salary 10yr+', value: 'Pending', note: 'source row required' },
         { label: 'Self-employed (10yr)', value: '18%', note: 'graduates running businesses' },
       ],
       links: [{ label: 'Employer Intelligence', href: '/employers' }, { label: 'Graduate Outcomes', href: '/graduate-outcomes' }],

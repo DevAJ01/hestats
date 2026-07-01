@@ -5,6 +5,8 @@ import {
   hasAnyFinancialValue,
   isKnownNumber,
 } from './financials'
+import { DEGREES, Degree } from './degrees'
+import { EMPLOYERS, Employer } from './employers'
 import { institutions } from './institutions'
 import { getInstitutionCoordinates, UK_BOUNDS } from './coordinates'
 import { INTELLIGENCE_RECORDS, IntelligenceRecord } from './intelligence'
@@ -18,6 +20,7 @@ import {
 } from './providers'
 import { DataQualityIssue, isOfficialUkprn } from './schema'
 import { DATA_SOURCES, PROVENANCE } from './sources'
+import { GraduateOutcome, OUTCOMES } from './outcomes'
 import { STUDENT_YEARS, StudentEnrolmentRecord, isKnownStudentNumber, studentEnrolments } from './students'
 import { FinancialYear, Institution } from './types'
 import { UK_OUTLINE_PATH, UK_OUTLINE_SOURCE } from './ukOutline'
@@ -362,6 +365,92 @@ export function validateStudentEnrolments(
   return issues
 }
 
+export function validateGraduateOutcomes(
+  rows: GraduateOutcome[] = OUTCOMES,
+  institutionRows: Institution[] = institutions,
+): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const institutionIds = new Set(institutionRows.map((row) => row.id))
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+  const seen = new Set<string>()
+
+  if (rows.length !== institutionRows.length) {
+    issues.push(issue('error', 'outcomes.coverage_count_mismatch', `Expected ${institutionRows.length} institution outcome rows, found ${rows.length}.`))
+  }
+
+  for (const row of rows) {
+    const details = { institution_id: row.institution_id, fiscal_year: row.tax_year }
+    if (seen.has(row.institution_id)) issues.push(issue('error', 'outcomes.duplicate_institution', `Duplicate outcome row for '${row.institution_id}'.`, details))
+    seen.add(row.institution_id)
+    if (!institutionIds.has(row.institution_id)) issues.push(issue('error', 'outcomes.orphan_institution', 'Outcome row references unknown institution.', details))
+    if (!['verified', 'pending'].includes(row.source_status)) issues.push(issue('error', 'outcomes.source_status_invalid', `Invalid source status '${row.source_status}'.`, details))
+    if (!sourceIds.has(row.source_id)) issues.push(issue('error', 'outcomes.source_unknown', `Outcome row references unknown source '${row.source_id}'.`, details))
+    if (!row.source_url.startsWith('https://') || !row.source_reference.trim() || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
+      issues.push(issue('error', 'outcomes.provenance_incomplete', 'Outcome rows require source URL, reference, retrieved date, and last verified date.', details))
+    }
+    if (!['high', 'awaiting'].includes(row.confidence)) issues.push(issue('error', 'outcomes.confidence_invalid', `Invalid confidence '${row.confidence}'.`, details))
+    if (row.source_status === 'pending' && row.included_in_aggregates) {
+      issues.push(issue('error', 'outcomes.pending_in_aggregates', 'Pending outcome rows must be excluded from aggregates.', details))
+    }
+    if (row.source_status === 'verified' && !row.source_documents.length) {
+      issues.push(issue('error', 'outcomes.verified_missing_documents', 'Verified outcome rows require source documents.', details))
+    }
+  }
+
+  return issues
+}
+
+export function validateDegreeIntelligence(rows: Degree[] = DEGREES): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+  const seen = new Set<string>()
+
+  if (rows.length < 30) issues.push(issue('error', 'degrees.too_few_rows', `Expected a broad CAH2 subject set, found ${rows.length}.`))
+
+  for (const row of rows) {
+    if (seen.has(row.id)) issues.push(issue('error', 'degrees.duplicate_id', `Duplicate degree id '${row.id}'.`))
+    seen.add(row.id)
+    if (!row.name.trim()) issues.push(issue('error', 'degrees.name_missing', `Degree '${row.id}' requires a name.`))
+    if (!sourceIds.has(row.source_id)) issues.push(issue('error', 'degrees.source_unknown', `Degree '${row.id}' references unknown source '${row.source_id}'.`))
+    if (!row.source_url.startsWith('https://') || !row.source_reference.trim() || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
+      issues.push(issue('error', 'degrees.provenance_incomplete', `Degree '${row.id}' requires source URL, reference, retrieved date, and last verified date.`))
+    }
+    if (row.source_status === 'verified' && !row.source_documents.length) {
+      issues.push(issue('error', 'degrees.verified_missing_documents', `Degree '${row.id}' requires source documents.`))
+    }
+    if (row.ai_source_status === 'external_analysis' && row.included_in_aggregates && !row.uk_ranking_note.toLowerCase().includes('external analysis')) {
+      issues.push(issue('error', 'degrees.ai_external_not_labelled', `Degree '${row.id}' has external AI metrics without a display note.`))
+    }
+  }
+
+  return issues
+}
+
+export function validateEmployerMarkets(rows: Employer[] = EMPLOYERS): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+  const seen = new Set<string>()
+
+  if (!rows.length) issues.push(issue('error', 'employer_markets.empty', 'Employer market intelligence must not be empty.'))
+
+  for (const row of rows) {
+    if (seen.has(row.id)) issues.push(issue('error', 'employer_markets.duplicate_id', `Duplicate employer market id '${row.id}'.`))
+    seen.add(row.id)
+    if (!sourceIds.has(row.source_id)) issues.push(issue('error', 'employer_markets.source_unknown', `Employer market '${row.id}' references unknown source '${row.source_id}'.`))
+    if (!row.source_url.startsWith('https://') || !row.source_reference.trim() || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
+      issues.push(issue('error', 'employer_markets.provenance_incomplete', `Employer market '${row.id}' requires source URL, reference, retrieved date, and last verified date.`))
+    }
+    if (row.market_type !== 'industry_section') {
+      issues.push(issue('error', 'employer_markets.unsourced_company_model', `Employer market '${row.id}' must be an official industry-section row unless company-level source data is attached.`))
+    }
+    if (!row.included_in_aggregates) {
+      issues.push(issue('error', 'employer_markets.not_in_aggregates', `Verified employer market '${row.id}' should be included in aggregate market counts.`))
+    }
+  }
+
+  return issues
+}
+
 export function validateInstitutionCoordinates(
   institutionRows: Institution[] = institutions,
 ): DataQualityIssue[] {
@@ -504,6 +593,9 @@ export function validateData(): DataQualityIssue[] {
     ...validateFinancials(),
     ...validateProviderFinanceCoverage(),
     ...validateStudentEnrolments(),
+    ...validateGraduateOutcomes(),
+    ...validateDegreeIntelligence(),
+    ...validateEmployerMarkets(),
     ...validateProviderSourceCoverage(),
     ...validateNationalStudentFinance(),
     ...validateInstitutionCoordinates(),

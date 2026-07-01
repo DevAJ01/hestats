@@ -13,7 +13,8 @@
     "test:data": "vitest run src/app/data/validation.test.ts",
     "validate:data": "vitest run src/app/data/validation.test.ts",
     "ingest:hesa-finance": "node scripts/ingest-hesa-finance.mjs",
-    "ingest:hesa-students": "node scripts/ingest-hesa-students.mjs"
+    "ingest:hesa-students": "node scripts/ingest-hesa-students.mjs",
+    "ingest:dfe-leo": "node scripts/ingest-dfe-leo.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

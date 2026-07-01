@@ -44,6 +44,25 @@ describe('open data exports', () => {
     expect(rows[0]).toHaveProperty('confidence')
   })
 
+  it('exports graduate outcomes, degree intelligence and employer market datasets', () => {
+    const outcomes = JSON.parse(getDataset('graduate-outcomes', 'json'))
+    const outcomeHeader = getDataset('graduate-outcomes', 'csv').split('\n')[0]
+    const degrees = JSON.parse(getDataset('degree-intelligence', 'json'))
+    const degreeHeader = getDataset('degree-intelligence', 'csv').split('\n')[0]
+    const markets = JSON.parse(getDataset('employer-markets', 'json'))
+    const marketHeader = getDataset('employer-markets', 'csv').split('\n')[0]
+
+    expect(outcomes).toHaveLength(304)
+    expect(outcomeHeader).toContain('employment_rate_yag1_pct')
+    expect(outcomeHeader).toContain('source_url')
+    expect(degrees.length).toBeGreaterThanOrEqual(30)
+    expect(degreeHeader).toContain('ai_source_status')
+    expect(degrees.every((row: { ai_source_status: string }) => row.ai_source_status === 'external_analysis')).toBe(true)
+    expect(markets.length).toBeGreaterThan(10)
+    expect(marketHeader).toContain('market_type')
+    expect(markets.every((row: { market_type: string }) => row.market_type === 'industry_section')).toBe(true)
+  })
+
   it('exports provider universe and finance coverage datasets', () => {
     const providers = JSON.parse(getDataset('provider-universe', 'json'))
     const providerHeader = getDataset('provider-universe', 'csv').split('\n')[0]
@@ -175,6 +194,39 @@ describe('open data exports', () => {
     expect(payload.data.every((row) => row.metrics.every((metric) => !metric.included_in_aggregates))).toBe(true)
     expect(payload.meta.coverage.external_analysis_records).toBeGreaterThan(0)
     expect(payload.meta.coverage.included_in_aggregates).toBe(0)
+  })
+
+  it('reports graduate outcomes, degree intelligence and employer markets in the API simulator', async () => {
+    const outcomesResponse = await dispatchRequest('GET', '/v1/graduate-outcomes', '?limit=400')
+    expect(outcomesResponse.status).toBe(200)
+    const outcomesPayload = outcomesResponse.data as {
+      data: { source_status: string; source_documents: unknown[] }[]
+      meta: { coverage: { verified_records: number; included_in_aggregates: number } }
+    }
+    expect(outcomesPayload.data).toHaveLength(304)
+    expect(outcomesPayload.meta.coverage.verified_records).toBeGreaterThan(200)
+    expect(outcomesPayload.data.filter((row) => row.source_status === 'verified').every((row) => row.source_documents.length > 0)).toBe(true)
+
+    const degreesResponse = await dispatchRequest('GET', '/v1/degrees')
+    expect(degreesResponse.status).toBe(200)
+    const degreesPayload = degreesResponse.data as {
+      data: { ai: { source_status: string; included_in_official_aggregates: boolean } }[]
+      meta: { coverage: { total_subjects: number; external_ai_analysis: number } }
+    }
+    expect(degreesPayload.meta.coverage.total_subjects).toBeGreaterThanOrEqual(30)
+    expect(degreesPayload.data.every((row) => row.ai.source_status === 'external_analysis')).toBe(true)
+    expect(degreesPayload.data.every((row) => !row.ai.included_in_official_aggregates)).toBe(true)
+
+    const marketsResponse = await dispatchRequest('GET', '/v1/employer-markets')
+    expect(marketsResponse.status).toBe(200)
+    const marketsPayload = marketsResponse.data as {
+      data: { market_type: string; source_documents: unknown[] }[]
+      meta: { coverage: { verified: number } }
+    }
+    expect(marketsPayload.data.length).toBeGreaterThan(10)
+    expect(marketsPayload.data.every((row) => row.market_type === 'industry_section')).toBe(true)
+    expect(marketsPayload.data.every((row) => row.source_documents.length > 0)).toBe(true)
+    expect(marketsPayload.meta.coverage.verified).toBeGreaterThan(10)
   })
 
   it('reports provider universe coverage through the API simulator', async () => {

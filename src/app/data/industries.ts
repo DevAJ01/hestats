@@ -1,3 +1,5 @@
+import { dfeLeoIndustries } from './generated/leoRecords'
+
 export interface Industry {
   id: string
   name: string
@@ -14,21 +16,31 @@ export interface Industry {
   skills_demand: string[]
   outlook: 'Excellent' | 'Good' | 'Stable' | 'Challenging' | 'Pending'
   outlook_note: string
-  source_status: 'pending'
+  source_status: 'verified' | 'pending'
+  source_id: 'dfe-leo'
+  source_url: string
+  source_reference: string
+  retrieved_date: string
+  last_verified: string
+  confidence: 'high' | 'awaiting'
+  included_in_aggregates: boolean
 }
 
-export const INDUSTRIES: Industry[] = []
+export const INDUSTRIES: Industry[] = dfeLeoIndustries
 
-export function getIndustryById(_id: string): Industry | undefined {
-  return undefined
+export function getIndustryById(id: string): Industry | undefined {
+  return INDUSTRIES.find((industry) => industry.id === id)
 }
 
 export function getIndustriesByOutlook(): Record<Industry['outlook'], Industry[]> {
-  return {
+  return INDUSTRIES.reduce<Record<Industry['outlook'], Industry[]>>((groups, industry) => {
+    groups[industry.outlook] = [...(groups[industry.outlook] ?? []), industry]
+    return groups
+  }, {
     Excellent: [],
     Good: [],
     Stable: [],
     Challenging: [],
     Pending: [],
-  }
+  })
 }

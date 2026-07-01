@@ -1,4 +1,6 @@
 import { institutions, getInstitutionById } from '../data/institutions'
+import { DEGREES } from '../data/degrees'
+import { EMPLOYERS } from '../data/employers'
 import {
   financials,
   getAllLatestFinancials,
@@ -26,6 +28,7 @@ import {
   providerUniverse,
 } from '../data/providers'
 import { getProvenance } from '../data/sources'
+import { OUTCOMES, getSectorOutcomes } from '../data/outcomes'
 import {
   STUDENT_YEARS,
   getStudentCoverage,
@@ -270,6 +273,85 @@ function buildNationalStudentFinance(row: (typeof nationalStudentFinanceRecords)
       retrieved_date: row.retrieved_date,
       last_verified: row.last_verified,
       confidence: row.confidence,
+    }],
+  }
+}
+
+function buildOutcome(row: (typeof OUTCOMES)[number]) {
+  const inst = getInstitutionById(row.institution_id)
+  return {
+    institution_id: row.institution_id,
+    ukprn: row.ukprn,
+    institution_name: inst?.canonical_name ?? row.institution_id,
+    academic_year: row.academic_year,
+    tax_year: row.tax_year,
+    graduates_yag1: row.graduates_yag1,
+    employment_rate_yag1_pct: row.employment_rate_15mo,
+    sustained_employment_only_pct: row.graduate_role_pct,
+    no_sustained_destination_pct: row.unemployed_pct,
+    further_study_pct: row.further_study_pct,
+    median_salary_1yr_k: row.salary_1yr_k,
+    median_salary_3yr_k: row.salary_3yr_k,
+    median_salary_5yr_k: row.salary_5yr_k,
+    source_status: row.source_status,
+    confidence: row.confidence,
+    included_in_aggregates: row.included_in_aggregates,
+    source_documents: row.source_documents,
+    notes: row.notes ?? null,
+  }
+}
+
+function buildDegree(row: (typeof DEGREES)[number]) {
+  return {
+    id: row.id,
+    name: row.name,
+    annual_graduations: row.annual_graduations,
+    employment_rate_yag1_pct: row.employment_rate_pct,
+    sustained_employment_only_pct: row.sustained_employment_pct,
+    no_sustained_destination_pct: row.no_sustained_destination_pct,
+    further_study_pct: row.further_study_pct,
+    median_salary_1yr_k: row.salary_1yr_k,
+    median_salary_3yr_k: row.salary_3yr_k,
+    median_salary_5yr_k: row.salary_5yr_k,
+    median_salary_10yr_k: row.salary_10yr_k,
+    ai: {
+      automation_risk_pct: row.ai_automation_risk_pct,
+      augmentation_pct: row.ai_augmentation_pct,
+      source_status: row.ai_source_status,
+      included_in_official_aggregates: false,
+    },
+    top_institutions: row.top_institutions,
+    industry_destinations: row.industry_destinations,
+    regional_destinations: row.regional_destinations,
+    source_status: row.source_status,
+    confidence: row.confidence,
+    included_in_aggregates: row.included_in_aggregates,
+    source_documents: row.source_documents,
+  }
+}
+
+function buildEmployerMarket(row: (typeof EMPLOYERS)[number]) {
+  return {
+    id: row.id,
+    name: row.name,
+    sector: row.sector,
+    market_type: row.market_type,
+    annual_graduate_count: row.annual_graduate_intake,
+    median_salary_k: row.avg_starting_salary_k,
+    same_section_flow_pct: row.retention_rate,
+    ai_exposure_pct: row.ai_exposure_pct,
+    top_subjects: row.top_subjects,
+    source_status: row.source_status,
+    confidence: row.confidence,
+    included_in_aggregates: row.included_in_aggregates,
+    source_documents: [{
+      source_id: row.source_id,
+      source_url: row.source_url,
+      source_reference: row.source_reference,
+      retrieved_date: row.retrieved_date,
+      last_verified: row.last_verified,
+      confidence: row.confidence,
+      notes: row.notes ?? null,
     }],
   }
 }
@@ -626,6 +708,68 @@ export async function dispatchRequest(method: string, path: string, search: stri
       limit,
       offset,
       coverage: getStudentCoverage(year),
+    }))
+  }
+
+  // ── GET /graduate-outcomes ─────────────────────────────────────────────────
+  if (segments[0] === 'graduate-outcomes') {
+    let rows = [...OUTCOMES]
+    if (params.institution_id) rows = rows.filter((row) => row.institution_id === params.institution_id || row.ukprn === params.institution_id)
+    if (params.source_status) rows = rows.filter((row) => row.source_status === params.source_status)
+    if (params.nation) {
+      const nationInsts = new Set(institutions.filter((i) => i.nation.toLowerCase() === params.nation.toLowerCase()).map((i) => i.id))
+      rows = rows.filter((row) => nationInsts.has(row.institution_id))
+    }
+    const limit = Math.min(Number(params.limit ?? 50), 304)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(rows, limit, offset)
+    return respond(ok(items.map(buildOutcome), {
+      total,
+      limit,
+      offset,
+      coverage: getSectorOutcomes(),
+    }))
+  }
+
+  // ── GET /degrees ───────────────────────────────────────────────────────────
+  if (segments[0] === 'degrees') {
+    let rows = [...DEGREES]
+    if (params.q) rows = rows.filter((row) => row.name.toLowerCase().includes(params.q.toLowerCase()))
+    if (params.source_status) rows = rows.filter((row) => row.source_status === params.source_status)
+    if (params.ai_source_status) rows = rows.filter((row) => row.ai_source_status === params.ai_source_status)
+    const limit = Math.min(Number(params.limit ?? 50), 100)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(rows, limit, offset)
+    return respond(ok(items.map(buildDegree), {
+      total,
+      limit,
+      offset,
+      coverage: {
+        total_subjects: DEGREES.length,
+        verified: DEGREES.filter((row) => row.source_status === 'verified').length,
+        included_in_aggregates: DEGREES.filter((row) => row.included_in_aggregates).length,
+        external_ai_analysis: DEGREES.filter((row) => row.ai_source_status === 'external_analysis').length,
+      },
+    }))
+  }
+
+  // ── GET /employer-markets ──────────────────────────────────────────────────
+  if (segments[0] === 'employer-markets') {
+    let rows = [...EMPLOYERS]
+    if (params.q) rows = rows.filter((row) => row.name.toLowerCase().includes(params.q.toLowerCase()) || row.sector.toLowerCase().includes(params.q.toLowerCase()))
+    if (params.source_status) rows = rows.filter((row) => row.source_status === params.source_status)
+    const limit = Math.min(Number(params.limit ?? 50), 100)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(rows, limit, offset)
+    return respond(ok(items.map(buildEmployerMarket), {
+      total,
+      limit,
+      offset,
+      coverage: {
+        total_markets: EMPLOYERS.length,
+        verified: EMPLOYERS.filter((row) => row.source_status === 'verified').length,
+        included_in_aggregates: EMPLOYERS.filter((row) => row.included_in_aggregates).length,
+      },
     }))
   }
 

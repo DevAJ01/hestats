@@ -1,8 +1,11 @@
 import { computeHealthScore } from './health'
+import { DEGREES } from './degrees'
+import { EMPLOYERS } from './employers'
 import { INTELLIGENCE_RECORDS } from './intelligence'
 import { financials, getAllLatestFinancials } from './financials'
 import { institutions } from './institutions'
 import { nationalStudentFinanceRecords } from './nationalStudentFinance'
+import { OUTCOMES } from './outcomes'
 import { providerFinanceCoverage } from './providerFinanceCoverage'
 import { providerSourceCoverage } from './providerSourceCoverage'
 import { providerUniverse } from './providers'
@@ -262,6 +265,103 @@ export function generateStudentEnrolmentsJson() {
   return JSON.stringify(studentEnrolments, null, 2)
 }
 
+export function generateGraduateOutcomesCsv() {
+  const header = 'institution_id,ukprn,academic_year,tax_year,graduates_yag1,employment_rate_yag1_pct,sustained_employment_only_pct,no_sustained_destination_pct,further_study_pct,median_salary_1yr_k,median_salary_3yr_k,median_salary_5yr_k,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates,notes'
+  const rows = OUTCOMES.map((row) => [
+    row.institution_id,
+    row.ukprn ?? '',
+    row.academic_year ?? '',
+    row.tax_year,
+    csvNullable(row.graduates_yag1),
+    csvNullable(row.employment_rate_15mo),
+    csvNullable(row.graduate_role_pct),
+    csvNullable(row.unemployed_pct),
+    csvNullable(row.further_study_pct),
+    csvNullable(row.salary_1yr_k),
+    csvNullable(row.salary_3yr_k),
+    csvNullable(row.salary_5yr_k),
+    row.source_status,
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    row.included_in_aggregates,
+    csvText(row.notes),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateGraduateOutcomesJson() {
+  return JSON.stringify(OUTCOMES, null, 2)
+}
+
+export function generateDegreeIntelligenceCsv() {
+  const header = 'id,name,annual_graduations,employment_rate_yag1_pct,sustained_employment_only_pct,no_sustained_destination_pct,further_study_pct,median_salary_1yr_k,median_salary_3yr_k,median_salary_5yr_k,median_salary_10yr_k,ai_automation_risk_pct,ai_augmentation_pct,ai_source_status,top_institutions,industry_destinations_json,regional_destinations_json,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates'
+  const rows = DEGREES.map((row) => [
+    row.id,
+    csvText(row.name),
+    csvNullable(row.annual_graduations),
+    csvNullable(row.employment_rate_pct),
+    csvNullable(row.sustained_employment_pct),
+    csvNullable(row.no_sustained_destination_pct),
+    csvNullable(row.further_study_pct),
+    csvNullable(row.salary_1yr_k),
+    csvNullable(row.salary_3yr_k),
+    csvNullable(row.salary_5yr_k),
+    csvNullable(row.salary_10yr_k),
+    row.ai_automation_risk_pct,
+    row.ai_augmentation_pct,
+    row.ai_source_status,
+    csvText(row.top_institutions.join('|')),
+    csvText(JSON.stringify(row.industry_destinations)),
+    csvText(JSON.stringify(row.regional_destinations)),
+    row.source_status,
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    row.included_in_aggregates,
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateDegreeIntelligenceJson() {
+  return JSON.stringify(DEGREES, null, 2)
+}
+
+export function generateEmployerMarketsCsv() {
+  const header = 'id,name,sector,market_type,annual_graduate_count,median_salary_k,same_section_flow_pct,ai_exposure_pct,top_subjects,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates,notes'
+  const rows = EMPLOYERS.map((row) => [
+    row.id,
+    csvText(row.name),
+    csvText(row.sector),
+    row.market_type,
+    row.annual_graduate_intake,
+    csvNullable(row.avg_starting_salary_k),
+    csvNullable(row.retention_rate),
+    row.ai_exposure_pct,
+    csvText(row.top_subjects.join('|')),
+    row.source_status,
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    row.included_in_aggregates,
+    csvText(row.notes),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateEmployerMarketsJson() {
+  return JSON.stringify(EMPLOYERS, null, 2)
+}
+
 export function generateIntelligenceCsv() {
   const header = 'id,title,category,claim_type,source_status,confidence,publisher,source_id,source_url,source_reference,published_date,retrieved_date,last_verified,geography,period,metric_count,metrics_json,notes'
   const rows = INTELLIGENCE_RECORDS.map((row) => [
@@ -301,6 +401,9 @@ export function getDataset(id: string, fmt: Format): string {
   if (id === 'latest-snapshot') return fmt === 'csv' ? generateLatestSnapshotCsv() : generateLatestSnapshotJson()
   if (id === 'health-scores') return fmt === 'csv' ? generateHealthScoresCsv() : generateHealthScoresJson()
   if (id === 'student-enrolments') return fmt === 'csv' ? generateStudentEnrolmentsCsv() : generateStudentEnrolmentsJson()
+  if (id === 'graduate-outcomes') return fmt === 'csv' ? generateGraduateOutcomesCsv() : generateGraduateOutcomesJson()
+  if (id === 'degree-intelligence') return fmt === 'csv' ? generateDegreeIntelligenceCsv() : generateDegreeIntelligenceJson()
+  if (id === 'employer-markets') return fmt === 'csv' ? generateEmployerMarketsCsv() : generateEmployerMarketsJson()
   if (id === 'intelligence') return fmt === 'csv' ? generateIntelligenceCsv() : generateIntelligenceJson()
   return ''
 }

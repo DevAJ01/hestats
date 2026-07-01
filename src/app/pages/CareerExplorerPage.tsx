@@ -10,7 +10,25 @@ type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6
 
 const STEP_LABELS = ['Choose Degree', 'Top Universities', 'Top Employers', 'Salary Progression', 'AI Outlook', 'Regional Demand', 'Summary']
 
-const UK_REGIONS = ['London', 'South East', 'South West', 'East of England', 'West Midlands', 'East Midlands', 'Yorkshire', 'North West', 'North East', 'Scotland', 'Wales', 'Northern Ireland']
+function isKnown(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function fmtPct(value: number | null | undefined) {
+  return isKnown(value) ? `${value}%` : 'Pending'
+}
+
+function fmtK(value: number | null | undefined) {
+  return isKnown(value) ? `£${value}k` : 'Pending'
+}
+
+function fmtCount(value: number | null | undefined) {
+  return isKnown(value) ? value.toLocaleString() : 'Pending'
+}
+
+function barPct(value: number | null | undefined, multiplier = 1) {
+  return `${Math.max(0, Math.min(100, (value ?? 0) * multiplier))}%`
+}
 
 function StepHeader({ step, total, label }: { step: number; total: number; label: string }) {
   return (
@@ -32,6 +50,7 @@ function StepDegree({ onSelect }: { onSelect: (d: Degree) => void }) {
     <div>
       <h2 style={{ color: 'var(--text)', fontSize: 17, fontWeight: 700, marginBottom: 4 }}>What did you study — or plan to study?</h2>
       <p style={{ color: 'var(--text-2)', fontSize: 12.5, marginBottom: 16 }}>Select your degree subject to explore your graduate pathway.</p>
+      <p style={{ color: 'var(--muted)', fontSize: 10.5, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 10 }}>Source: DfE LEO 2023/24 subject, provider, industry and regional files</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {DEGREES.sort((a, b) => a.name.localeCompare(b.name)).map((d) => {
           const riskColor = d.ai_automation_risk_pct >= 50 ? 'var(--negative)' : d.ai_automation_risk_pct >= 35 ? 'var(--warning)' : 'var(--positive)'
@@ -51,7 +70,7 @@ function StepDegree({ onSelect }: { onSelect: (d: Degree) => void }) {
               <p style={{ fontSize: 24, marginBottom: 4 }}>{d.emoji}</p>
               <p style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600, lineHeight: 1.2, marginBottom: 4 }}>{d.name}</p>
               <div className="flex items-center gap-1.5">
-                <span className="font-num" style={{ color: 'var(--positive)', fontSize: 10.5, fontWeight: 600 }}>{d.employment_rate_pct}%</span>
+                <span className="font-num" style={{ color: 'var(--positive)', fontSize: 10.5, fontWeight: 600 }}>{fmtPct(d.employment_rate_pct)}</span>
                 <span style={{ color: 'var(--muted)', fontSize: 9.5 }}>employed</span>
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
@@ -88,8 +107,8 @@ function StepUniversities({ degree }: { degree: Degree }) {
             <p style={{ color: 'var(--muted)', fontSize: 10.5, marginBottom: 8 }}>{inst.city} · {inst.nation}</p>
             <div className="grid grid-cols-2 gap-1.5">
               {[
-                { l: 'Employment', v: `${outcome.employment_rate_15mo}%`, c: 'var(--positive)' },
-                { l: 'Avg salary', v: `£${outcome.avg_salary_k}k`, c: 'var(--text)' },
+                { l: 'LEO YAG1', v: fmtPct(outcome.employment_rate_15mo), c: 'var(--positive)' },
+                { l: 'Median earnings', v: fmtK(outcome.median_salary_k), c: 'var(--text)' },
                 { l: 'NSS score', v: `${outcome.nss_overall_pct}%`, c: 'var(--link)' },
                 { l: 'TEF', v: outcome.tef_rating, c: outcome.tef_rating === 'Gold' ? 'var(--warning)' : 'var(--muted)' },
               ].map(({ l, v, c }) => (
@@ -127,9 +146,9 @@ function StepEmployers({ degree }: { degree: Degree }) {
               </div>
               <div className="grid grid-cols-3 gap-3 flex-shrink-0">
                 {[
-                  { l: 'Intake/yr', v: emp.annual_graduate_intake.toLocaleString(), c: 'var(--text)' },
-                  { l: 'Avg salary', v: `£${emp.avg_starting_salary_k}k`, c: 'var(--positive)' },
-                  { l: 'Retention', v: `${emp.retention_rate}%`, c: 'var(--text-2)' },
+                  { l: 'LEO count', v: emp.annual_graduate_intake.toLocaleString(), c: 'var(--text)' },
+                  { l: 'Median earnings', v: fmtK(emp.avg_starting_salary_k), c: 'var(--positive)' },
+                  { l: 'Same-section', v: fmtPct(emp.retention_rate), c: 'var(--text-2)' },
                 ].map(({ l, v, c }) => (
                   <div key={l} className="text-right">
                     <p style={{ color: 'var(--muted)', fontSize: 8.5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{l}</p>
@@ -149,7 +168,7 @@ function StepEmployers({ degree }: { degree: Degree }) {
             <div key={sector} className="flex items-center gap-2">
               <span style={{ color: 'var(--text-2)', fontSize: 11, flex: 1 }}>{sector}</span>
               <div style={{ width: 120, height: 4, backgroundColor: 'var(--border)', borderRadius: 1 }}>
-                <div style={{ height: '100%', width: `${pct * 2}%`, backgroundColor: 'var(--accent)', borderRadius: 1 }} />
+                <div style={{ height: '100%', width: barPct(pct, 2), backgroundColor: 'var(--accent)', borderRadius: 1 }} />
               </div>
               <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 11, width: 28, textAlign: 'right' }}>{pct}%</span>
             </div>
@@ -163,13 +182,12 @@ function StepEmployers({ degree }: { degree: Degree }) {
 // Step 3: Salary progression
 function StepSalary({ degree }: { degree: Degree }) {
   const points = [
-    { label: '15 months', salary: degree.median_salary_k, note: 'HESA Graduate Outcomes Survey' },
-    { label: '1 year', salary: +(degree.median_salary_k * 0.98).toFixed(0), note: 'Estimated' },
-    { label: '3 years', salary: +(degree.median_salary_k * 1.20).toFixed(0), note: 'With promotions / role changes' },
-    { label: '5 years', salary: +(degree.median_salary_k * 1.42).toFixed(0), note: 'Senior / specialist level' },
-    { label: '10 years', salary: +(degree.median_salary_k * 1.85).toFixed(0), note: 'Management / highly specialised' },
+    { label: '1 YAG', salary: degree.salary_1yr_k, note: 'DfE LEO observed median' },
+    { label: '3 YAG', salary: degree.salary_3yr_k, note: 'DfE LEO observed median' },
+    { label: '5 YAG', salary: degree.salary_5yr_k, note: 'DfE LEO observed median' },
+    { label: '10 YAG', salary: degree.salary_10yr_k, note: 'DfE LEO where available' },
   ]
-  const max = Math.max(...points.map((p) => p.salary))
+  const max = Math.max(...points.map((p) => p.salary ?? 0), 1)
 
   return (
     <div>
@@ -180,7 +198,7 @@ function StepSalary({ degree }: { degree: Degree }) {
         {points.map(({ label, salary, note }) => (
           <div key={label} className="p-3 border text-center" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 4 }}>
             <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>{label}</p>
-            <p className="font-num" style={{ color: 'var(--positive)', fontSize: 22, fontWeight: 800, marginBottom: 2 }}>£{salary}k</p>
+            <p className="font-num" style={{ color: 'var(--positive)', fontSize: 22, fontWeight: 800, marginBottom: 2 }}>{fmtK(salary)}</p>
             <p style={{ color: 'var(--muted)', fontSize: 9.5 }}>{note}</p>
           </div>
         ))}
@@ -189,10 +207,10 @@ function StepSalary({ degree }: { degree: Degree }) {
       {/* Visual bar chart */}
       <div className="flex items-end gap-3" style={{ height: 140 }}>
         {points.map(({ label, salary }) => {
-          const pct = (salary / max) * 100
+          const pct = ((salary ?? 0) / max) * 100
           return (
             <div key={label} className="flex flex-col items-center gap-1 flex-1">
-              <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 10 }}>£{salary}k</span>
+              <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 10 }}>{fmtK(salary)}</span>
               <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
                 <div style={{ height: `${pct}%`, width: '100%', backgroundColor: 'var(--positive)', borderRadius: '3px 3px 0 0', opacity: 0.8 }} />
               </div>
@@ -204,9 +222,9 @@ function StepSalary({ degree }: { degree: Degree }) {
 
       <div className="mt-4 grid grid-cols-3 gap-2">
         {[
-          { l: 'Avg salary', v: `£${degree.avg_salary_k}k`, sub: '15 months' },
-          { l: 'Median salary', v: `£${degree.median_salary_k}k`, sub: '15 months' },
-          { l: 'Further study', v: `${degree.further_study_pct}%`, sub: 'pursue PG' },
+          { l: 'YAG1 earnings', v: fmtK(degree.salary_1yr_k), sub: 'DfE LEO median' },
+          { l: 'YAG5 earnings', v: fmtK(degree.salary_5yr_k), sub: 'DfE LEO median' },
+          { l: 'Further study', v: fmtPct(degree.further_study_pct), sub: 'LEO YAG1' },
         ].map(({ l, v, sub }) => (
           <div key={l} className="px-3 py-2.5 border text-center" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
             <p style={{ color: 'var(--muted)', fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{l}</p>
@@ -276,13 +294,8 @@ function StepAI({ degree }: { degree: Degree }) {
 
 // Step 5: Regional demand
 function StepRegions({ degree }: { degree: Degree }) {
-  const regionData = UK_REGIONS.map((r, i) => {
-    const seed = degree.id.split('').reduce((s, c) => s + c.charCodeAt(0), 0)
-    const londonBonus = r === 'London' ? 25 : r === 'South East' ? 15 : r === 'Scotland' ? (degree.top_institutions.includes('edinburgh') ? 12 : 8) : 0
-    const baseShare = Math.max(1, 15 - i * 1.5 + (seed % (i + 3)) + londonBonus)
-    return { region: r, share: Math.min(40, baseShare) }
-  })
-  const maxShare = Math.max(...regionData.map((r) => r.share))
+  const regionData = degree.regional_destinations
+  const maxShare = Math.max(...regionData.map((row) => row.pct ?? 0), 1)
 
   return (
     <div>
@@ -290,8 +303,8 @@ function StepRegions({ degree }: { degree: Degree }) {
       <p style={{ color: 'var(--text-2)', fontSize: 12.5, marginBottom: 16 }}>Where are {degree.name} graduates most in demand across the UK?</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
-        {regionData.sort((a, b) => b.share - a.share).map(({ region, share }) => {
-          const pct = (share / maxShare) * 100
+        {regionData.map(({ region, pct: share, count }) => {
+          const pct = ((share ?? 0) / maxShare) * 100
           return (
             <div key={region} className="flex items-center gap-2 px-3 py-2" style={{ backgroundColor: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 3 }}>
               <MapPin className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--muted)' }} />
@@ -300,13 +313,15 @@ function StepRegions({ degree }: { degree: Degree }) {
                 <div style={{ height: '100%', width: `${pct}%`, backgroundColor: 'var(--accent)', borderRadius: 1, opacity: 0.8 }} />
               </div>
               <div className="flex items-center gap-1">
+                <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 10, width: 42, textAlign: 'right' }}>{fmtPct(share)}</span>
                 {pct >= 90 && <span style={{ fontSize: 9, backgroundColor: 'var(--positive-bg)', color: 'var(--positive)', padding: '0 4px', borderRadius: 2, fontWeight: 700 }}>HOT</span>}
               </div>
+              <span className="font-num" style={{ color: 'var(--muted)', fontSize: 10, width: 54, textAlign: 'right' }}>{count.toLocaleString()}</span>
             </div>
           )
         })}
       </div>
-      <p style={{ color: 'var(--muted)', fontSize: 10.5 }}>Regional demand index uses published labour-market and employer-location analysis where available. Relative index — not absolute job counts.</p>
+      <p style={{ color: 'var(--muted)', fontSize: 10.5 }}>Regional rows are from the DfE LEO 2023/24 industry regional map and show observed current residence for graduates in work, not open-vacancy counts.</p>
     </div>
   )
 }
@@ -320,12 +335,12 @@ function StepSummary({ degree, onReset }: { degree: Degree; onReset: () => void 
       <p style={{ color: 'var(--text-2)', fontSize: 12.5, marginBottom: 16 }}>Everything connected — your full intelligence summary.</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
         {[
-          { l: 'Employment rate', v: `${degree.employment_rate_pct}%`, c: 'var(--positive)', icon: '📊' },
-          { l: 'Avg salary (15mo)', v: `£${degree.avg_salary_k}k`, c: 'var(--text)', icon: '💷' },
-          { l: 'Salary at 5 years', v: `£${(degree.median_salary_k * 1.42).toFixed(0)}k`, c: 'var(--positive)', icon: '📈' },
+          { l: 'LEO YAG1 outcome', v: fmtPct(degree.employment_rate_pct), c: 'var(--positive)', icon: 'DATA' },
+          { l: 'YAG1 earnings', v: fmtK(degree.salary_1yr_k), c: 'var(--text)', icon: 'GBP' },
+          { l: 'YAG5 earnings', v: fmtK(degree.salary_5yr_k), c: 'var(--positive)', icon: 'Y5' },
           { l: 'AI resilience', v: `${degree.ai_resilience_score}/100`, c: riskColor, icon: '🤖' },
-          { l: 'Further study', v: `${degree.further_study_pct}%`, c: 'var(--link)', icon: '🎓' },
-          { l: 'Time to job', v: `${degree.avg_months_to_job} months`, c: 'var(--text-2)', icon: '⏱' },
+          { l: 'Further study', v: fmtPct(degree.further_study_pct), c: 'var(--link)', icon: 'PG' },
+          { l: 'Regional rows', v: fmtCount(degree.regional_destinations.length), c: 'var(--text-2)', icon: 'REG' },
         ].map(({ l, v, c, icon }) => (
           <div key={l} className="p-3 border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
             <p style={{ fontSize: 20, marginBottom: 2 }}>{icon}</p>

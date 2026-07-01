@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_FINANCIAL_VALUE_KEYS, AVAILABLE_YEARS, financials } from './financials'
+import { DEGREES } from './degrees'
+import { EMPLOYERS } from './employers'
 import { institutions } from './institutions'
 import { INTELLIGENCE_RECORDS } from './intelligence'
 import { nationalStudentFinanceRecords } from './nationalStudentFinance'
@@ -7,7 +9,8 @@ import { providerFinanceCoverage } from './providerFinanceCoverage'
 import { providerSourceCoverage } from './providerSourceCoverage'
 import { HESA_STUDENT_PROVIDER_COUNT_2024_25, providerUniverse } from './providers'
 import { STUDENT_YEARS, studentEnrolments } from './students'
-import { blockingIssues, validateData, validateFinancials, validateInstitutionCoordinates, validateInstitutions, validateIntelligenceRecords, validateMapOutline, validateNationalStudentFinance, validateProviderFinanceCoverage, validateProviderSourceCoverage, validateProviderUniverse, validateStudentEnrolments } from './validation'
+import { OUTCOMES } from './outcomes'
+import { blockingIssues, validateData, validateDegreeIntelligence, validateEmployerMarkets, validateFinancials, validateGraduateOutcomes, validateInstitutionCoordinates, validateInstitutions, validateIntelligenceRecords, validateMapOutline, validateNationalStudentFinance, validateProviderFinanceCoverage, validateProviderSourceCoverage, validateProviderUniverse, validateStudentEnrolments } from './validation'
 
 describe('HEStats data validation', () => {
   it('has no blocking errors in the bundled verified dataset', () => {
@@ -161,6 +164,31 @@ describe('HEStats data validation', () => {
     expect(pendingRows.every((row) => row.uk_enrolments === null)).toBe(true)
     expect(pendingRows.every((row) => row.non_uk_enrolments === null)).toBe(true)
     expect(pendingRows.every((row) => row.unknown_domicile_enrolments === null)).toBe(true)
+  })
+
+  it('keeps source-backed graduate outcomes for every platform institution', () => {
+    expect(OUTCOMES).toHaveLength(institutions.length)
+    expect(OUTCOMES.filter((row) => row.source_status === 'verified').length).toBeGreaterThan(200)
+    expect(OUTCOMES.every((row) => row.source_url.startsWith('https://'))).toBe(true)
+    expect(blockingIssues(validateGraduateOutcomes())).toEqual([])
+
+    const row = { ...OUTCOMES[0], source_url: '', source_reference: '' }
+    const errors = blockingIssues(validateGraduateOutcomes([row], [institutions.find((item) => item.id === row.institution_id) ?? institutions[0]]))
+    expect(errors.map((item) => item.code)).toContain('outcomes.provenance_incomplete')
+  })
+
+  it('keeps degree intelligence populated and separates AI external analysis', () => {
+    expect(DEGREES.length).toBeGreaterThanOrEqual(30)
+    expect(DEGREES.every((row) => row.source_id === 'dfe-leo')).toBe(true)
+    expect(DEGREES.every((row) => row.ai_source_status === 'external_analysis')).toBe(true)
+    expect(blockingIssues(validateDegreeIntelligence())).toEqual([])
+  })
+
+  it('keeps employer market intelligence as official industry-section rows', () => {
+    expect(EMPLOYERS.length).toBeGreaterThan(10)
+    expect(EMPLOYERS.every((row) => row.market_type === 'industry_section')).toBe(true)
+    expect(EMPLOYERS.every((row) => row.source_id === 'dfe-leo')).toBe(true)
+    expect(blockingIssues(validateEmployerMarkets())).toEqual([])
   })
 
   it('fails when a student row lacks source metadata', () => {

@@ -39,6 +39,22 @@ function fmtMetric(value: number | null, suffix = '') {
   return value === null ? 'Pending' : `${value}${suffix}`
 }
 
+function fmtK(value: number | null) {
+  return value === null ? 'Pending' : `£${value}k`
+}
+
+function fmtCount(value: number | null) {
+  return value === null ? 'Pending' : value.toLocaleString()
+}
+
+function metricValue(value: number | null, fallback = -Infinity) {
+  return value === null ? fallback : value
+}
+
+function barWidth(value: number | null, multiplier = 1) {
+  return `${Math.max(0, Math.min(100, (value ?? 0) * multiplier))}%`
+}
+
 function DegreeCard({ degree, expanded, onToggle }: { degree: Degree; expanded: boolean; onToggle: () => void }) {
   const riskColor = degree.ai_automation_risk_pct >= 50 ? 'var(--negative)' : degree.ai_automation_risk_pct >= 35 ? 'var(--warning)' : 'var(--positive)'
   const outlookColor = OUTLOOK_COLOR[degree.ai_demand_outlook]
@@ -62,9 +78,9 @@ function DegreeCard({ degree, expanded, onToggle }: { degree: Degree; expanded: 
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
               {[
-                { l: 'Employment', v: `${degree.employment_rate_pct}%`, c: 'var(--positive)' },
-                { l: 'Avg Salary', v: `£${degree.avg_salary_k}k`, c: 'var(--text)' },
-                { l: 'Graduates/yr', v: degree.annual_graduations.toLocaleString(), c: 'var(--text-2)' },
+                { l: 'LEO YAG1', v: fmtMetric(degree.employment_rate_pct, '%'), c: 'var(--positive)' },
+                { l: 'Median Earnings', v: fmtK(degree.avg_salary_k), c: 'var(--text)' },
+                { l: 'YAG1 Grads', v: fmtCount(degree.annual_graduations), c: 'var(--text-2)' },
                 { l: 'AI Risk', v: `${degree.ai_automation_risk_pct}%`, c: riskColor },
               ].map(({ l, v, c }) => (
                 <div key={l}>
@@ -88,16 +104,16 @@ function DegreeCard({ degree, expanded, onToggle }: { degree: Degree; expanded: 
             <div>
               <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Full metrics</p>
               {[
-                { l: 'Employment rate (15mo)', v: `${degree.employment_rate_pct}%` },
-                { l: 'Average salary', v: `£${degree.avg_salary_k}k` },
-                { l: 'Median salary', v: `£${degree.median_salary_k}k` },
-                { l: 'Further study', v: `${degree.further_study_pct}%` },
-                { l: 'PhD progression', v: `${degree.phd_progression_pct}%` },
-                { l: 'Annual graduations', v: degree.annual_graduations.toLocaleString() },
-                { l: 'NSS satisfaction', v: `${degree.satisfaction_score}%` },
-                { l: 'Female students', v: `${degree.gender_female_pct}%` },
-                { l: 'International students', v: `${degree.international_pct}%` },
-                { l: 'Avg months to job', v: `${degree.avg_months_to_job} months` },
+                { l: 'LEO YAG1 outcome', v: fmtMetric(degree.employment_rate_pct, '%') },
+                { l: 'YAG1 median earnings', v: fmtK(degree.salary_1yr_k) },
+                { l: 'YAG5 median earnings', v: fmtK(degree.salary_5yr_k) },
+                { l: 'Further study', v: fmtMetric(degree.further_study_pct, '%') },
+                { l: 'No sustained destination', v: fmtMetric(degree.no_sustained_destination_pct, '%') },
+                { l: 'Annual graduations', v: fmtCount(degree.annual_graduations) },
+                { l: 'NSS satisfaction', v: fmtMetric(degree.satisfaction_score, '%') },
+                { l: 'Female students', v: fmtMetric(degree.gender_female_pct, '%') },
+                { l: 'International students', v: fmtMetric(degree.international_pct, '%') },
+                { l: 'Avg months to job', v: degree.avg_months_to_job === null ? 'Not in LEO' : `${degree.avg_months_to_job} months` },
               ].map(({ l, v }) => (
                 <div key={l} className="flex items-center justify-between py-1" style={{ borderBottom: '1px solid var(--border)' }}>
                   <span style={{ color: 'var(--text-2)', fontSize: 11 }}>{l}</span>
@@ -139,7 +155,7 @@ function DegreeCard({ degree, expanded, onToggle }: { degree: Degree; expanded: 
                   <div key={sector} className="flex items-center gap-2">
                     <span style={{ color: 'var(--text-2)', fontSize: 10.5, flex: 1, minWidth: 0 }}>{sector}</span>
                     <div style={{ width: 60, height: 4, backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
-                      <div style={{ height: '100%', width: `${pct * 2}%`, backgroundColor: 'var(--accent)', borderRadius: 1, opacity: 0.75 }} />
+                      <div style={{ height: '100%', width: barWidth(pct, 2), backgroundColor: 'var(--accent)', borderRadius: 1, opacity: 0.75 }} />
                     </div>
                     <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 10.5, width: 28, textAlign: 'right', flexShrink: 0 }}>{pct}%</span>
                   </div>
@@ -189,14 +205,14 @@ export function DegreesPage() {
     .filter((d) => {
       if (filter === 'high-ai-risk') return d.ai_automation_risk_pct >= 40
       if (filter === 'low-ai-risk') return d.ai_automation_risk_pct < 25
-      if (filter === 'high-employment') return d.employment_rate_pct >= 90
-      if (filter === 'high-salary') return d.avg_salary_k >= 35
+      if (filter === 'high-employment') return metricValue(d.employment_rate_pct, 0) >= 90
+      if (filter === 'high-salary') return metricValue(d.avg_salary_k, 0) >= 35
       return true
     })
     .sort((a, b) => {
       if (sort === 'ai_automation_risk_pct') return b[sort] - a[sort]
       if (sort === 'ai_resilience_score') return b[sort] - a[sort]
-      return (b[sort] as number) - (a[sort] as number)
+      return metricValue(b[sort] as number | null) - metricValue(a[sort] as number | null)
     })
 
   const highestRisk = DEGREES.length
@@ -207,7 +223,7 @@ export function DegreesPage() {
     {
       label: 'Highest Paid',
       name: stats.highest_paid?.name ?? 'Pending source row',
-      val: stats.highest_paid ? `£${stats.highest_paid.avg_salary_k}k` : 'Pending',
+      val: stats.highest_paid ? fmtK(stats.highest_paid.avg_salary_k) : 'Pending',
       color: 'var(--positive)',
       emoji: stats.highest_paid?.emoji ?? 'HE',
     },
@@ -245,7 +261,7 @@ export function DegreesPage() {
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>Avg employment <span className="font-num" style={{ color: 'var(--positive)' }}>{fmtMetric(stats.avg_employment_rate, '%')}</span></span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}>Avg salary <span className="font-num" style={{ color: 'var(--text)' }}>{stats.avg_salary_k === null ? 'Pending' : `£${stats.avg_salary_k}k`}</span></span>
+        <span style={{ color: 'var(--text-2)' }}>Median earnings <span className="font-num" style={{ color: 'var(--text)' }}>{stats.avg_salary_k === null ? 'Pending' : `£${stats.avg_salary_k}k`}</span></span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>Avg AI risk <span className="font-num" style={{ color: 'var(--warning)' }}>{fmtMetric(stats.avg_ai_risk, '%')}</span></span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
