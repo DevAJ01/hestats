@@ -107,9 +107,11 @@ src/styles/         Theme, global CSS, fonts, Tailwind entry
 .github/           Contribution templates and CI
 ```
 
-## Data Contributions
+## Public Contributions
 
-High-quality data contributions are welcome. The best data issue or PR includes:
+Public contributions are currently limited to data accuracy, source discovery, and provenance review. Platform upgrades, UI changes, product features, architecture changes, and code refactors are maintainer-led unless a maintainer explicitly asks for that work.
+
+High-quality data issues or PRs include:
 
 - Institution name and HEStats id, if known.
 - Fiscal year, for example `2024-25`.
@@ -121,16 +123,22 @@ High-quality data contributions are welcome. The best data issue or PR includes:
 
 Please do not submit unsourced financial values. If a value is inferred, modelled, or estimated, say so clearly.
 
-## Code Contributions
+## Accepted Public Contribution Types
 
-Good first contributions include:
+- Data corrections with official sources.
+- Missing annual report URLs.
+- Source PDF/page/table references.
+- UKPRN/provider metadata corrections.
+- Notes that explain discrepancies between HEStats, annual reports, HESA, OfS, or provider metadata.
 
-- Fixing broken links, route regressions, or accessibility issues.
-- Improving tests and validation coverage.
-- Adding source/provenance fields to exports.
-- Improving table ergonomics without reducing density.
-- Documenting methodology and data assumptions.
-- Replacing pending identifiers with verified official metadata.
+Not currently accepted from public contributors unless requested:
+
+- Feature requests that require product development.
+- UI redesigns.
+- Code refactors.
+- Dependency upgrades.
+- New platform modules.
+- Unsourced or modelled financial data.
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 

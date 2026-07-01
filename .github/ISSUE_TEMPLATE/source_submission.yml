@@ -1,0 +1,58 @@
+name: Source submission
+description: Submit an annual report, financial statement, source URL, or page reference for maintainer review.
+title: "Source: "
+labels:
+  - data
+  - source-submission
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to send source material to the maintainer. HEStats may manually upgrade the platform from accepted sources.
+  - type: input
+    id: institution
+    attributes:
+      label: Institution
+      placeholder: University of Oxford
+    validations:
+      required: true
+  - type: input
+    id: hestats_id
+    attributes:
+      label: HEStats id or UKPRN
+      placeholder: oxford or 10007774
+  - type: input
+    id: fiscal_year
+    attributes:
+      label: Fiscal year
+      placeholder: 2024-25
+  - type: input
+    id: source_url
+    attributes:
+      label: Official source URL
+      placeholder: https://...
+    validations:
+      required: true
+  - type: dropdown
+    id: source_type
+    attributes:
+      label: Source type
+      options:
+        - Annual report / financial statements
+        - HESA
+        - OfS
+        - UKPRN/provider metadata
+        - Government/statistical release
+        - Other official source
+    validations:
+      required: true
+  - type: input
+    id: source_location
+    attributes:
+      label: Page, table, note, or row reference
+      placeholder: Page 42, note 6, table 3, row ID, etc.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes for maintainer review
+      description: Mention relevant metrics, uncertainty, conflicts, or extraction notes.

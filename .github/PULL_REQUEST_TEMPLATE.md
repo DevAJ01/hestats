@@ -1,27 +1,35 @@
-## Summary
+## Data Accuracy Summary
 
-What changed?
+What data, source, or provenance record changed?
 
-## Type of Change
+## Accepted Contribution Type
 
-- [ ] Code
 - [ ] Data correction
-- [ ] Documentation
-- [ ] Design/UI
-- [ ] Tests/validation
-- [ ] Other
+- [ ] Source URL or annual report update
+- [ ] UKPRN/provider metadata correction
+- [ ] Provenance/confidence note
+- [ ] Maintainer-requested documentation update
 
 ## Data Provenance
 
-If this changes data, include source URLs, fiscal years, page/table references, and confidence status.
+Include:
+
+- Institution:
+- Fiscal year:
+- Metric or field:
+- Current value:
+- Proposed value:
+- Official source URL:
+- Page/table/note/row reference:
+- Confidence: `verified`, `pending`, or `estimated`
 
 ## Verification
 
-- [ ] `pnpm typecheck`
-- [ ] `pnpm test`
-- [ ] `pnpm build`
-- [ ] Visual check, if UI changed
+- [ ] I included an official source.
+- [ ] I labelled uncertainty clearly.
+- [ ] I did not submit unsourced or AI-generated financial values.
+- [ ] `pnpm test:data` passes, if I changed data files.
 
 ## Notes for Reviewers
 
-Anything unusual, risky, incomplete, or intentionally deferred?
+Anything uncertain, conflicting, incomplete, or requiring maintainer review?
