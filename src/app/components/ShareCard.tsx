@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { X, Download, Instagram, CheckCircle, Smartphone, Monitor } from 'lucide-react'
 import { Institution, FinancialYear } from '../data/types'
 import { computeHealthScore } from '../data/health'
+import { formatPct, isKnownNumber } from '../data/financials'
 
 interface ShareItem {
   inst: Institution
@@ -67,9 +68,14 @@ function gradeHex(grade: string): string {
   return map[grade] ?? '#707987'
 }
 
-function fmtM(m: number): string {
+function fmtM(m: number | null | undefined): string {
+  if (!isKnownNumber(m)) return 'Pending'
   if (m >= 1000) return `£${(m / 1000).toFixed(1)}bn`
   return `£${m.toFixed(0)}m`
+}
+
+function fmtScore(score: number | null): string {
+  return score === null ? 'Pending' : `${score}/100`
 }
 
 function drawCard(canvas: HTMLCanvasElement, items: ShareItem[], format: Format) {
@@ -182,9 +188,9 @@ function drawCard(canvas: HTMLCanvasElement, items: ShareItem[], format: Format)
       // Metrics row
       const metrics = [
         { l: 'Income', v: fmtM(fin.revenue_gbp_m) },
-        { l: 'Surplus', v: `${fin.surplus_margin_pct >= 0 ? '+' : ''}${fin.surplus_margin_pct.toFixed(1)}%` },
+        { l: 'Surplus', v: formatPct(fin.surplus_margin_pct) },
         { l: 'Research', v: fmtM(fin.research_income_gbp_m) },
-        { l: 'Health', v: `${health.score}/100` },
+        { l: 'Health', v: fmtScore(health.score) },
       ]
       const metW = (contentW - 24 - 90) / metrics.length
       metrics.forEach(({ l, v }, mi) => {
@@ -264,13 +270,15 @@ function drawCard(canvas: HTMLCanvasElement, items: ShareItem[], format: Format)
       const barX = cx + innerPad, barW = colW - innerPad * 2, barH = 5
       ctx.fillStyle = BORDER
       roundRect(ctx, barX, ry, barW, barH, 2); ctx.fill()
-      ctx.fillStyle = gradeHex(health.grade)
-      roundRect(ctx, barX, ry, barW * (health.score / 100), barH, 2); ctx.fill()
+      if (isKnownNumber(health.score)) {
+        ctx.fillStyle = gradeHex(health.grade)
+        roundRect(ctx, barX, ry, barW * (health.score / 100), barH, 2); ctx.fill()
+      }
       ry += barH + 6
       ctx.fillStyle = MUTED
       ctx.font = `400 9px "JetBrains Mono", monospace`
       ctx.textAlign = 'center'
-      ctx.fillText(`${health.score}/100`, cx + colW / 2, ry)
+      ctx.fillText(fmtScore(health.score), cx + colW / 2, ry)
       ctx.textAlign = 'left'
       ry += 18
 
@@ -283,10 +291,10 @@ function drawCard(canvas: HTMLCanvasElement, items: ShareItem[], format: Format)
       // Metrics
       const mets = [
         { l: 'Income', v: fmtM(fin.revenue_gbp_m), c: TEXT },
-        { l: 'Surplus', v: `${fin.surplus_margin_pct >= 0 ? '+' : ''}${fin.surplus_margin_pct.toFixed(1)}%`, c: fin.surplus_margin_pct >= 0 ? '#5fa97b' : '#cf6660' },
+        { l: 'Surplus', v: formatPct(fin.surplus_margin_pct), c: isKnownNumber(fin.surplus_margin_pct) && fin.surplus_margin_pct >= 0 ? '#5fa97b' : '#cf6660' },
         { l: 'Research', v: fmtM(fin.research_income_gbp_m), c: TEXT },
         { l: 'Cash', v: fmtM(fin.cash_gbp_m), c: TEXT },
-        { l: 'Students', v: `${(fin.student_fte_total / 1000).toFixed(1)}k`, c: TEXT },
+        { l: 'Students', v: isKnownNumber(fin.student_fte_total) ? `${(fin.student_fte_total / 1000).toFixed(1)}k` : 'Pending', c: TEXT },
       ]
 
       const metFontL = 8, metFontV = 11
@@ -316,7 +324,7 @@ function drawCard(canvas: HTMLCanvasElement, items: ShareItem[], format: Format)
   ctx.fillText('hestats.co.uk  ·  UK HE Financial Intelligence  ·  Data: OfS · HESA · Audited Accounts  ·  CC BY 4.0', padCard, footerY + 18)
   ctx.font = `400 9px "JetBrains Mono", monospace`
   ctx.fillStyle = '#3a414d'
-  ctx.fillText('Estimated figures are model-derived. Verified figures sourced from audited institutional accounts.', padCard, footerY + 32)
+  ctx.fillText('Pending figures are withheld until official source rows and provenance are attached.', padCard, footerY + 32)
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────

@@ -176,6 +176,20 @@ function DegreeCard({ degree, expanded, onToggle }: { degree: Degree; expanded: 
 }
 
 export function DegreesPage() {
+  return (
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-8">
+      <Panel title="Degree Intelligence" subtitle="Awaiting official subject-level source rows">
+        <div className="px-3 py-8 text-center">
+          <BookOpen className="w-6 h-6 mx-auto mb-3" style={{ color: 'var(--muted)' }} />
+          <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 4 }}>Degree statistics are pending verification.</p>
+          <p style={{ color: 'var(--muted)', fontSize: 11.5, lineHeight: 1.6 }}>
+            Subject employment, salary, graduate volume, AI-risk, and employer-destination metrics are hidden until official rows and source references are attached.
+          </p>
+        </div>
+      </Panel>
+    </div>
+  )
+
   const [sort, setSort] = useState<SortKey>('employment_rate_pct')
   const [filter, setFilter] = useState<FilterKey>('all')
   const [expanded, setExpanded] = useState<string | null>(null)

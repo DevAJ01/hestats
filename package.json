@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:smoke": "vitest run src/app/__tests__/routes.smoke.test.tsx src/app/__tests__/open-data.test.ts",
     "test:data": "vitest run src/app/data/validation.test.ts",
-    "validate:data": "vitest run src/app/data/validation.test.ts"
+    "validate:data": "vitest run src/app/data/validation.test.ts",
+    "ingest:hesa-finance": "node scripts/ingest-hesa-finance.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

@@ -2,7 +2,8 @@ export interface Institution {
   id: string
   canonical_name: string
   short_name: string
-  ukprn: string
+  ukprn: string | null
+  metadata_status?: 'verified' | 'pending'
   nation: 'England' | 'Scotland' | 'Wales' | 'Northern Ireland'
   official_website: string
   logo_initial: string
@@ -11,30 +12,34 @@ export interface Institution {
   city: string
 }
 
+export type NullableMetric = number | null
+
 export interface FinancialYear {
   institution_id: string
   fiscal_year: string
   published: string
-  revenue_gbp_m: number
-  surplus_gbp_m: number
-  surplus_margin_pct: number
-  research_income_gbp_m: number
-  tuition_fee_income_gbp_m: number
-  other_income_gbp_m: number
-  staff_costs_gbp_m: number
-  total_expenditure_gbp_m: number
-  cash_gbp_m: number
-  borrowing_gbp_m: number
-  liquidity_days: number
-  international_fte_pct: number
-  student_fte_total: number
-  capital_expenditure_gbp_m: number
-  net_assets_gbp_m: number
-  risk_flag: 'Low' | 'Medium' | 'High'
+  revenue_gbp_m: NullableMetric
+  surplus_gbp_m: NullableMetric
+  surplus_margin_pct: NullableMetric
+  research_income_gbp_m: NullableMetric
+  tuition_fee_income_gbp_m: NullableMetric
+  other_income_gbp_m: NullableMetric
+  staff_costs_gbp_m: NullableMetric
+  total_expenditure_gbp_m: NullableMetric
+  cash_gbp_m: NullableMetric
+  borrowing_gbp_m: NullableMetric
+  liquidity_days: NullableMetric
+  international_fte_pct: NullableMetric
+  student_fte_total: NullableMetric
+  capital_expenditure_gbp_m: NullableMetric
+  net_assets_gbp_m: NullableMetric
+  risk_flag: 'Low' | 'Medium' | 'High' | 'Pending'
   source_pdf?: string
   source_page?: string
   status: 'found' | 'archived' | 'missing'
   data_source: 'verified' | 'estimated' | 'pending'
+  confidence: 'high' | 'medium' | 'provisional' | 'awaiting'
+  included_in_aggregates: boolean
 }
 
 export type MetricKey = keyof Pick<

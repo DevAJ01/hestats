@@ -595,24 +595,24 @@ const SCHEMAS: { name: string; description: string; fields: { name: string; type
     description: 'Annual financial statement for one institution in one fiscal year.',
     fields: [
       { name: 'fiscal_year', type: 'string', description: 'HESA fiscal year format, e.g. 2024-25' },
-      { name: 'data_source', type: '"verified"|"estimated"|"pending"', description: 'Confidence in this record\'s source' },
-      { name: 'revenue_gbp_m', type: 'number', description: 'Total annual income (£m)' },
-      { name: 'surplus_gbp_m', type: 'number', description: 'Operating surplus (£m)' },
-      { name: 'surplus_margin_pct', type: 'number', description: 'Surplus as % of income' },
-      { name: 'research_income_gbp_m', type: 'number', description: 'Research grants and contracts income (£m)' },
-      { name: 'tuition_fee_income_gbp_m', type: 'number', description: 'Tuition fee income (£m)' },
-      { name: 'other_income_gbp_m', type: 'number', description: 'Residences, catering, and other income (£m)' },
-      { name: 'staff_costs_gbp_m', type: 'number', description: 'Total staff emoluments inc. pension (£m)' },
-      { name: 'total_expenditure_gbp_m', type: 'number', description: 'Total operating expenditure (£m)' },
-      { name: 'cash_gbp_m', type: 'number', description: 'Cash and short-term deposits (£m)' },
-      { name: 'borrowing_gbp_m', type: 'number', description: 'External long-term borrowing (£m)' },
-      { name: 'liquidity_days', type: 'integer', description: 'Days of expenditure covered by liquid assets' },
-      { name: 'international_fte_pct', type: 'number', description: 'International students as % of FTE total' },
-      { name: 'student_fte_total', type: 'integer', description: 'Total full-time equivalent student enrolment' },
-      { name: 'capital_expenditure_gbp_m', type: 'number', description: 'Capital investment in estate and equipment (£m)' },
-      { name: 'net_assets_gbp_m', type: 'number', description: 'Total assets minus total liabilities (£m)' },
-      { name: 'risk_flag', type: '"Low"|"Medium"|"High"', description: 'HEStats financial risk assessment' },
-      { name: 'source_pdf', type: 'string', nullable: true, description: 'URL to the source annual report PDF' },
+      { name: 'data_source', type: '"verified"|"pending"', description: 'Official source status for this record' },
+      { name: 'revenue_gbp_m', type: 'number|null', nullable: true, description: 'Total annual income (£m)' },
+      { name: 'surplus_gbp_m', type: 'number|null', nullable: true, description: 'Operating surplus (£m)' },
+      { name: 'surplus_margin_pct', type: 'number|null', nullable: true, description: 'Surplus as % of income' },
+      { name: 'research_income_gbp_m', type: 'number|null', nullable: true, description: 'Research grants and contracts income (£m)' },
+      { name: 'tuition_fee_income_gbp_m', type: 'number|null', nullable: true, description: 'Tuition fee income (£m)' },
+      { name: 'other_income_gbp_m', type: 'number|null', nullable: true, description: 'Income other than tuition and research (£m)' },
+      { name: 'staff_costs_gbp_m', type: 'number|null', nullable: true, description: 'Total staff costs inc. pension (£m)' },
+      { name: 'total_expenditure_gbp_m', type: 'number|null', nullable: true, description: 'Total operating expenditure (£m)' },
+      { name: 'cash_gbp_m', type: 'number|null', nullable: true, description: 'Cash and short-term deposits (£m)' },
+      { name: 'borrowing_gbp_m', type: 'number|null', nullable: true, description: 'External borrowing (£m)' },
+      { name: 'liquidity_days', type: 'number|null', nullable: true, description: 'HESA net liquidity days' },
+      { name: 'international_fte_pct', type: 'number|null', nullable: true, description: 'International students as % of FTE total' },
+      { name: 'student_fte_total', type: 'number|null', nullable: true, description: 'Total full-time equivalent student enrolment' },
+      { name: 'capital_expenditure_gbp_m', type: 'number|null', nullable: true, description: 'Capital investment in estate and equipment (£m)' },
+      { name: 'net_assets_gbp_m', type: 'number|null', nullable: true, description: 'Total assets minus total liabilities (£m)' },
+      { name: 'risk_flag', type: '"Low"|"Medium"|"High"|"Pending"', description: 'HEStats financial risk assessment' },
+      { name: 'source_pdf', type: 'string', nullable: true, description: 'Legacy source URL field; HESA rows link to canonical CSV source' },
     ],
   },
   {
@@ -687,7 +687,7 @@ function SchemaBlock({ s }: { s: typeof SCHEMAS[0] }) {
 const CHANGELOG = [
   { version: 'prototype-2026.1', date: 'Jun 2026', tag: 'New', color: 'var(--positive)', changes: ['Bundled read-only API simulator aligned with the React runtime', 'Added /compare endpoint supporting up to 6 institutions', 'Health score components included in /institutions/{id}/health', 'Export examples no longer require authentication headers'] },
   { version: 'prototype-2025.2', date: 'Mar 2026', tag: 'Update', color: 'var(--link)', changes: ['Added /years endpoint listing available fiscal years', 'Added /metrics catalogue endpoint', 'Pagination offset/limit added to /institutions and /health-scores', 'source_pdf field exposed where a source document is known'] },
-  { version: 'prototype-2025.1', date: 'Jan 2026', tag: 'Baseline', color: 'var(--warning)', changes: ['Initial local API catalogue for the frontend prototype', 'Endpoints: /institutions, /sector/summary, /rankings', 'REST + JSON examples backed by bundled app data', 'Verified and estimated records are labelled in response payloads'] },
+  { version: 'prototype-2025.1', date: 'Jan 2026', tag: 'Baseline', color: 'var(--warning)', changes: ['Initial local API catalogue for the frontend prototype', 'Endpoints: /institutions, /sector/summary, /rankings', 'REST + JSON examples backed by bundled app data', 'Verified and pending records are labelled in response payloads'] },
 ]
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
@@ -732,7 +732,7 @@ export function ApiPage() {
           <h1 style={{ color: 'var(--text)', fontSize: 20, fontWeight: 700, marginBottom: 8, letterSpacing: '-0.02em' }}>HEStats API</h1>
           <p style={{ color: 'var(--text-2)', fontSize: 13, lineHeight: 1.7, marginBottom: 14 }}>
             Programmatic shape for HEStats financial metrics, health scores, and institution profiles. This build exposes
-            a local read-only simulator backed by the bundled prototype dataset, with verified and estimated records labelled.
+            a local read-only simulator backed by the bundled verified dataset, with pending source gaps explicitly labelled.
             <strong style={{ color: 'var(--text)' }}> No authentication is required in the prototype.</strong>
           </p>
           <div className="flex flex-wrap gap-2">
@@ -741,7 +741,7 @@ export function ApiPage() {
               { icon: <Shield className="w-3.5 h-3.5" />, label: 'Provenance labelled' },
               { icon: <Globe className="w-3.5 h-3.5" />, label: `${institutions.length} institutions` },
               { icon: <Database className="w-3.5 h-3.5" />, label: '10 years history' },
-              { icon: <Activity className="w-3.5 h-3.5" />, label: 'Prototype data' },
+              { icon: <Activity className="w-3.5 h-3.5" />, label: 'Verified finance data' },
               { icon: <Heart className="w-3.5 h-3.5" />, label: 'Open data intent' },
             ].map((f) => (
               <span key={f.label} className="flex items-center gap-1.5 px-2.5 py-1.5"
@@ -935,7 +935,7 @@ curl "${BASE}/institutions/oxford" \\
             <h2 style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Access Model</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
               {[
-                { tier: 'Prototype', rate: 'Local', unit: 'runtime', price: 'Bundled', color: 'var(--muted)', features: ['Read-only responses', 'No account required', 'JSON response examples', 'Verified and estimated rows labelled', 'Runs from app data'] },
+                { tier: 'Prototype', rate: 'Local', unit: 'runtime', price: 'Bundled', color: 'var(--muted)', features: ['Read-only responses', 'No account required', 'JSON response examples', 'Verified and pending rows labelled', 'Runs from app data'] },
                 { tier: 'Open data', rate: 'CSV/JSON', unit: 'exports', price: 'Public', color: 'var(--link)', features: ['Institution directory', 'Financial rows', 'Health scores', 'Source and confidence fields', 'Versioned files planned'] },
                 { tier: 'Hosted API', rate: 'Planned', unit: 'surface', price: 'Not launched', color: 'var(--warning)', features: ['Service status needed', 'Quotas not implemented', 'Authentication undecided', 'Bulk feeds to be designed', 'Methodology versioning required'] },
               ].map((t) => (

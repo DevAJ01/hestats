@@ -1,16 +1,16 @@
 import { FinancialYear } from './types'
-import { financials, getAllLatestFinancials } from './financials'
+import { getAllLatestFinancials, isKnownNumber } from './financials'
 
 export interface HealthScore {
-  score: number
+  score: number | null
   grade: string
   components: {
-    liquidity: number
-    surplusMargin: number
-    borrowingBurden: number
-    cashCover: number
-    incomeDiversity: number
-    researchIntensity: number
+    liquidity: number | null
+    surplusMargin: number | null
+    borrowingBurden: number | null
+    cashCover: number | null
+    incomeDiversity: number | null
+    researchIntensity: number | null
   }
 }
 
@@ -82,14 +82,51 @@ function scoreResearchIntensity(ratio: number): number {
 }
 
 export function computeHealthScore(fin: FinancialYear): HealthScore {
-  const borrowingRatio = fin.revenue_gbp_m > 0 ? fin.borrowing_gbp_m / fin.revenue_gbp_m : 0
-  const cashCoverRatio = fin.total_expenditure_gbp_m > 0 ? fin.cash_gbp_m / fin.total_expenditure_gbp_m : 0
-  const tuitionRatio = fin.revenue_gbp_m > 0 ? fin.tuition_fee_income_gbp_m / fin.revenue_gbp_m : 0
-  const researchRatio = fin.revenue_gbp_m > 0 ? fin.research_income_gbp_m / fin.revenue_gbp_m : 0
+  const {
+    revenue_gbp_m: revenue,
+    borrowing_gbp_m: borrowing,
+    total_expenditure_gbp_m: totalExpenditure,
+    cash_gbp_m: cash,
+    tuition_fee_income_gbp_m: tuition,
+    research_income_gbp_m: research,
+    liquidity_days: liquidityDays,
+    surplus_margin_pct: surplusMargin,
+  } = fin
+
+  if (
+    !isKnownNumber(revenue) ||
+    !isKnownNumber(borrowing) ||
+    !isKnownNumber(totalExpenditure) ||
+    !isKnownNumber(cash) ||
+    !isKnownNumber(tuition) ||
+    !isKnownNumber(research) ||
+    !isKnownNumber(liquidityDays) ||
+    !isKnownNumber(surplusMargin) ||
+    revenue <= 0 ||
+    totalExpenditure <= 0
+  ) {
+    return {
+      score: null,
+      grade: 'Pending',
+      components: {
+        liquidity: null,
+        surplusMargin: null,
+        borrowingBurden: null,
+        cashCover: null,
+        incomeDiversity: null,
+        researchIntensity: null,
+      },
+    }
+  }
+
+  const borrowingRatio = borrowing / revenue
+  const cashCoverRatio = cash / totalExpenditure
+  const tuitionRatio = tuition / revenue
+  const researchRatio = research / revenue
 
   const components = {
-    liquidity: Math.round(scoreLiquidity(fin.liquidity_days)),
-    surplusMargin: Math.round(scoreSurplusMargin(fin.surplus_margin_pct)),
+    liquidity: Math.round(scoreLiquidity(liquidityDays)),
+    surplusMargin: Math.round(scoreSurplusMargin(surplusMargin)),
     borrowingBurden: Math.round(scoreBorrowingBurden(borrowingRatio)),
     cashCover: Math.round(scoreCashCover(cashCoverRatio)),
     incomeDiversity: Math.round(scoreIncomeDiversity(tuitionRatio)),
@@ -119,12 +156,14 @@ export function scoreToGrade(score: number): string {
 }
 
 export function getGradeColor(grade: string): string {
+  if (grade === 'Pending') return 'var(--muted)'
   if (grade === 'AAA' || grade === 'AA') return 'var(--positive)'
   if (grade === 'A' || grade === 'BBB') return 'var(--warning)'
   return 'var(--negative)'
 }
 
 export function getGradeBg(grade: string): string {
+  if (grade === 'Pending') return 'var(--bg)'
   if (grade === 'AAA' || grade === 'AA') return 'var(--positive-bg)'
   if (grade === 'A' || grade === 'BBB') return 'var(--warning-bg)'
   return 'var(--negative-bg)'
@@ -140,7 +179,7 @@ export function getAllHealthScores(): (HealthScore & { institution_id: string })
 
 /** Sector average health score */
 export function getSectorAverageScore(): number {
-  const scores = getAllHealthScores().map((h) => h.score)
+  const scores = getAllHealthScores().map((h) => h.score).filter(isKnownNumber)
   if (!scores.length) return 0
   return Math.round(scores.reduce((s, v) => s + v, 0) / scores.length)
 }

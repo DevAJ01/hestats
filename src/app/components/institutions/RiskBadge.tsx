@@ -1,5 +1,5 @@
 interface RiskBadgeProps {
-  risk: 'Low' | 'Medium' | 'High'
+  risk: 'Low' | 'Medium' | 'High' | 'Pending'
   size?: 'sm' | 'md'
 }
 
@@ -7,6 +7,7 @@ const colorMap = {
   Low: { fg: 'var(--positive)', bg: 'var(--positive-bg)' },
   Medium: { fg: 'var(--warning)', bg: 'var(--warning-bg)' },
   High: { fg: 'var(--negative)', bg: 'var(--negative-bg)' },
+  Pending: { fg: 'var(--muted)', bg: 'var(--bg)' },
 }
 
 export function RiskBadge({ risk, size = 'md' }: RiskBadgeProps) {

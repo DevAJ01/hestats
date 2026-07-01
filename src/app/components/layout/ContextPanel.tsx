@@ -3,7 +3,7 @@ import { X, Star, GitCompare, ArrowUpRight, FileText, TrendingUp, TrendingDown }
 import { useContextPanel } from '../../context/ContextPanelContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { institutions } from '../../data/institutions'
-import { getLatestFinancial, getFinancialsByInstitution } from '../../data/financials'
+import { formatCurrencyM, formatDays, formatNumber, formatPct, getLatestFinancial, getFinancialsByInstitution, isKnownNumber, ratioPct } from '../../data/financials'
 import { computeHealthScore } from '../../data/health'
 import { HealthBadge } from '../institutions/HealthBadge'
 import { NationBadge } from '../institutions/NationBadge'
@@ -45,7 +45,9 @@ export function ContextPanel() {
           const history = getFinancialsByInstitution(inst.id).sort((a, b) => a.fiscal_year.localeCompare(b.fiscal_year))
           const revSpark = history.map((h) => h.revenue_gbp_m)
           const prev = history[history.length - 2]
-          const revChange = prev ? ((fin.revenue_gbp_m - prev.revenue_gbp_m) / prev.revenue_gbp_m) * 100 : 0
+          const revChange = prev && isKnownNumber(fin.revenue_gbp_m) && isKnownNumber(prev.revenue_gbp_m)
+            ? ratioPct(fin.revenue_gbp_m - prev.revenue_gbp_m, prev.revenue_gbp_m, 1)
+            : null
           return (
             <>
               {/* Header */}
@@ -57,7 +59,7 @@ export function ContextPanel() {
                     <RiskBadge risk={fin.risk_flag} size="sm" />
                   </div>
                   <p style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{inst.canonical_name}</p>
-                  <p style={{ color: 'var(--muted)', fontSize: 11 }}>{inst.city} · Est. {inst.founded} · UKPRN {inst.ukprn}</p>
+                  <p style={{ color: 'var(--muted)', fontSize: 11 }}>{inst.city} · Est. {inst.founded} · UKPRN {inst.ukprn ?? 'pending'}</p>
                 </div>
                 <button onClick={closePanel} className="w-8 h-8 flex items-center justify-center flex-shrink-0" style={{ color: 'var(--text-2)' }} aria-label="Close panel">
                   <X className="w-4 h-4" />
@@ -71,7 +73,7 @@ export function ContextPanel() {
                   <p className="mb-2" style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Financial health</p>
                   <div className="flex items-center justify-between px-3 py-2.5 border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
                     <div>
-                      <p className="font-num" style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, lineHeight: 1 }}>{health.score}<span style={{ color: 'var(--muted)', fontSize: 12, fontWeight: 400 }}>/100</span></p>
+                      <p className="font-num" style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, lineHeight: 1 }}>{health.score ?? 'Pending'}{health.score !== null && <span style={{ color: 'var(--muted)', fontSize: 12, fontWeight: 400 }}>/100</span>}</p>
                       <p style={{ color: 'var(--muted)', fontSize: 10, marginTop: 2 }}>Grade {health.grade}</p>
                     </div>
                     <Sparkline values={revSpark} width={120} height={32} color="#7396c2" />
@@ -83,12 +85,12 @@ export function ContextPanel() {
                   <p className="mb-2" style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Key metrics</p>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { label: 'Total income', value: `£${fin.revenue_gbp_m.toLocaleString()}m`, change: revChange },
-                      { label: 'Surplus margin', value: `${fin.surplus_margin_pct.toFixed(1)}%`, color: fin.surplus_margin_pct >= 0 ? 'var(--positive)' : 'var(--negative)' },
-                      { label: 'Research income', value: `£${fin.research_income_gbp_m}m` },
-                      { label: 'Liquidity', value: `${fin.liquidity_days}d` },
-                      { label: 'Borrowing', value: `£${fin.borrowing_gbp_m}m` },
-                      { label: 'International', value: `${fin.international_fte_pct}%` },
+                      { label: 'Total income', value: formatCurrencyM(fin.revenue_gbp_m), change: revChange },
+                      { label: 'Surplus margin', value: formatPct(fin.surplus_margin_pct), color: isKnownNumber(fin.surplus_margin_pct) ? (fin.surplus_margin_pct >= 0 ? 'var(--positive)' : 'var(--negative)') : 'var(--muted)' },
+                      { label: 'Research income', value: formatCurrencyM(fin.research_income_gbp_m) },
+                      { label: 'Liquidity', value: formatDays(fin.liquidity_days) },
+                      { label: 'Borrowing', value: formatCurrencyM(fin.borrowing_gbp_m) },
+                      { label: 'International', value: isKnownNumber(fin.international_fte_pct) ? formatPct(fin.international_fte_pct) : formatNumber(fin.international_fte_pct) },
                     ].map((m) => (
                       <div key={m.label} className="px-2.5 py-2 border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
                         <p style={{ color: 'var(--muted)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{m.label}</p>

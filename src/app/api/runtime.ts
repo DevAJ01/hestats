@@ -2,11 +2,18 @@ import { institutions, getInstitutionById } from '../data/institutions'
 import {
   financials,
   getAllLatestFinancials,
+  getAggregateEligibleFinancials,
   getFinancialsByInstitution,
   getLatestFinancial,
   AVAILABLE_YEARS,
+  averageKnown,
+  isKnownNumber,
+  ratioPct,
+  roundNullable,
+  sumKnown,
 } from '../data/financials'
 import { computeHealthScore, getAllHealthScores, getSectorAverageScore, scoreToGrade } from '../data/health'
+import { getProvenance } from '../data/sources'
 import { FinancialYear } from '../data/types'
 
 export interface ApiResponse {
@@ -53,14 +60,18 @@ function err(status: number, message: string): ApiResponse {
 }
 
 function buildFin(f: FinancialYear) {
+  const provenance = getProvenance(f.institution_id, f.fiscal_year)
   return {
     fiscal_year: f.fiscal_year,
     published: f.published || null,
     data_source: f.data_source,
+    source_status: f.data_source,
+    confidence: f.confidence,
     status: f.status,
+    included_in_aggregates: f.included_in_aggregates,
     revenue_gbp_m: f.revenue_gbp_m,
     surplus_gbp_m: f.surplus_gbp_m,
-    surplus_margin_pct: +f.surplus_margin_pct.toFixed(2),
+    surplus_margin_pct: roundNullable(f.surplus_margin_pct, 2),
     research_income_gbp_m: f.research_income_gbp_m,
     tuition_fee_income_gbp_m: f.tuition_fee_income_gbp_m,
     other_income_gbp_m: f.other_income_gbp_m,
@@ -75,6 +86,18 @@ function buildFin(f: FinancialYear) {
     net_assets_gbp_m: f.net_assets_gbp_m,
     risk_flag: f.risk_flag,
     source_pdf: f.source_pdf || null,
+    source_documents: provenance
+      ? [{
+          source_id: provenance.source_id,
+          publication: provenance.publication,
+          source_url: provenance.source_url,
+          page_reference: provenance.page_reference ?? null,
+          retrieved_date: provenance.retrieved_date,
+          last_verified: provenance.last_verified,
+          confidence: provenance.confidence,
+          notes: provenance.notes ?? null,
+        }]
+      : [],
   }
 }
 
@@ -140,7 +163,7 @@ export async function dispatchRequest(method: string, path: string, search: stri
     if (params.mission_group) list = list.filter((i) => (i.mission_group ?? '').toLowerCase().includes(params.mission_group.toLowerCase()))
     if (params.q) {
       const q = params.q.toLowerCase()
-      list = list.filter((i) => i.canonical_name.toLowerCase().includes(q) || i.short_name.toLowerCase().includes(q) || i.ukprn.includes(q))
+      list = list.filter((i) => i.canonical_name.toLowerCase().includes(q) || i.short_name.toLowerCase().includes(q) || (i.ukprn ?? '').includes(q))
     }
     const limit = Math.min(Number(params.limit ?? 50), 200)
     const offset = Number(params.offset ?? 0)
@@ -195,31 +218,38 @@ export async function dispatchRequest(method: string, path: string, search: stri
     if (!AVAILABLE_YEARS.includes(year)) return err(422, `Unknown fiscal_year '${year}'. Available: ${AVAILABLE_YEARS.join(', ')}.`)
     const yearFins = financials.filter((f) => f.fiscal_year === year)
     if (!yearFins.length) return err(404, `No data for fiscal year '${year}'.`)
-    const totalIncome = yearFins.reduce((s, f) => s + f.revenue_gbp_m, 0)
-    const totalSurplus = yearFins.reduce((s, f) => s + f.surplus_gbp_m, 0)
-    const totalResearch = yearFins.reduce((s, f) => s + f.research_income_gbp_m, 0)
-    const totalBorrowing = yearFins.reduce((s, f) => s + f.borrowing_gbp_m, 0)
-    const totalStudents = yearFins.reduce((s, f) => s + f.student_fte_total, 0)
-    const avgLiquidity = yearFins.reduce((s, f) => s + f.liquidity_days, 0) / yearFins.length
-    const avgIntl = yearFins.reduce((s, f) => s + f.international_fte_pct, 0) / yearFins.length
+    const aggregateFins = getAggregateEligibleFinancials(year)
+    const totalIncome = sumKnown(aggregateFins, 'revenue_gbp_m')
+    const totalSurplus = sumKnown(aggregateFins, 'surplus_gbp_m')
+    const totalResearch = sumKnown(aggregateFins, 'research_income_gbp_m')
+    const totalBorrowing = sumKnown(aggregateFins, 'borrowing_gbp_m')
+    const totalStudents = sumKnown(aggregateFins, 'student_fte_total')
+    const avgLiquidity = averageKnown(aggregateFins, 'liquidity_days')
+    const avgIntl = averageKnown(aggregateFins, 'international_fte_pct')
     const avgHealth = getSectorAverageScore()
     const healthScores = getAllHealthScores()
     const gradeCounts: Record<string, number> = {}
     healthScores.forEach(({ grade }) => { gradeCounts[grade] = (gradeCounts[grade] ?? 0) + 1 })
     return respond(ok({
       fiscal_year: year,
-      institutions_reporting: yearFins.length,
+      institutions_reporting: aggregateFins.length,
+      coverage: {
+        reporting_institutions: aggregateFins.length,
+        total_institutions: institutions.length,
+        pending_institutions: institutions.length - aggregateFins.length,
+        included_in_aggregates: aggregateFins.length,
+      },
       aggregate: {
-        total_income_gbp_m: Math.round(totalIncome),
-        total_surplus_gbp_m: Math.round(totalSurplus),
-        average_surplus_margin_pct: +((totalSurplus / totalIncome) * 100).toFixed(2),
-        total_research_income_gbp_m: Math.round(totalResearch),
-        total_student_fte: Math.round(totalStudents),
-        total_borrowing_gbp_m: Math.round(totalBorrowing),
-        average_liquidity_days: Math.round(avgLiquidity),
-        average_international_pct: +avgIntl.toFixed(1),
-        average_health_score: avgHealth,
-        average_health_grade: scoreToGrade(avgHealth),
+        total_income_gbp_m: roundNullable(totalIncome),
+        total_surplus_gbp_m: roundNullable(totalSurplus),
+        average_surplus_margin_pct: ratioPct(totalSurplus, totalIncome, 2),
+        total_research_income_gbp_m: roundNullable(totalResearch),
+        total_student_fte: roundNullable(totalStudents),
+        total_borrowing_gbp_m: roundNullable(totalBorrowing),
+        average_liquidity_days: roundNullable(avgLiquidity),
+        average_international_pct: roundNullable(avgIntl, 1),
+        average_health_score: isKnownNumber(avgHealth) && avgHealth > 0 ? avgHealth : null,
+        average_health_grade: isKnownNumber(avgHealth) && avgHealth > 0 ? scoreToGrade(avgHealth) : 'Pending',
       },
       health_distribution: gradeCounts,
     }))
@@ -227,7 +257,7 @@ export async function dispatchRequest(method: string, path: string, search: stri
 
   // ── GET /rankings ─────────────────────────────────────────────────────────────
   if (segments[0] === 'rankings') {
-    const VALID_METRICS: Record<string, (f: FinancialYear) => number> = {
+    const VALID_METRICS: Record<string, (f: FinancialYear) => number | null> = {
       revenue: (f) => f.revenue_gbp_m,
       surplus: (f) => f.surplus_gbp_m,
       surplus_margin: (f) => f.surplus_margin_pct,
@@ -242,8 +272,8 @@ export async function dispatchRequest(method: string, path: string, search: stri
       capex: (f) => f.capital_expenditure_gbp_m,
       net_assets: (f) => f.net_assets_gbp_m,
       health_score: (f) => computeHealthScore(f).score,
-      borrowing_ratio: (f) => f.revenue_gbp_m > 0 ? (f.borrowing_gbp_m / f.revenue_gbp_m) * 100 : 0,
-      staff_ratio: (f) => f.revenue_gbp_m > 0 ? (f.staff_costs_gbp_m / f.revenue_gbp_m) * 100 : 0,
+      borrowing_ratio: (f) => ratioPct(f.borrowing_gbp_m, f.revenue_gbp_m, 2),
+      staff_ratio: (f) => ratioPct(f.staff_costs_gbp_m, f.revenue_gbp_m, 2),
     }
     const metric = params.metric ?? 'revenue'
     if (!VALID_METRICS[metric]) return err(422, `Unknown metric '${metric}'. Valid metrics: ${Object.keys(VALID_METRICS).join(', ')}.`)
@@ -257,7 +287,8 @@ export async function dispatchRequest(method: string, path: string, search: stri
       yearFins = yearFins.filter((f) => nationInsts.has(f.institution_id))
     }
     const getter = VALID_METRICS[metric]
-    const sorted = yearFins.slice().sort((a, b) => order === 'desc' ? getter(b) - getter(a) : getter(a) - getter(b))
+    const ranked = yearFins.filter((f) => isKnownNumber(getter(f)))
+    const sorted = ranked.slice().sort((a, b) => order === 'desc' ? (getter(b) ?? 0) - (getter(a) ?? 0) : (getter(a) ?? 0) - (getter(b) ?? 0))
     const paged = sorted.slice(offset, offset + limit)
     const items = paged.map((f, i) => {
       const inst = getInstitutionById(f.institution_id)
@@ -267,10 +298,10 @@ export async function dispatchRequest(method: string, path: string, search: stri
         ukprn: inst?.ukprn ?? null,
         institution_name: inst?.canonical_name ?? f.institution_id,
         nation: inst?.nation ?? null,
-        [metric]: +getter(f).toFixed(2),
+        [metric]: roundNullable(getter(f), 2),
       }
     })
-    return respond(ok(items, { metric, fiscal_year: year, order, total: sorted.length, limit, offset }))
+    return respond(ok(items, { metric, fiscal_year: year, order, total: sorted.length, limit, offset, coverage: { included: sorted.length, total_rows: yearFins.length, excluded_pending: yearFins.length - sorted.length } }))
   }
 
   // ── GET /health-scores ────────────────────────────────────────────────────────
@@ -293,7 +324,9 @@ export async function dispatchRequest(method: string, path: string, search: stri
     if (params.grade) list = list.filter((h) => h.health_grade === params.grade.toUpperCase())
     if (params.nation) list = list.filter((h) => (h.nation ?? '').toLowerCase() === params.nation.toLowerCase())
     const order = params.order === 'asc' ? 'asc' : 'desc'
-    list = list.sort((a, b) => order === 'desc' ? b.health_score - a.health_score : a.health_score - b.health_score)
+    list = list
+      .filter((h) => isKnownNumber(h.health_score))
+      .sort((a, b) => order === 'desc' ? (b.health_score ?? 0) - (a.health_score ?? 0) : (a.health_score ?? 0) - (b.health_score ?? 0))
     const limit = Math.min(Number(params.limit ?? 50), 200)
     const offset = Number(params.offset ?? 0)
     const { items, total } = paginateArray(list, limit, offset)
@@ -320,7 +353,7 @@ export async function dispatchRequest(method: string, path: string, search: stri
         fiscal_year: fin.fiscal_year,
         revenue_gbp_m: fin.revenue_gbp_m,
         surplus_gbp_m: fin.surplus_gbp_m,
-        surplus_margin_pct: +fin.surplus_margin_pct.toFixed(2),
+        surplus_margin_pct: roundNullable(fin.surplus_margin_pct, 2),
         research_income_gbp_m: fin.research_income_gbp_m,
         tuition_fee_income_gbp_m: fin.tuition_fee_income_gbp_m,
         staff_costs_gbp_m: fin.staff_costs_gbp_m,

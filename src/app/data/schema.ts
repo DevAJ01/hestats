@@ -49,6 +49,6 @@ export function isPendingUkprn(ukprn: string): boolean {
   return ukprn.startsWith(PENDING_UKPRN_PREFIX)
 }
 
-export function isOfficialUkprn(ukprn: string): boolean {
-  return /^100\d{5}$/.test(ukprn)
+export function isOfficialUkprn(ukprn: string | null | undefined): boolean {
+  return typeof ukprn === 'string' && /^100\d{5}$/.test(ukprn)
 }

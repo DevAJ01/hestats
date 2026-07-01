@@ -55,9 +55,9 @@ export function Footer() {
           <span className="flex items-center gap-1.5 ml-auto">
             <span
               className="inline-block w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: 'var(--warning)' }}
+              style={{ backgroundColor: 'var(--positive)' }}
             />
-            Prototype dataset · verified and estimated rows labelled
+            Verified HESA rows · pending gaps labelled
           </span>
         </div>
       </div>

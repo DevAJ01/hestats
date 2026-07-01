@@ -38,6 +38,21 @@ function StageCard({ stage, active, onClick }: { stage: JourneyStage; active: bo
 }
 
 export function StudentJourneyPage() {
+  return (
+    <div className="max-w-[1200px] mx-auto px-3 sm:px-4 py-8">
+      <div className="border px-4 py-8 text-center" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
+        <Map className="w-7 h-7 mx-auto mb-3" style={{ color: 'var(--muted)' }} />
+        <h1 style={{ color: 'var(--text)', fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Student Journey Pending Verification</h1>
+        <p style={{ color: 'var(--muted)', fontSize: 12.5, lineHeight: 1.6, maxWidth: 640, margin: '0 auto' }}>
+          Applicant, enrolment, study, funding, outcomes, and career-stage claims are hidden until each statistic has an official source URL, table reference, and verification date.
+        </p>
+        <Link to="/about" className="inline-flex items-center gap-1.5 mt-4" style={{ color: 'var(--link)', fontSize: 12 }}>
+          Methodology <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+    </div>
+  )
+
   const [activeStage, setActiveStage] = useState<string>('application')
   const sector = getSectorOutcomes()
   const degreeStats = getSectorDegreeStats()

@@ -1,7 +1,7 @@
 import { getGradeColor, getGradeBg } from '../../data/health'
 
 interface HealthBadgeProps {
-  score: number
+  score: number | null
   grade: string
   size?: 'sm' | 'md' | 'lg'
   showScore?: boolean
@@ -28,12 +28,12 @@ export function HealthBadge({ score, grade, size = 'md', showScore = false }: He
         lineHeight: 1.4,
         border: `1px solid ${color}40`,
       }}
-      title={`Financial Health Score: ${score}/100`}
+      title={score === null ? 'Financial Health Score: pending verified metrics' : `Financial Health Score: ${score}/100`}
     >
       {grade}
       {showScore && (
         <span style={{ fontWeight: 400, opacity: 0.75, fontSize: fontSize - 1 }}>
-          {score}
+          {score ?? 'Pending'}
         </span>
       )}
     </span>

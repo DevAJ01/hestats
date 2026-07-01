@@ -4,7 +4,7 @@ import { useWorkspace } from '../context/WorkspaceContext'
 import { useYear } from '../context/YearContext'
 import { X, Plus, Download, GitCompare, Camera, Bookmark } from 'lucide-react'
 import { institutions } from '../data/institutions'
-import { AVAILABLE_YEARS, financials, getLatestFinancial, getFinancialsByInstitution } from '../data/financials'
+import { AVAILABLE_YEARS, financials, getLatestFinancial, getFinancialsByInstitution, isKnownNumber } from '../data/financials'
 import { Institution, FinancialYear } from '../data/types'
 import { RiskBadge } from '../components/institutions/RiskBadge'
 import { NationBadge } from '../components/institutions/NationBadge'
@@ -72,19 +72,19 @@ function CompareRadar({
   )
 }
 
-const METRICS: { key: keyof FinancialYear; label: string; format: (v: number) => string; higherBetter: boolean }[] = [
-  { key: 'revenue_gbp_m', label: 'Total Income', format: (v) => `£${v.toLocaleString()}m`, higherBetter: true },
-  { key: 'surplus_gbp_m', label: 'Surplus', format: (v) => `£${v.toLocaleString()}m`, higherBetter: true },
-  { key: 'surplus_margin_pct', label: 'Surplus Margin', format: (v) => `${v.toFixed(1)}%`, higherBetter: true },
-  { key: 'research_income_gbp_m', label: 'Research Income', format: (v) => `£${v.toLocaleString()}m`, higherBetter: true },
-  { key: 'tuition_fee_income_gbp_m', label: 'Tuition Fees', format: (v) => `£${v.toLocaleString()}m`, higherBetter: true },
-  { key: 'staff_costs_gbp_m', label: 'Staff Costs', format: (v) => `£${v.toLocaleString()}m`, higherBetter: false },
-  { key: 'cash_gbp_m', label: 'Cash & Equivalents', format: (v) => `£${v.toLocaleString()}m`, higherBetter: true },
-  { key: 'borrowing_gbp_m', label: 'External Borrowing', format: (v) => `£${v.toLocaleString()}m`, higherBetter: false },
-  { key: 'liquidity_days', label: 'Liquidity Days', format: (v) => `${v} days`, higherBetter: true },
-  { key: 'international_fte_pct', label: 'International %', format: (v) => `${v}%`, higherBetter: true },
-  { key: 'student_fte_total', label: 'Total Student FTE', format: (v) => v.toLocaleString(), higherBetter: true },
-  { key: 'capital_expenditure_gbp_m', label: 'Capital Expenditure', format: (v) => `£${v.toLocaleString()}m`, higherBetter: true },
+const METRICS: { key: keyof FinancialYear; label: string; format: (v: number | null | undefined) => string; higherBetter: boolean }[] = [
+  { key: 'revenue_gbp_m', label: 'Total Income', format: (v) => isKnownNumber(v) ? `£${v.toLocaleString()}m` : 'Pending', higherBetter: true },
+  { key: 'surplus_gbp_m', label: 'Surplus', format: (v) => isKnownNumber(v) ? `£${v.toLocaleString()}m` : 'Pending', higherBetter: true },
+  { key: 'surplus_margin_pct', label: 'Surplus Margin', format: (v) => isKnownNumber(v) ? `${v.toFixed(1)}%` : 'Pending', higherBetter: true },
+  { key: 'research_income_gbp_m', label: 'Research Income', format: (v) => isKnownNumber(v) ? `£${v.toLocaleString()}m` : 'Pending', higherBetter: true },
+  { key: 'tuition_fee_income_gbp_m', label: 'Tuition Fees', format: (v) => isKnownNumber(v) ? `£${v.toLocaleString()}m` : 'Pending', higherBetter: true },
+  { key: 'staff_costs_gbp_m', label: 'Staff Costs', format: (v) => isKnownNumber(v) ? `£${v.toLocaleString()}m` : 'Pending', higherBetter: false },
+  { key: 'cash_gbp_m', label: 'Cash & Equivalents', format: (v) => isKnownNumber(v) ? `£${v.toLocaleString()}m` : 'Pending', higherBetter: true },
+  { key: 'borrowing_gbp_m', label: 'External Borrowing', format: (v) => isKnownNumber(v) ? `£${v.toLocaleString()}m` : 'Pending', higherBetter: false },
+  { key: 'liquidity_days', label: 'Liquidity Days', format: (v) => isKnownNumber(v) ? `${v} days` : 'Pending', higherBetter: true },
+  { key: 'international_fte_pct', label: 'International %', format: (v) => isKnownNumber(v) ? `${v}%` : 'Pending', higherBetter: true },
+  { key: 'student_fte_total', label: 'Total Student FTE', format: (v) => isKnownNumber(v) ? v.toLocaleString() : 'Pending', higherBetter: true },
+  { key: 'capital_expenditure_gbp_m', label: 'Capital Expenditure', format: (v) => isKnownNumber(v) ? `£${v.toLocaleString()}m` : 'Pending', higherBetter: true },
 ]
 
 const DNA_AXES = [
@@ -108,12 +108,14 @@ function buildRadarData(
   allFins: FinancialYear[],
 ) {
   return DNA_AXES.map(({ key, label }) => {
-    const allVals = allFins.map((f) => f[key] as number)
+    const allVals = allFins.map((f) => f[key]).filter(isKnownNumber)
+    if (!allVals.length) return { axis: label }
     const min = Math.min(...allVals)
     const max = Math.max(...allVals)
     const row: Record<string, number | string> = { axis: label }
     for (const { inst, fin } of selectedInstitutions) {
-      row[inst.id] = normalise(fin[key] as number, min, max)
+      const value = fin[key]
+      row[inst.id] = isKnownNumber(value) ? normalise(value, min, max) : 0
     }
     return row
   })
@@ -152,11 +154,12 @@ function ExportModal({ onClose, tableRef, selectedInstitutions }: { onClose: () 
 
       const metrics = METRICS.map((m) => ({
         label: m.label,
-        values: selectedInstitutions.map(({ fin }) => m.format(fin[m.key] as number)),
+        values: selectedInstitutions.map(({ fin }) => m.format(fin[m.key] as number | null | undefined)),
         colors: selectedInstitutions.map(({ fin, color }, idx) => {
-          const vals = selectedInstitutions.map((s) => s.fin[m.key] as number)
+          const vals = selectedInstitutions.map((s) => s.fin[m.key] as number | null | undefined).filter(isKnownNumber)
+          if (!vals.length || !isKnownNumber(fin[m.key] as number | null | undefined)) return TEXT
           const best = m.higherBetter ? Math.max(...vals) : Math.min(...vals)
-          return (fin[m.key] as number) === best ? color : TEXT
+          return fin[m.key] === best ? color : TEXT
         }),
       }))
 
@@ -379,9 +382,10 @@ export function ComparePage() {
 
   function getBestIdx(metricKey: keyof FinancialYear, higherBetter: boolean): number {
     if (!selectedInstitutions.length) return -1
-    const values = selectedInstitutions.map(({ fin }) => fin[metricKey] as number)
+    const values = selectedInstitutions.map(({ fin }) => fin[metricKey] as number | null | undefined).filter(isKnownNumber)
+    if (!values.length) return -1
     const best = higherBetter ? Math.max(...values) : Math.min(...values)
-    return values.indexOf(best)
+    return selectedInstitutions.findIndex(({ fin }) => fin[metricKey] === best)
   }
 
   const radarData = buildRadarData(selectedInstitutions, allFins)
@@ -621,8 +625,8 @@ export function ComparePage() {
                           {metric.label}
                         </td>
                         {selectedInstitutions.map(({ inst, fin, color }, idx) => {
-                          const val = fin[metric.key] as number
-                          const isBest = idx === bestIdx
+                          const val = fin[metric.key] as number | null | undefined
+                          const isBest = bestIdx >= 0 && idx === bestIdx
                           return (
                             <td
                               key={inst.id}

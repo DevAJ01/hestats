@@ -3,7 +3,7 @@ import { Star, Clock, GitCompare, Eye, X, ArrowUpRight, Bookmark } from 'lucide-
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useContextPanel } from '../../context/ContextPanelContext'
 import { institutions } from '../../data/institutions'
-import { getLatestFinancial } from '../../data/financials'
+import { formatCurrencyM, getLatestFinancial } from '../../data/financials'
 
 function nameFor(id: string) {
   return institutions.find((i) => i.id === id)?.short_name ?? id
@@ -51,7 +51,7 @@ export function WorkspaceSection() {
                       <button onClick={() => openPanel(id)} className="flex-1 min-w-0 flex items-center gap-2 text-left px-1.5 py-1 rounded-sm transition-colors hover:bg-[var(--panel-hover)]">
                         <Eye className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--muted)' }} />
                         <span className="flex-1 min-w-0 truncate" style={{ color: 'var(--text)', fontSize: 12 }}>{nameFor(id)}</span>
-                        {fin && <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 11 }}>£{fin.revenue_gbp_m.toLocaleString()}m</span>}
+                        {fin && <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 11 }}>{formatCurrencyM(fin.revenue_gbp_m)}</span>}
                       </button>
                       <button onClick={() => toggleWatch(id)} className="opacity-0 group-hover/item:opacity-100 transition-opacity" style={{ color: 'var(--muted)' }} aria-label="Unwatch">
                         <X className="w-3 h-3" />

@@ -1,5 +1,5 @@
 interface SparklineProps {
-  values: number[]
+  values: (number | null | undefined)[]
   width?: number
   height?: number
   color?: string
@@ -7,14 +7,15 @@ interface SparklineProps {
 }
 
 export function Sparkline({ values, width = 60, height = 18, color, fill = false }: SparklineProps) {
-  if (!values.length) return null
+  const knownValues = values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+  if (!knownValues.length) return null
 
-  const min = Math.min(...values)
-  const max = Math.max(...values)
+  const min = Math.min(...knownValues)
+  const max = Math.max(...knownValues)
   const range = max - min || 1
-  const stepX = values.length > 1 ? width / (values.length - 1) : 0
+  const stepX = knownValues.length > 1 ? width / (knownValues.length - 1) : 0
 
-  const points = values.map((v, i) => {
+  const points = knownValues.map((v, i) => {
     const x = i * stepX
     const y = height - ((v - min) / range) * height
     return [x, y] as const
@@ -22,7 +23,7 @@ export function Sparkline({ values, width = 60, height = 18, color, fill = false
 
   const path = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
 
-  const trendUp = values[values.length - 1] >= values[0]
+  const trendUp = knownValues[knownValues.length - 1] >= knownValues[0]
   const strokeColor = color ?? (trendUp ? '#5fa97b' : '#cf6660')
 
   const areaPath = `${path} L${width},${height} L0,${height} Z`

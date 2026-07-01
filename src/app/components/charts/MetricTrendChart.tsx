@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { FinancialYear } from '../../data/types'
+import { isKnownNumber } from '../../data/financials'
 
 interface Metric {
   key: keyof FinancialYear
@@ -58,7 +59,11 @@ export function MetricTrendChart({ financials, metrics, height = 240 }: MetricTr
   const sharedSorted = dedupeByYear(financials).sort((a, b) => a.fiscal_year.localeCompare(b.fiscal_year))
   const series = metrics.map((m) => {
     const src = dedupeByYear(m.financials ?? financials)
-    const byYear = new Map(src.map((f) => [f.fiscal_year, f[m.key] as number]))
+    const byYear = new Map(
+      src
+        .map((f) => [f.fiscal_year, f[m.key]] as const)
+        .filter((entry): entry is readonly [string, number] => isKnownNumber(entry[1] as number | null)),
+    )
     return { metric: m, byYear }
   })
 

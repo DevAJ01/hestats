@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { TrendingUp, TrendingDown, ArrowUpRight, FileText, ChevronRight, Activity, AlertCircle, Heart, Coffee } from 'lucide-react'
 import { institutions } from '../data/institutions'
-import { financials, getAllLatestFinancials, getFinancialsByInstitution, AVAILABLE_YEARS } from '../data/financials'
+import { compareNullableDesc, financials, formatCurrencyM, formatNumber, formatPct, getAllLatestFinancials, getFinancialsByInstitution, AVAILABLE_YEARS, isAggregateEligible, isKnownNumber } from '../data/financials'
 import { getSectorAverageScore, getAllHealthScores, scoreToGrade, computeHealthScore, getGradeColor } from '../data/health'
 import { SUPPORT_LINKS } from '../data/links'
 import { getSectorOutcomes } from '../data/outcomes'
@@ -21,19 +21,19 @@ function aggregateByYear() {
   const byYear = new Map<string, { revenue: number; surplus: number; research: number; staff: number; cash: number; borrowing: number; capex: number; intl: number; students: number; tuition: number; other: number; net_assets: number; count: number }>()
   for (const f of financials) {
     const e = byYear.get(f.fiscal_year) ?? { revenue: 0, surplus: 0, research: 0, staff: 0, cash: 0, borrowing: 0, capex: 0, intl: 0, students: 0, tuition: 0, other: 0, net_assets: 0, count: 0 }
-    e.revenue += f.revenue_gbp_m
-    e.surplus += f.surplus_gbp_m
-    e.research += f.research_income_gbp_m
-    e.staff += f.staff_costs_gbp_m
-    e.cash += f.cash_gbp_m
-    e.borrowing += f.borrowing_gbp_m
-    e.capex += f.capital_expenditure_gbp_m
-    e.intl += f.international_fte_pct
-    e.students += f.student_fte_total
-    e.tuition += f.tuition_fee_income_gbp_m
-    e.other += f.other_income_gbp_m
-    e.net_assets += f.net_assets_gbp_m
-    e.count += 1
+    if (isKnownNumber(f.revenue_gbp_m)) e.revenue += f.revenue_gbp_m
+    if (isKnownNumber(f.surplus_gbp_m)) e.surplus += f.surplus_gbp_m
+    if (isKnownNumber(f.research_income_gbp_m)) e.research += f.research_income_gbp_m
+    if (isKnownNumber(f.staff_costs_gbp_m)) e.staff += f.staff_costs_gbp_m
+    if (isKnownNumber(f.cash_gbp_m)) e.cash += f.cash_gbp_m
+    if (isKnownNumber(f.borrowing_gbp_m)) e.borrowing += f.borrowing_gbp_m
+    if (isKnownNumber(f.capital_expenditure_gbp_m)) e.capex += f.capital_expenditure_gbp_m
+    if (isKnownNumber(f.international_fte_pct)) e.intl += f.international_fte_pct
+    if (isKnownNumber(f.student_fte_total)) e.students += f.student_fte_total
+    if (isKnownNumber(f.tuition_fee_income_gbp_m)) e.tuition += f.tuition_fee_income_gbp_m
+    if (isKnownNumber(f.other_income_gbp_m)) e.other += f.other_income_gbp_m
+    if (isKnownNumber(f.net_assets_gbp_m)) e.net_assets += f.net_assets_gbp_m
+    if (isAggregateEligible(f)) e.count += 1
     byYear.set(f.fiscal_year, e)
   }
   return byYear
@@ -85,11 +85,11 @@ export function HomePage() {
 
   const latestByInst = new Map(getAllLatestFinancials().map((f) => [f.institution_id, f]))
   const verifiedCount = [...latestByInst.values()].filter((f) => f.data_source === 'verified').length
-  const estimatedCount = [...latestByInst.values()].filter((f) => f.data_source === 'estimated').length
+  const pendingCount = [...latestByInst.values()].filter((f) => f.data_source === 'pending').length
 
   const sectorHealthScore = getSectorAverageScore()
   const healthScores = getAllHealthScores()
-  const distressCount = healthScores.filter((h) => h.score < 45).length
+  const distressCount = healthScores.filter((h) => isKnownNumber(h.score) && h.score < 45).length
 
   const numYears = sortedYears.length - 1
 
@@ -232,37 +232,40 @@ export function HomePage() {
     },
   ]
 
-  const sectorTrendFinancials = sortedYears.map((y) => {
+  const sectorTrendFinancials = sortedYears.flatMap((y) => {
     const e = byYear.get(y)!
+    if (!e.count) return []
     return {
       institution_id: 'SECTOR',
       fiscal_year: y,
       published: '',
       revenue_gbp_m: e.revenue,
       surplus_gbp_m: e.surplus,
-      surplus_margin_pct: (e.surplus / e.revenue) * 100,
+      surplus_margin_pct: e.revenue > 0 ? (e.surplus / e.revenue) * 100 : null,
       research_income_gbp_m: e.research,
       tuition_fee_income_gbp_m: e.tuition,
       other_income_gbp_m: e.other,
       staff_costs_gbp_m: e.staff,
-      total_expenditure_gbp_m: 0,
+      total_expenditure_gbp_m: null,
       cash_gbp_m: e.cash,
       borrowing_gbp_m: e.borrowing,
-      liquidity_days: 0,
-      international_fte_pct: 0,
+      liquidity_days: null,
+      international_fte_pct: null,
       student_fte_total: e.students,
       capital_expenditure_gbp_m: e.capex,
-      net_assets_gbp_m: 0,
-      risk_flag: 'Low' as const,
+      net_assets_gbp_m: e.net_assets,
+      risk_flag: 'Pending' as const,
       status: 'found' as const,
-      data_source: 'estimated' as const,
+      data_source: 'verified' as const,
+      confidence: 'high' as const,
+      included_in_aggregates: true,
     }
   })
 
   const rankedByRevenue = [...institutions]
     .map((i) => ({ inst: i, fin: latestByInst.get(i.id) }))
     .filter((x): x is { inst: typeof x.inst; fin: NonNullable<typeof x.fin> } => !!x.fin)
-    .sort((a, b) => b.fin.revenue_gbp_m - a.fin.revenue_gbp_m)
+    .sort((a, b) => compareNullableDesc(a.fin.revenue_gbp_m, b.fin.revenue_gbp_m))
     .slice(0, 12)
 
   const recentReports = financials
@@ -310,7 +313,7 @@ export function HomePage() {
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
           <span className="font-num" style={{ color: 'var(--positive)' }}>{verifiedCount}</span> verified ·{' '}
-          <span className="font-num" style={{ color: 'var(--warning)' }}>{estimatedCount}</span> estimated
+          <span className="font-num" style={{ color: 'var(--warning)' }}>{pendingCount}</span> pending
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
@@ -401,8 +404,8 @@ export function HomePage() {
       {/* ── Current era: UK HE indicators ──────────────────────────────────── */}
       {(() => {
         const allFins = getAllLatestFinancials()
-        const deficitInsts = allFins.filter((f) => f.surplus_gbp_m < 0)
-        const surplusInsts = allFins.filter((f) => f.surplus_gbp_m >= 0)
+        const deficitInsts = allFins.filter((f) => isKnownNumber(f.surplus_gbp_m) && f.surplus_gbp_m < 0)
+        const surplusInsts = allFins.filter((f) => isKnownNumber(f.surplus_gbp_m) && f.surplus_gbp_m >= 0)
         const totalIncome = latest.revenue
         const totalBorrowing = latest.borrowing
         const totalResearch = latest.research
@@ -960,7 +963,7 @@ export function HomePage() {
                   {rankedByRevenue.map(({ inst, fin }, idx) => {
                     const history = getFinancialsByInstitution(inst.id).sort((a, b) => a.fiscal_year.localeCompare(b.fiscal_year))
                     const revSpark = history.map((h) => h.revenue_gbp_m)
-                    const isPositive = fin.surplus_margin_pct >= 0
+                    const isPositive = isKnownNumber(fin.surplus_margin_pct) && fin.surplus_margin_pct >= 0
                     return (
                       <tr
                         key={inst.id}
@@ -984,24 +987,24 @@ export function HomePage() {
                           <div className="flex items-center justify-end gap-1.5">
                             <Sparkline values={revSpark} width={28} height={10} color="#7396c2" />
                             <span className="tabular-nums" style={{ color: 'var(--text)', fontSize: 11.5, fontWeight: 500 }}>
-                              £{fin.revenue_gbp_m.toLocaleString()}m
+                              {formatCurrencyM(fin.revenue_gbp_m)}
                             </span>
                           </div>
                         </td>
                         <td className="px-2 sm:px-3 py-2 tabular-nums text-right" style={{ color: isPositive ? 'var(--positive)' : 'var(--negative)', fontSize: 11.5 }}>
-                          {isPositive ? '+' : ''}{fin.surplus_margin_pct.toFixed(1)}%
+                          {formatPct(fin.surplus_margin_pct)}
                         </td>
                         <td className="hidden md:table-cell px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 11.5 }}>
-                          £{fin.research_income_gbp_m}m
+                          {formatCurrencyM(fin.research_income_gbp_m)}
                         </td>
                         <td className="hidden lg:table-cell px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 11.5 }}>
-                          £{fin.cash_gbp_m}m
+                          {formatCurrencyM(fin.cash_gbp_m)}
                         </td>
                         <td className="hidden lg:table-cell px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 11.5 }}>
-                          £{fin.borrowing_gbp_m}m
+                          {formatCurrencyM(fin.borrowing_gbp_m)}
                         </td>
                         <td className="hidden xl:table-cell px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 11.5 }}>
-                          {(fin.student_fte_total / 1000).toFixed(1)}k
+                          {isKnownNumber(fin.student_fte_total) ? `${(fin.student_fte_total / 1000).toFixed(1)}k` : 'Pending'}
                         </td>
                         <td className="px-2 sm:px-3 py-2 text-right">
                           {(() => {
@@ -1050,73 +1053,30 @@ export function HomePage() {
         </Panel>
       </div>
 
-      {/* ── Career Intelligence indicators ───────────────────────────────────── */}
-      {(() => {
-        const sectorOut = getSectorOutcomes()
-        const degStats = getSectorDegreeStats()
-        const mostAIResilient = DEGREES.reduce((a, b) => a.ai_resilience_score > b.ai_resilience_score ? a : b)
-        const highestPaid = DEGREES.reduce((a, b) => a.avg_salary_k > b.avg_salary_k ? a : b)
-        const fastestToJob = DEGREES.reduce((a, b) => a.avg_months_to_job < b.avg_months_to_job ? a : b)
-        const totalEmployerIntake = EMPLOYERS.reduce((s, e) => s + e.annual_graduate_intake, 0)
-
-        const CAREER_INDICATORS = [
-          { label: 'Sector employment rate', value: `${sectorOut.avg_employment_rate}%`, sub: '15 months post-graduation', color: 'var(--positive)', signal: 'positive', context: 'HESA Graduate Outcomes Survey, sector average' },
-          { label: 'Avg graduate salary', value: `£${sectorOut.avg_salary_k}k`, sub: 'sector average, all subjects', color: 'var(--text)', signal: 'neutral', context: '15 months after graduation, median across institutions' },
-          { label: 'Graduate-level roles', value: `${sectorOut.avg_graduate_role_pct}%`, sub: 'of employed graduates', color: 'var(--positive)', signal: 'positive', context: 'Graduates employed in professional or managerial roles' },
-          { label: 'Highest paid degree', value: `£${highestPaid.avg_salary_k}k`, sub: highestPaid.name, color: 'var(--positive)', signal: 'positive', context: `${highestPaid.emoji} ${highestPaid.name} — average graduate salary 15 months post-graduation` },
-          { label: 'Most AI resilient', value: `${mostAIResilient.ai_resilience_score}/100`, sub: mostAIResilient.name, color: 'var(--positive)', signal: 'positive', context: `${mostAIResilient.emoji} ${mostAIResilient.name} — AI resilience score (HEStats model)` },
-          { label: 'Fastest to employment', value: `${fastestToJob.avg_months_to_job} months`, sub: fastestToJob.name, color: 'var(--link)', signal: 'positive', context: `${fastestToJob.emoji} ${fastestToJob.name} — average time to first graduate job` },
-          { label: 'Major employer intake', value: totalEmployerIntake.toLocaleString(), sub: `${EMPLOYERS.length} tracked employers`, color: 'var(--text)', signal: 'neutral', context: 'Combined annual graduate intake across 26 major UK employers' },
-          { label: 'Avg AI automation risk', value: `${degStats.avg_ai_risk}%`, sub: 'across all degree subjects', color: 'var(--warning)', signal: 'warning', context: 'Modelled estimate — McKinsey / Oxford Future of Work research. Not official statistics.' },
-          { label: 'Further study rate', value: `${sectorOut.avg_further_study_pct}%`, sub: 'proceed to postgrad', color: 'var(--link)', signal: 'neutral', context: 'Graduates progressing to Master\'s or PhD study within 3 years' },
-          { label: 'Avg time to job', value: `${sectorOut.avg_months_to_job} months`, sub: 'sector average', color: 'var(--text-2)', signal: 'neutral', context: 'Average months to secure first graduate-level employment' },
-        ]
-
-        return (
-          <div className="mb-2.5">
-            <div className="flex items-center gap-3 mb-1.5">
-              <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Career Intelligence · Graduate Outcomes 2024–25
-              </span>
-              <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
-              <Link to="/graduate-outcomes" style={{ color: 'var(--link)', fontSize: 10, letterSpacing: '0.04em' }}>Full outcomes data →</Link>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10 border-l border-t" style={{ borderColor: 'var(--border)' }}>
-              {CAREER_INDICATORS.map((ind) => (
-                <div key={ind.label} className="px-3 py-2.5 border-r border-b group relative" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)' }}>
-                  <div className="absolute top-0 left-0 right-0 h-0.5" style={{
-                    backgroundColor: ind.signal === 'positive' ? 'var(--positive)' : ind.signal === 'warning' ? 'var(--warning)' : 'transparent',
-                    opacity: 0.5,
-                  }} />
-                  <p style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>{ind.label}</p>
-                  <p className="font-num tabular-nums" style={{ color: ind.color, fontSize: 16, fontWeight: 700, lineHeight: 1.05, marginBottom: 2 }}>{ind.value}</p>
-                  <p style={{ color: 'var(--text-2)', fontSize: 10, lineHeight: 1.3 }}>{ind.sub}</p>
-                  <div className="absolute bottom-full left-0 mb-1 px-2 py-1.5 z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ backgroundColor: 'var(--panel)', border: '1px solid var(--border-strong)', borderRadius: 3, fontSize: 10, color: 'var(--text-2)', boxShadow: '0 4px 12px rgba(0,0,0,0.35)', maxWidth: 220, whiteSpace: 'normal' as const }}>
-                    {ind.context}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {[
-                { label: 'Graduate Outcomes', href: '/graduate-outcomes' },
-                { label: 'Employer Intelligence', href: '/employers' },
-                { label: 'Degree Intelligence', href: '/degrees' },
-                { label: 'Career Explorer', href: '/career-explorer' },
-                { label: 'Student Journey', href: '/student-journey' },
-              ].map(({ label, href }) => (
-                <Link key={href} to={href} className="flex items-center gap-1 px-2.5 py-1 hover:underline"
-                  style={{ border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text-2)', fontSize: 11, textDecoration: 'none' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--text)' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-2)' }}>
-                  {label} <ArrowUpRight className="w-3 h-3" />
-                </Link>
-              ))}
-            </div>
-          </div>
-        )
-      })()}
+      {/* Career intelligence status */}
+      <div className="mb-2.5 border px-3 py-3" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
+        <div className="flex flex-wrap items-center gap-3 mb-2">
+          <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Career Intelligence</span>
+          <span style={{ color: 'var(--warning)', fontSize: 11 }}>Pending official source rows</span>
+        </div>
+        <p style={{ color: 'var(--text-2)', fontSize: 11.5, lineHeight: 1.6, marginBottom: 10 }}>
+          Graduate outcomes, degree, employer, career-pathway, and student-journey statistics are hidden until each displayed claim has source provenance and verification metadata.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: 'Graduate Outcomes', href: '/graduate-outcomes' },
+            { label: 'Employer Intelligence', href: '/employers' },
+            { label: 'Degree Intelligence', href: '/degrees' },
+            { label: 'Career Explorer', href: '/career-explorer' },
+            { label: 'Student Journey', href: '/student-journey' },
+          ].map(({ label, href }) => (
+            <Link key={href} to={href} className="flex items-center gap-1 px-2.5 py-1 hover:underline"
+              style={{ border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text-2)', fontSize: 11, textDecoration: 'none' }}>
+              {label} <ArrowUpRight className="w-3 h-3" />
+            </Link>
+          ))}
+        </div>
+      </div>
 
       {/* Methodology footer */}
       <div

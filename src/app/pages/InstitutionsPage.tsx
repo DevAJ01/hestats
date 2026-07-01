@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Search, LayoutGrid, List } from 'lucide-react'
 import { institutions } from '../data/institutions'
-import { getAllLatestFinancials } from '../data/financials'
+import { compareNullableDesc, getAllLatestFinancials } from '../data/financials'
 import { Institution } from '../data/types'
 import { InstitutionCard } from '../components/institutions/InstitutionCard'
 import { InstitutionRow } from '../components/institutions/InstitutionRow'
@@ -54,10 +54,10 @@ export function InstitutionsPage() {
       const fa = finMap.get(a.id)!
       const fb = finMap.get(b.id)!
       if (sortBy === 'name') return a.canonical_name.localeCompare(b.canonical_name)
-      if (sortBy === 'revenue') return fb.revenue_gbp_m - fa.revenue_gbp_m
-      if (sortBy === 'surplus') return fb.surplus_margin_pct - fa.surplus_margin_pct
-      if (sortBy === 'research') return fb.research_income_gbp_m - fa.research_income_gbp_m
-      if (sortBy === 'liquidity') return fb.liquidity_days - fa.liquidity_days
+      if (sortBy === 'revenue') return compareNullableDesc(fa.revenue_gbp_m, fb.revenue_gbp_m)
+      if (sortBy === 'surplus') return compareNullableDesc(fa.surplus_margin_pct, fb.surplus_margin_pct)
+      if (sortBy === 'research') return compareNullableDesc(fa.research_income_gbp_m, fb.research_income_gbp_m)
+      if (sortBy === 'liquidity') return compareNullableDesc(fa.liquidity_days, fb.liquidity_days)
       return 0
     })
     return list
@@ -119,7 +119,7 @@ export function InstitutionsPage() {
         <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} style={SELECT_STYLE}>
           <option value="All">All Data</option>
           <option value="verified">Verified</option>
-          <option value="estimated">Estimated</option>
+          <option value="pending">Pending</option>
         </select>
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)} style={SELECT_STYLE}>
           <option value="revenue">Sort: Income ▾</option>

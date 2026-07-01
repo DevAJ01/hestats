@@ -5,6 +5,7 @@ import { getAllOutcomes, getSectorOutcomes, getOutcomesByInstitution, type Gradu
 import { institutions } from '../data/institutions'
 import { DEGREES, getSectorDegreeStats } from '../data/degrees'
 import { EMPLOYERS, getTopEmployersForInstitution } from '../data/employers'
+import { formatNumber, isKnownNumber } from '../data/financials'
 import { NationBadge } from '../components/institutions/NationBadge'
 import { Panel } from '../components/layout/Panel'
 import { Sparkline } from '../components/charts/Sparkline'
@@ -22,11 +23,25 @@ const SORT_OPTIONS: { key: SortKey; label: string; unit: string; higherBetter: b
   { key: 'avg_months_to_job', label: 'Months to Job', unit: 'mo', higherBetter: false },
 ]
 
-function fmtPct(n: number) { return `${n.toFixed(1)}%` }
-function fmtK(n: number) { return `£${n.toFixed(0)}k` }
-function fmtMo(n: number) { return `${n.toFixed(1)} mo` }
+function fmtPct(n: number | null | undefined) { return isKnownNumber(n) ? `${n.toFixed(1)}%` : 'Pending' }
+function fmtK(n: number | null | undefined) { return isKnownNumber(n) ? `£${n.toFixed(0)}k` : 'Pending' }
+function fmtMo(n: number | null | undefined) { return isKnownNumber(n) ? `${n.toFixed(1)} mo` : 'Pending' }
 
 export function GraduateOutcomesPage() {
+  return (
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-8">
+      <Panel title="Graduate Outcomes" subtitle="Awaiting official outcome-source rows">
+        <div className="px-3 py-8 text-center">
+          <GraduationCap className="w-6 h-6 mx-auto mb-3" style={{ color: 'var(--muted)' }} />
+          <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 4 }}>Graduate outcome statistics are pending verification.</p>
+          <p style={{ color: 'var(--muted)', fontSize: 11.5, lineHeight: 1.6 }}>
+            Employment, salary, NSS, TEF, placement, subject, and employer metrics are withheld until HESA Graduate Outcomes, LEO, OfS, or other official source rows are attached.
+          </p>
+        </div>
+      </Panel>
+    </div>
+  )
+
   const [tab, setTab] = useState<Tab>('overview')
   const [sortKey, setSortKey] = useState<SortKey>('employment_rate_15mo')
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
@@ -43,8 +58,9 @@ export function GraduateOutcomesPage() {
       .filter((r): r is { inst: typeof r.inst; outcome: GraduateOutcome } => !!r.outcome)
       .filter((r) => !search || r.inst.canonical_name.toLowerCase().includes(search.toLowerCase()) || r.inst.short_name.toLowerCase().includes(search.toLowerCase()))
       .sort((a, b) => {
-        const av = a.outcome[sortKey] as number
-        const bv = b.outcome[sortKey] as number
+        const av = a.outcome[sortKey]
+        const bv = b.outcome[sortKey]
+        if (!isKnownNumber(av) || !isKnownNumber(bv)) return isKnownNumber(av) ? -1 : isKnownNumber(bv) ? 1 : 0
         return sortDir === 'desc' ? bv - av : av - bv
       })
   }, [sortKey, sortDir, search])
@@ -54,8 +70,8 @@ export function GraduateOutcomesPage() {
     else { setSortKey(key); setSortDir(SORT_OPTIONS.find((s) => s.key === key)?.higherBetter ? 'desc' : 'asc') }
   }
 
-  const topEmp = [...allOutcomes].sort((a, b) => b.employment_rate_15mo - a.employment_rate_15mo).slice(0, 5)
-  const topSalary = [...allOutcomes].sort((a, b) => b.avg_salary_k - a.avg_salary_k).slice(0, 5)
+  const topEmp = [...allOutcomes].filter((o) => isKnownNumber(o.employment_rate_15mo)).sort((a, b) => (b.employment_rate_15mo ?? 0) - (a.employment_rate_15mo ?? 0)).slice(0, 5)
+  const topSalary = [...allOutcomes].filter((o) => isKnownNumber(o.avg_salary_k)).sort((a, b) => (b.avg_salary_k ?? 0) - (a.avg_salary_k ?? 0)).slice(0, 5)
   const tef_gold = institutions.filter((i) => getOutcomesByInstitution(i.id)?.tef_rating === 'Gold').length
   const tef_silver = institutions.filter((i) => getOutcomesByInstitution(i.id)?.tef_rating === 'Silver').length
 
@@ -66,11 +82,11 @@ export function GraduateOutcomesPage() {
         <GraduationCap className="w-3 h-3" style={{ color: 'var(--positive)' }} />
         <span style={{ color: 'var(--muted)', letterSpacing: '0.06em' }}>GRADUATE OUTCOMES</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}>Sector avg employment <span className="font-num" style={{ color: 'var(--positive)' }}>{sector.avg_employment_rate}%</span></span>
+        <span style={{ color: 'var(--text-2)' }}>Sector avg employment <span className="font-num" style={{ color: 'var(--positive)' }}>{fmtPct(sector.avg_employment_rate)}</span></span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}>Avg salary <span className="font-num" style={{ color: 'var(--text)' }}>£{sector.avg_salary_k}k</span></span>
+        <span style={{ color: 'var(--text-2)' }}>Avg salary <span className="font-num" style={{ color: 'var(--text)' }}>{fmtK(sector.avg_salary_k)}</span></span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}><span className="font-num" style={{ color: 'var(--text)' }}>{sector.total_graduates_annually.toLocaleString()}</span> graduates/year</span>
+        <span style={{ color: 'var(--text-2)' }}><span className="font-num" style={{ color: 'var(--text)' }}>{formatNumber(sector.total_graduates_annually)}</span> graduates/year</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}><span className="font-num" style={{ color: 'var(--warning)' }}>TEF Gold: {tef_gold}</span> · Silver: {tef_silver}</span>
         <div className="ml-auto flex items-center gap-2">
@@ -81,14 +97,14 @@ export function GraduateOutcomesPage() {
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 border-l border-t" style={{ borderColor: 'var(--border)' }}>
         {[
-          { label: 'Avg Employment', value: `${sector.avg_employment_rate}%`, color: 'var(--positive)', sub: '15 months post-grad' },
-          { label: 'Graduate Roles', value: `${sector.avg_graduate_role_pct}%`, color: 'var(--positive)', sub: 'in professional roles' },
-          { label: 'Avg Salary', value: `£${sector.avg_salary_k}k`, color: 'var(--text)', sub: '15 months post-grad' },
-          { label: 'Median Salary', value: `£${sector.avg_median_salary_k}k`, color: 'var(--text)', sub: 'across all subjects' },
-          { label: 'Further Study', value: `${sector.avg_further_study_pct}%`, color: 'var(--link)', sub: 'postgraduate study' },
-          { label: 'Avg Unemployed', value: `${sector.avg_unemployed_pct}%`, color: 'var(--warning)', sub: '15 months post-grad' },
-          { label: 'Time to Job', value: `${sector.avg_months_to_job} mo`, color: 'var(--text)', sub: 'average months' },
-          { label: 'NSS Satisfaction', value: `${sector.avg_nss}%`, color: 'var(--positive)', sub: 'sector average' },
+          { label: 'Avg Employment', value: fmtPct(sector.avg_employment_rate), color: 'var(--positive)', sub: '15 months post-grad' },
+          { label: 'Graduate Roles', value: fmtPct(sector.avg_graduate_role_pct), color: 'var(--positive)', sub: 'in professional roles' },
+          { label: 'Avg Salary', value: fmtK(sector.avg_salary_k), color: 'var(--text)', sub: '15 months post-grad' },
+          { label: 'Median Salary', value: fmtK(sector.avg_median_salary_k), color: 'var(--text)', sub: 'across all subjects' },
+          { label: 'Further Study', value: fmtPct(sector.avg_further_study_pct), color: 'var(--link)', sub: 'postgraduate study' },
+          { label: 'Avg Unemployed', value: fmtPct(sector.avg_unemployed_pct), color: 'var(--warning)', sub: '15 months post-grad' },
+          { label: 'Time to Job', value: fmtMo(sector.avg_months_to_job), color: 'var(--text)', sub: 'average months' },
+          { label: 'NSS Satisfaction', value: fmtPct(sector.avg_nss), color: 'var(--positive)', sub: 'sector average' },
         ].map(({ label, value, color, sub }) => (
           <div key={label} className="px-3 py-2.5 border-r border-b" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)' }}>
             <p style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>{label}</p>
@@ -137,13 +153,13 @@ export function GraduateOutcomesPage() {
               {topSalary.map((o, i) => {
                 const inst = institutions.find((x) => x.id === o.institution_id)
                 if (!inst) return null
-                const maxSal = topSalary[0].avg_salary_k
+                const maxSal = topSalary[0]?.avg_salary_k
                 return (
                   <div key={o.institution_id} className="flex items-center gap-2">
                     <span className="font-num" style={{ color: 'var(--muted)', fontSize: 10, width: 16, flexShrink: 0 }}>{i + 1}</span>
                     <Link to={`/universities/${inst.id}`} className="flex-1 min-w-0 hover:underline truncate" style={{ color: 'var(--text)', fontSize: 12 }}>{inst.short_name}</Link>
                     <div className="flex-1 h-1.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
-                      <div style={{ height: '100%', width: `${(o.avg_salary_k / maxSal) * 100}%`, backgroundColor: 'var(--link)', borderRadius: 1 }} />
+                      <div style={{ height: '100%', width: `${isKnownNumber(o.avg_salary_k) && isKnownNumber(maxSal) && maxSal > 0 ? (o.avg_salary_k / maxSal) * 100 : 0}%`, backgroundColor: 'var(--link)', borderRadius: 1 }} />
                     </div>
                     <span className="font-num" style={{ color: 'var(--link)', fontSize: 12, fontWeight: 600, width: 36, textAlign: 'right', flexShrink: 0 }}>£{o.avg_salary_k}k</span>
                   </div>

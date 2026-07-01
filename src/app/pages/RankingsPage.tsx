@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { TrendingUp, TrendingDown, Download, ArrowUpDown } from 'lucide-react'
 import { institutions } from '../data/institutions'
-import { getFinancialsByInstitution, getAllLatestFinancials, financials, AVAILABLE_YEARS } from '../data/financials'
+import { getFinancialsByInstitution, getAllLatestFinancials, financials, AVAILABLE_YEARS, isKnownNumber, ratioPct } from '../data/financials'
 import { computeHealthScore } from '../data/health'
 import { getOutcomesByInstitution } from '../data/outcomes'
 import { NationBadge } from '../components/institutions/NationBadge'
@@ -142,7 +142,8 @@ function resolveRankingParams(params: URLSearchParams): { tab: TabDef; sortKey: 
   return { tab, sortKey }
 }
 
-function fmt(key: SortKey, val: number): string {
+function fmt(key: SortKey, val: number | null): string {
+  if (!isKnownNumber(val)) return 'Pending'
   switch (key) {
     case 'surplus_margin':
     case 'international':
@@ -175,11 +176,11 @@ function fmt(key: SortKey, val: number): string {
 type FinRow = ReturnType<typeof getAllLatestFinancials>[0]
 type HealthRow = ReturnType<typeof computeHealthScore>
 
-function getValue(key: SortKey, fin: FinRow, health: HealthRow): number {
+function getValue(key: SortKey, fin: FinRow, health: HealthRow): number | null {
   // Outcome-based metrics: look up from outcomes data
   if (['employment_rate', 'avg_salary', 'graduate_role_pct', 'placement_pct', 'months_to_job', 'nss_score', 'further_study', 'ai_resilience'].includes(key)) {
     const outcome = getOutcomesByInstitution(fin.institution_id)
-    if (!outcome) return 0
+    if (!outcome) return null
     switch (key) {
       case 'employment_rate': return outcome.employment_rate_15mo
       case 'avg_salary': return outcome.avg_salary_k
@@ -189,11 +190,9 @@ function getValue(key: SortKey, fin: FinRow, health: HealthRow): number {
       case 'nss_score': return outcome.nss_overall_pct
       case 'further_study': return outcome.further_study_pct
       case 'ai_resilience': {
-        // Simple heuristic: institutions with higher research intensity = higher AI resilience
-        const researchPct = fin.revenue_gbp_m > 0 ? (fin.research_income_gbp_m / fin.revenue_gbp_m) * 100 : 0
-        return Math.min(95, 50 + researchPct * 2 + health.score * 0.2)
+        return null
       }
-      default: return 0
+      default: return null
     }
   }
   switch (key) {
@@ -202,18 +201,18 @@ function getValue(key: SortKey, fin: FinRow, health: HealthRow): number {
     case 'surplus_margin': return fin.surplus_margin_pct
     case 'research': return fin.research_income_gbp_m
     case 'tuition': return fin.tuition_fee_income_gbp_m
-    case 'staff_cost_ratio': return fin.revenue_gbp_m > 0 ? (fin.staff_costs_gbp_m / fin.revenue_gbp_m) * 100 : 0
+    case 'staff_cost_ratio': return ratioPct(fin.staff_costs_gbp_m, fin.revenue_gbp_m, 2)
     case 'cash': return fin.cash_gbp_m
     case 'borrowing': return fin.borrowing_gbp_m
-    case 'borrowing_ratio': return fin.revenue_gbp_m > 0 ? (fin.borrowing_gbp_m / fin.revenue_gbp_m) * 100 : 0
+    case 'borrowing_ratio': return ratioPct(fin.borrowing_gbp_m, fin.revenue_gbp_m, 2)
     case 'liquidity': return fin.liquidity_days
     case 'international': return fin.international_fte_pct
     case 'students': return fin.student_fte_total
     case 'capex': return fin.capital_expenditure_gbp_m
     case 'net_assets': return fin.net_assets_gbp_m
-    case 'income_per_student': return fin.student_fte_total > 0 ? (fin.revenue_gbp_m * 1000) / fin.student_fte_total : 0
+    case 'income_per_student': return isKnownNumber(fin.student_fte_total) && isKnownNumber(fin.revenue_gbp_m) && fin.student_fte_total > 0 ? (fin.revenue_gbp_m * 1000) / fin.student_fte_total : null
     case 'health': return health.score
-    default: return 0
+    default: return null
   }
 }
 
@@ -267,17 +266,18 @@ export function RankingsPage() {
         r!.inst.canonical_name.toLowerCase().includes(search.toLowerCase()) ||
         r!.inst.short_name.toLowerCase().includes(search.toLowerCase()),
       )
+      .filter((r) => r !== null && isKnownNumber(getValue(sortKey, r.fin, r.health)))
       .sort((a, b) => {
         const aVal = getValue(sortKey, a!.fin, a!.health)
         const bVal = getValue(sortKey, b!.fin, b!.health)
-        return sortDir === 'desc' ? bVal - aVal : aVal - bVal
+        return sortDir === 'desc' ? (bVal ?? 0) - (aVal ?? 0) : (aVal ?? 0) - (bVal ?? 0)
       }) as { inst: typeof institutions[0]; fin: FinRow; health: HealthRow; prevFin: FinRow | undefined; history: number[] }[]
   }, [yearFins, sortKey, sortDir, search, prevYear])
 
   const maxVals = useMemo(() => {
     const m: Partial<Record<SortKey, number>> = {}
     activeTab.metrics.forEach(({ key }) => {
-      m[key] = Math.max(1, ...rows.map((r) => Math.abs(getValue(key, r.fin, r.health))))
+      m[key] = Math.max(1, ...rows.map((r) => getValue(key, r.fin, r.health)).filter(isKnownNumber).map((value) => Math.abs(value)))
     })
     return m
   }, [rows, activeTab])
@@ -300,8 +300,11 @@ export function RankingsPage() {
         i + 1,
         `"${r.inst.canonical_name}"`,
         r.inst.nation,
-        ...activeTab.metrics.map(({ key }) => getValue(key, r.fin, r.health).toFixed(2)),
-        r.health.score,
+        ...activeTab.metrics.map(({ key }) => {
+          const value = getValue(key, r.fin, r.health)
+          return isKnownNumber(value) ? value.toFixed(2) : ''
+        }),
+        r.health.score ?? '',
         r.health.grade,
         r.fin.risk_flag,
       ].join(','),
@@ -425,7 +428,7 @@ export function RankingsPage() {
               {rows.map((r, idx) => {
                 const prevVal = r.prevFin ? getValue(sortKey, r.prevFin, computeHealthScore(r.prevFin)) : null
                 const curVal = getValue(sortKey, r.fin, r.health)
-                const yoy = prevVal != null && prevVal !== 0 ? ((curVal - prevVal) / Math.abs(prevVal)) * 100 : null
+                const yoy = isKnownNumber(prevVal) && isKnownNumber(curVal) && prevVal !== 0 ? ((curVal - prevVal) / Math.abs(prevVal)) * 100 : null
                 const positive = isLowerBetter(sortKey) ? (yoy ?? 0) < 0 : (yoy ?? 0) > 0
                 return (
                   <tr
@@ -449,7 +452,7 @@ export function RankingsPage() {
                     {activeTab.metrics.map(({ key }) => {
                       const val = getValue(key, r.fin, r.health)
                       const maxV = maxVals[key] ?? 1
-                      const barPct = maxV > 0 ? Math.min((Math.abs(val) / maxV) * 100, 100) : 0
+                      const barPct = isKnownNumber(val) && maxV > 0 ? Math.min((Math.abs(val) / maxV) * 100, 100) : 0
                       const isActive = key === sortKey
                       return (
                         <td key={key} className="px-2 sm:px-3 py-2 text-right" style={{ minWidth: 80 }}>
@@ -498,7 +501,7 @@ export function RankingsPage() {
       </div>
 
       <div style={{ color: 'var(--muted)', fontSize: 11 }}>
-        {rows.length} institutions · FY{latestYear} · Click column headers to sort ·{' '}
+        {rows.length} ranked · {institutions.length - rows.length} pending/excluded · FY{latestYear} · Click column headers to sort ·{' '}
         <Link to="/about" className="hover:underline" style={{ color: 'var(--link)' }}>Methodology</Link>
       </div>
     </div>

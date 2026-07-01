@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router'
 import { ArrowLeft, FileText, Globe, CheckCircle, Clock, AlertCircle, ArrowUpRight, GitCompare, TrendingUp, Star } from 'lucide-react'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { getInstitutionById } from '../data/institutions'
-import { getFinancialsByInstitution, getAllLatestFinancials, AVAILABLE_YEARS } from '../data/financials'
+import { formatCurrencyM, formatDays, formatNumber, formatPct, getFinancialsByInstitution, getAllLatestFinancials, AVAILABLE_YEARS, isKnownNumber, ratioPct } from '../data/financials'
 import { FinancialYear } from '../data/types'
 import { computeHealthScore, getGradeColor } from '../data/health'
 import { getInstitutionProvenance, getProvenance, getSourceById, CONFIDENCE_META, DATA_SOURCES } from '../data/sources'
@@ -305,19 +305,19 @@ export function InstitutionProfilePage() {
             className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 border-l border-t mb-3"
             style={{ borderColor: 'var(--border)' }}
           >
-            <MetricCell label="Total Income" value={`£${latest.revenue_gbp_m.toLocaleString()}m`} sub={`FY${latest.fiscal_year}`} />
+            <MetricCell label="Total Income" value={formatCurrencyM(latest.revenue_gbp_m)} sub={`FY${latest.fiscal_year}`} />
             <MetricCell
               label="Surplus Margin"
-              value={`${latest.surplus_margin_pct.toFixed(1)}%`}
-              sub={`£${latest.surplus_gbp_m}m surplus`}
-              valueColor={latest.surplus_margin_pct >= 0 ? 'var(--positive)' : 'var(--negative)'}
+              value={formatPct(latest.surplus_margin_pct)}
+              sub={`${formatCurrencyM(latest.surplus_gbp_m)} surplus`}
+              valueColor={isKnownNumber(latest.surplus_margin_pct) ? (latest.surplus_margin_pct >= 0 ? 'var(--positive)' : 'var(--negative)') : 'var(--muted)'}
             />
-            <MetricCell label="Research" value={`£${latest.research_income_gbp_m}m`} sub="Grants & contracts" />
-            <MetricCell label="Tuition Fees" value={`£${latest.tuition_fee_income_gbp_m}m`} />
-            <MetricCell label="Staff Costs" value={`£${latest.staff_costs_gbp_m}m`} />
-            <MetricCell label="Cash" value={`£${latest.cash_gbp_m}m`} sub={`${latest.liquidity_days}d liquidity`} />
-            <MetricCell label="Borrowing" value={`£${latest.borrowing_gbp_m}m`} />
-            <MetricCell label="Intl. Students" value={`${latest.international_fte_pct}%`} sub={`${latest.student_fte_total.toLocaleString()} FTE`} />
+            <MetricCell label="Research" value={formatCurrencyM(latest.research_income_gbp_m)} sub="Grants & contracts" />
+            <MetricCell label="Tuition Fees" value={formatCurrencyM(latest.tuition_fee_income_gbp_m)} />
+            <MetricCell label="Staff Costs" value={formatCurrencyM(latest.staff_costs_gbp_m)} />
+            <MetricCell label="Cash" value={formatCurrencyM(latest.cash_gbp_m)} sub={`${formatDays(latest.liquidity_days)} liquidity`} />
+            <MetricCell label="Borrowing" value={formatCurrencyM(latest.borrowing_gbp_m)} />
+            <MetricCell label="Intl. Students" value={isKnownNumber(latest.international_fte_pct) ? `${latest.international_fte_pct.toFixed(1)}%` : 'Pending'} sub={`${formatNumber(latest.student_fte_total)} FTE`} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -394,20 +394,20 @@ export function InstitutionProfilePage() {
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
                     <td className="px-3 py-2 font-num tabular-nums" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 500 }}>{f.fiscal_year}</td>
-                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text)', fontSize: 12 }}>£{f.revenue_gbp_m.toLocaleString()}m</td>
-                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: f.surplus_gbp_m >= 0 ? 'var(--positive)' : 'var(--negative)', fontSize: 12, fontWeight: 500 }}>
-                      £{f.surplus_gbp_m}m
+                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text)', fontSize: 12 }}>{formatCurrencyM(f.revenue_gbp_m)}</td>
+                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: isKnownNumber(f.surplus_gbp_m) ? (f.surplus_gbp_m >= 0 ? 'var(--positive)' : 'var(--negative)') : 'var(--muted)', fontSize: 12, fontWeight: 500 }}>
+                      {formatCurrencyM(f.surplus_gbp_m)}
                     </td>
-                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: f.surplus_margin_pct >= 0 ? 'var(--positive)' : 'var(--negative)', fontSize: 12, fontWeight: 500 }}>
-                      {f.surplus_margin_pct >= 0 ? '+' : ''}{f.surplus_margin_pct.toFixed(1)}%
+                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: isKnownNumber(f.surplus_margin_pct) ? (f.surplus_margin_pct >= 0 ? 'var(--positive)' : 'var(--negative)') : 'var(--muted)', fontSize: 12, fontWeight: 500 }}>
+                      {formatPct(f.surplus_margin_pct)}
                     </td>
-                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>£{f.research_income_gbp_m}m</td>
-                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>£{f.tuition_fee_income_gbp_m}m</td>
-                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>£{f.staff_costs_gbp_m}m</td>
-                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>£{f.cash_gbp_m}m</td>
-                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>£{f.borrowing_gbp_m}m</td>
-                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>{f.liquidity_days}d</td>
-                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>{f.international_fte_pct}%</td>
+                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>{formatCurrencyM(f.research_income_gbp_m)}</td>
+                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>{formatCurrencyM(f.tuition_fee_income_gbp_m)}</td>
+                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>{formatCurrencyM(f.staff_costs_gbp_m)}</td>
+                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>{formatCurrencyM(f.cash_gbp_m)}</td>
+                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>{formatCurrencyM(f.borrowing_gbp_m)}</td>
+                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>{formatDays(f.liquidity_days)}</td>
+                    <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>{isKnownNumber(f.international_fte_pct) ? `${f.international_fte_pct.toFixed(1)}%` : 'Pending'}</td>
                     <td className="px-3 py-2 text-right"><RiskBadge risk={f.risk_flag} size="sm" /></td>
                   </tr>
                 ))}
@@ -580,13 +580,13 @@ export function InstitutionProfilePage() {
               <table className="w-full">
                 <tbody>
                   {[
-                    { label: 'Research Income', value: `£${latest.research_income_gbp_m}m` },
-                    { label: 'Research % of Total', value: `${latest.revenue_gbp_m > 0 ? ((latest.research_income_gbp_m / latest.revenue_gbp_m) * 100).toFixed(1) : 0}%` },
-                    { label: 'Total Student FTE', value: latest.student_fte_total.toLocaleString() },
-                    { label: 'International FTE %', value: `${latest.international_fte_pct}%` },
-                    { label: 'Tuition Fees', value: `£${latest.tuition_fee_income_gbp_m}m` },
-                    { label: 'Tuition % of Total', value: `${latest.revenue_gbp_m > 0 ? ((latest.tuition_fee_income_gbp_m / latest.revenue_gbp_m) * 100).toFixed(1) : 0}%` },
-                    { label: 'Other Income', value: `£${latest.other_income_gbp_m}m` },
+                    { label: 'Research Income', value: formatCurrencyM(latest.research_income_gbp_m) },
+                    { label: 'Research % of Total', value: formatPct(ratioPct(latest.research_income_gbp_m, latest.revenue_gbp_m)) },
+                    { label: 'Total Student FTE', value: formatNumber(latest.student_fte_total) },
+                    { label: 'International FTE %', value: isKnownNumber(latest.international_fte_pct) ? `${latest.international_fte_pct.toFixed(1)}%` : 'Pending' },
+                    { label: 'Tuition Fees', value: formatCurrencyM(latest.tuition_fee_income_gbp_m) },
+                    { label: 'Tuition % of Total', value: formatPct(ratioPct(latest.tuition_fee_income_gbp_m, latest.revenue_gbp_m)) },
+                    { label: 'Other Income', value: formatCurrencyM(latest.other_income_gbp_m) },
                   ].map(({ label, value }) => (
                     <tr key={label} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td className="px-3 py-2" style={{ color: 'var(--text-2)', fontSize: 12 }}>{label}</td>
@@ -631,16 +631,16 @@ export function InstitutionProfilePage() {
               <table className="w-full">
                 <tbody>
                   {[
-                    { label: 'Cash & Equivalents', value: `£${latest.cash_gbp_m}m` },
-                    { label: 'External Borrowing', value: `£${latest.borrowing_gbp_m}m` },
-                    { label: 'Net Assets', value: `£${latest.net_assets_gbp_m}m` },
-                    { label: 'Liquidity Days', value: `${latest.liquidity_days} days` },
-                    { label: 'Capital Expenditure', value: `£${latest.capital_expenditure_gbp_m}m` },
-                    { label: 'Borrowing / Revenue Ratio', value: `${latest.revenue_gbp_m > 0 ? ((latest.borrowing_gbp_m / latest.revenue_gbp_m) * 100).toFixed(1) : 0}%` },
+                    { label: 'Cash & Equivalents', value: formatCurrencyM(latest.cash_gbp_m) },
+                    { label: 'External Borrowing', value: formatCurrencyM(latest.borrowing_gbp_m) },
+                    { label: 'Net Assets', value: formatCurrencyM(latest.net_assets_gbp_m) },
+                    { label: 'Liquidity Days', value: formatDays(latest.liquidity_days) },
+                    { label: 'Capital Expenditure', value: formatCurrencyM(latest.capital_expenditure_gbp_m) },
+                    { label: 'Borrowing / Revenue Ratio', value: formatPct(ratioPct(latest.borrowing_gbp_m, latest.revenue_gbp_m)) },
                     {
                       label: 'Financial Health Score', value: (
                         <span style={{ color: getGradeColor(health.grade), fontWeight: 700 }}>
-                          {health.grade} ({health.score}/100)
+                          {health.grade} ({health.score === null ? 'Pending' : `${health.score}/100`})
                         </span>
                       )
                     },
@@ -826,171 +826,28 @@ export function InstitutionProfilePage() {
         )
       })()}
 
-      {activeTab === 'Staff' && (() => {
-        const seed = institution.id.split('').reduce((s, c) => s + c.charCodeAt(0), 0)
-        const rng = (min: number, max: number, offset = 0) => min + ((seed + offset) % (max - min + 1))
-
-        const totalStaff = Math.round(latest.student_fte_total / rng(8, 14, 1))
-        const academicPct = rng(42, 58, 2)
-        const proPct = 100 - academicPct
-        const staffCostPerHead = Math.round((latest.staff_costs_gbp_m * 1000) / totalStaff)
-        const femaleAcademic = rng(38, 52, 3)
-        const bameAcademic = rng(14, 28, 4)
-        const casualisation = rng(12, 32, 5)
-        const professorial = rng(12, 22, 6)
-
-        const staffYears = AVAILABLE_YEARS.slice(0, 5).reverse()
-        const staffCostTrend = staffYears.map((_, i) =>
-          +(latest.staff_costs_gbp_m * (0.78 + i * 0.055)).toFixed(0)
-        )
-
-        return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <Panel title="Workforce Overview" subtitle={`FY${latest.fiscal_year} · HESA Staff Record`}>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                {[
-                  { label: 'Total Staff FTE', value: totalStaff.toLocaleString(), color: 'var(--text)' },
-                  { label: 'Staff Cost / Head', value: `£${staffCostPerHead.toLocaleString()}`, color: 'var(--text)' },
-                  { label: 'Academic Staff', value: `${academicPct}%`, color: 'var(--link)' },
-                  { label: 'Professorial %', value: `${professorial}%`, color: 'var(--text-2)' },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="px-3 py-2.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
-                    <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>{label}</p>
-                    <p className="font-num" style={{ color, fontSize: 20, fontWeight: 700 }}>{value}</p>
-                  </div>
-                ))}
-              </div>
-              <div>
-                <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Staff costs trend (£m)</p>
-                <div className="flex items-end gap-1.5" style={{ height: 64 }}>
-                  {staffCostTrend.map((v, i) => {
-                    const max = Math.max(...staffCostTrend)
-                    return (
-                      <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                        <span style={{ color: 'var(--muted)', fontSize: 9 }}>£{v}m</span>
-                        <div style={{ height: 40, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
-                          <div style={{ height: `${(v / max) * 100}%`, width: '100%', backgroundColor: 'var(--warning)', borderRadius: '2px 2px 0 0', opacity: 0.7 }} />
-                        </div>
-                        <span style={{ color: 'var(--muted)', fontSize: 8 }}>{staffYears[i].slice(-2)}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </Panel>
-
-            <Panel title="Workforce Composition" subtitle="Academic vs professional services split">
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span style={{ color: 'var(--text-2)', fontSize: 12 }}>Academic</span>
-                    <span className="font-num" style={{ color: 'var(--link)', fontSize: 12, fontWeight: 600 }}>{academicPct}%</span>
-                  </div>
-                  <div className="h-2.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 2 }}>
-                    <div style={{ height: '100%', width: `${academicPct}%`, backgroundColor: 'var(--link)', borderRadius: 2, opacity: 0.8 }} />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span style={{ color: 'var(--text-2)', fontSize: 12 }}>Professional services</span>
-                    <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 12, fontWeight: 600 }}>{proPct}%</span>
-                  </div>
-                  <div className="h-2.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 2 }}>
-                    <div style={{ height: '100%', width: `${proPct}%`, backgroundColor: 'var(--accent)', borderRadius: 2, opacity: 0.6 }} />
-                  </div>
-                </div>
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                  <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Equality indicators</p>
-                  {[
-                    { label: 'Female academics', value: `${femaleAcademic}%`, sector: '49%' },
-                    { label: 'BAME academics', value: `${bameAcademic}%`, sector: '19%' },
-                    { label: 'Casualised contracts', value: `${casualisation}%`, sector: '22%' },
-                  ].map(({ label, value, sector }) => (
-                    <div key={label} className="flex items-center justify-between mb-2">
-                      <span style={{ color: 'var(--text-2)', fontSize: 11.5 }}>{label}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="font-num" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>{value}</span>
-                        <span style={{ color: 'var(--muted)', fontSize: 10 }}>sector: {sector}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Panel>
-
-            <Panel title="Staff Cost Ratio" subtitle="Staff costs as % of total income (trend)">
-              <div className="space-y-3">
-                {staffYears.map((year, i) => {
-                  const ratio = latest.revenue_gbp_m > 0
-                    ? (staffCostTrend[i] / (latest.revenue_gbp_m * (0.78 + i * 0.055))) * 100
-                    : 55
-                  const sectorBenchmark = 58.5
-                  const isAbove = ratio > sectorBenchmark
-                  return (
-                    <div key={year}>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 11 }}>FY{year}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="font-num" style={{ color: isAbove ? 'var(--negative)' : 'var(--positive)', fontSize: 11, fontWeight: 600 }}>
-                            {ratio.toFixed(1)}%
-                          </span>
-                          <span style={{ color: 'var(--muted)', fontSize: 9.5 }}>vs {sectorBenchmark}% sector</span>
-                        </div>
-                      </div>
-                      <div className="relative h-1.5" style={{ backgroundColor: 'var(--border)', borderRadius: 1 }}>
-                        <div className="absolute top-0 h-full w-0.5" style={{ left: `${sectorBenchmark}%`, backgroundColor: 'var(--border-strong)', zIndex: 1 }} />
-                        <div style={{ height: '100%', width: `${Math.min(ratio, 100)}%`, backgroundColor: isAbove ? 'var(--negative)' : 'var(--positive)', borderRadius: 1, opacity: 0.7 }} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </Panel>
-
-            <Panel title="Pay & Industrial Relations" subtitle="USS pension and pay context">
-              <div className="space-y-3">
-                <div className="px-3 py-2.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3, borderLeft: '3px solid var(--warning)' }}>
-                  <p style={{ color: 'var(--warning)', fontSize: 11, fontWeight: 600, marginBottom: 3 }}>USS Pension Contributions</p>
-                  <p style={{ color: 'var(--text-2)', fontSize: 11, lineHeight: 1.5 }}>
-                    Employer rate: <strong style={{ color: 'var(--text)' }}>21.6%</strong> of pensionable salary.
-                    USS deficit recovery contributions add ~£{rng(2, 8, 16)}m annually to {institution.short_name}'s staff cost base.
-                  </p>
-                </div>
-                {[
-                  { label: 'Avg academic salary', value: `£${rng(52, 68, 17)}k`, note: 'FTE weighted, AC1–AC5 range' },
-                  { label: 'Vice-Chancellor pay', value: `£${rng(280, 480, 18)}k`, note: '2023-24 remuneration package' },
-                  { label: 'Pay spine point range', value: `AC1–AC5`, note: 'UCEA framework' },
-                  { label: 'Real pay change', value: `${rng(1, 4, 19) - 2 > 0 ? '+' : ''}${rng(1, 4, 19) - 2}%`, note: 'After inflation (CPI-adjusted)' },
-                ].map(({ label, value, note }) => (
-                  <div key={label} className="flex items-center justify-between">
-                    <div>
-                      <p style={{ color: 'var(--text-2)', fontSize: 11.5 }}>{label}</p>
-                      <p style={{ color: 'var(--muted)', fontSize: 10 }}>{note}</p>
-                    </div>
-                    <span className="font-num" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>{value}</span>
-                  </div>
-                ))}
-              </div>
-            </Panel>
+      {activeTab === 'Staff' && (
+        <Panel title="Staff" subtitle="Awaiting official staff-source rows">
+          <div className="px-3 py-6 text-center">
+            <p style={{ color: 'var(--text-2)', fontSize: 12.5, marginBottom: 4 }}>Staff metrics are pending verification.</p>
+            <p style={{ color: 'var(--muted)', fontSize: 11, lineHeight: 1.5 }}>HEStats will display staff FTE, cost ratios, and workforce composition only after HESA staff or institution-level source rows have been attached.</p>
           </div>
-        )
-      })()}
+        </Panel>
+      )}
 
       {activeTab === 'Timeline' && (() => {
         const historyAscAll = [...financials].sort((a, b) => a.fiscal_year.localeCompare(b.fiscal_year))
-        const seed = institution.id.split('').reduce((s, c) => s + c.charCodeAt(0), 0)
-
         const EVENTS: { year: string; type: 'milestone' | 'risk' | 'positive' | 'regulatory'; title: string; body: string }[] = [
-          { year: '2015-16', type: 'milestone', title: 'Baseline year', body: `${institution.short_name} enters HEStats 10-year tracking period. Income: £${historyAscAll[0]?.revenue_gbp_m ?? '—'}m.` },
-          { year: '2016-17', type: 'positive', title: 'International growth', body: 'International student numbers increase; tuition fee income diversification gains momentum across the sector.' },
+          { year: '2015-16', type: 'milestone', title: 'Baseline year', body: `${institution.short_name} enters HEStats 10-year tracking period. Income: ${formatCurrencyM(historyAscAll[0]?.revenue_gbp_m)}.` },
+          { year: '2016-17', type: 'positive', title: 'Pending source row', body: 'No verified institution-level narrative event is attached for this year yet.' },
           { year: '2017-18', type: 'regulatory', title: 'TEF framework introduced', body: 'Teaching Excellence Framework comes into force. Institution achieves TEF award reflecting teaching quality.' },
-          { year: '2018-19', type: 'positive', title: 'Research income growth', body: `Research income climbs to £${historyAscAll[3]?.research_income_gbp_m ?? '—'}m, up from baseline. UKRI relationships strengthened.` },
-          { year: '2019-20', type: 'milestone', title: 'Pre-pandemic peak', body: `Income reaches £${historyAscAll[4]?.revenue_gbp_m ?? '—'}m. Capital investment programme initiated.` },
-          { year: '2020-21', type: 'risk', title: 'COVID-19 impact', body: 'Campus closures reduce commercial and residential income. Remote learning transitions at cost. Government CBILS/BBL scheme accessed.' },
-          { year: '2021-22', type: 'positive', title: 'Recovery and growth', body: `International demand rebounds. Surplus recovers to £${historyAscAll[6]?.surplus_gbp_m ?? '—'}m as campuses reopen and fee income stabilises.` },
+          { year: '2018-19', type: 'positive', title: 'Research income', body: `Research income: ${formatCurrencyM(historyAscAll[3]?.research_income_gbp_m)}.` },
+          { year: '2019-20', type: 'milestone', title: 'Income row', body: `Income: ${formatCurrencyM(historyAscAll[4]?.revenue_gbp_m)}.` },
+          { year: '2020-21', type: 'risk', title: 'Pending source row', body: 'No verified institution-level narrative event is attached for this year yet.' },
+          { year: '2021-22', type: 'positive', title: 'Surplus row', body: `Surplus: ${formatCurrencyM(historyAscAll[6]?.surplus_gbp_m)}.` },
           { year: '2022-23', type: 'regulatory', title: 'OfS enhanced monitoring', body: 'Office for Students intensifies financial sustainability monitoring following sector-wide deficit concerns.' },
-          { year: '2023-24', type: 'milestone', title: 'Estate investment', body: `Capital expenditure of £${historyAscAll[8]?.capital_expenditure_gbp_m ?? '—'}m reflects ongoing estate modernisation strategy.` },
-          { year: '2024-25', type: 'positive', title: 'Latest accounts published', body: `FY${latest.fiscal_year} accounts confirmed: £${latest.revenue_gbp_m.toLocaleString()}m income, ${latest.surplus_margin_pct.toFixed(1)}% margin, ${latest.risk_flag} risk.` },
+          { year: '2023-24', type: 'milestone', title: 'Capital expenditure row', body: `Capital expenditure: ${formatCurrencyM(historyAscAll[8]?.capital_expenditure_gbp_m)}.` },
+          { year: '2024-25', type: 'positive', title: 'Latest financial row', body: `FY${latest.fiscal_year}: ${formatCurrencyM(latest.revenue_gbp_m)} income, ${formatPct(latest.surplus_margin_pct)} margin, ${latest.risk_flag} risk.` },
         ]
 
         const typeColor: Record<string, string> = {
@@ -1055,17 +912,17 @@ export function InstitutionProfilePage() {
               <Panel title="Key Metrics Over Time" subtitle="Annual income and surplus (£m)">
                 <div className="space-y-3">
                   {historyAscAll.map((f) => {
-                    const maxIncome = Math.max(...historyAscAll.map((h) => h.revenue_gbp_m))
-                    const pct = maxIncome > 0 ? (f.revenue_gbp_m / maxIncome) * 100 : 0
-                    const isPositiveSurplus = f.surplus_gbp_m >= 0
+                    const maxIncome = Math.max(...historyAscAll.map((h) => h.revenue_gbp_m).filter(isKnownNumber), 0)
+                    const pct = isKnownNumber(f.revenue_gbp_m) && maxIncome > 0 ? (f.revenue_gbp_m / maxIncome) * 100 : 0
+                    const isPositiveSurplus = isKnownNumber(f.surplus_gbp_m) && f.surplus_gbp_m >= 0
                     return (
                       <div key={f.fiscal_year}>
                         <div className="flex items-center justify-between mb-0.5">
                           <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 10.5 }}>FY{f.fiscal_year}</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-num" style={{ color: 'var(--text)', fontSize: 10.5, fontWeight: 500 }}>£{f.revenue_gbp_m.toLocaleString()}m</span>
-                            <span className="font-num" style={{ color: isPositiveSurplus ? 'var(--positive)' : 'var(--negative)', fontSize: 10 }}>
-                              {isPositiveSurplus ? '+' : ''}£{f.surplus_gbp_m}m
+                            <span className="font-num" style={{ color: 'var(--text)', fontSize: 10.5, fontWeight: 500 }}>{formatCurrencyM(f.revenue_gbp_m)}</span>
+                            <span className="font-num" style={{ color: isKnownNumber(f.surplus_gbp_m) ? (isPositiveSurplus ? 'var(--positive)' : 'var(--negative)') : 'var(--muted)', fontSize: 10 }}>
+                              {formatCurrencyM(f.surplus_gbp_m)}
                             </span>
                           </div>
                         </div>
@@ -1098,147 +955,14 @@ export function InstitutionProfilePage() {
         )
       })()}
 
-      {activeTab === 'Estates' && (() => {
-        const seed = institution.id.split('').reduce((s, c) => s + c.charCodeAt(0), 0)
-        const rng = (min: number, max: number, offset = 0) => min + ((seed + offset) % (max - min + 1))
-
-        const floorspaceK = rng(80, 650, 1)
-        const campusCount = rng(1, 5, 2)
-        const estateValueM = Math.round(latest.net_assets_gbp_m * rng(40, 65, 3) / 100)
-        const carbonIntensity = rng(45, 180, 4)
-        const netZeroYear = rng(2030, 2045, 5)
-        const renewablePct = rng(28, 82, 6)
-        const maintenanceBacklogM = Math.round(floorspaceK * rng(1, 4, 7) / 10)
-
-        const capexYears = AVAILABLE_YEARS.slice(0, 6).reverse()
-        const capexTrend = capexYears.map((_, i) =>
-          Math.round(latest.capital_expenditure_gbp_m * (0.65 + i * 0.07))
-        )
-
-        return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <Panel title="Estate Overview" subtitle={`FY${latest.fiscal_year} · HESA Estates Return`}>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                {[
-                  { label: 'Gross floor space', value: `${floorspaceK}k m²`, color: 'var(--text)' },
-                  { label: 'Estate value', value: `£${estateValueM}m`, color: 'var(--link)' },
-                  { label: 'Campus sites', value: campusCount.toString(), color: 'var(--text)' },
-                  { label: 'Maintenance backlog', value: `£${maintenanceBacklogM}m`, color: maintenanceBacklogM > 50 ? 'var(--warning)' : 'var(--text-2)' },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="px-3 py-2.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
-                    <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>{label}</p>
-                    <p className="font-num" style={{ color, fontSize: 20, fontWeight: 700 }}>{value}</p>
-                  </div>
-                ))}
-              </div>
-              <div>
-                <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Capital expenditure trend (£m)</p>
-                <div className="flex items-end gap-1.5" style={{ height: 72 }}>
-                  {capexTrend.map((v, i) => {
-                    const max = Math.max(...capexTrend)
-                    return (
-                      <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                        <span style={{ color: 'var(--muted)', fontSize: 8 }}>£{v}m</span>
-                        <div style={{ height: 48, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
-                          <div style={{ height: `${(v / max) * 100}%`, width: '100%', backgroundColor: 'var(--accent)', borderRadius: '2px 2px 0 0', opacity: 0.75 }} />
-                        </div>
-                        <span style={{ color: 'var(--muted)', fontSize: 8 }}>{capexYears[i].slice(-2)}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </Panel>
-
-            <Panel title="Sustainability & Carbon" subtitle="Environmental performance metrics">
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'Carbon intensity', value: `${carbonIntensity} kgCO₂/m²`, color: carbonIntensity > 120 ? 'var(--negative)' : carbonIntensity > 80 ? 'var(--warning)' : 'var(--positive)' },
-                    { label: 'Net zero target', value: netZeroYear.toString(), color: 'var(--text)' },
-                    { label: 'Renewable energy', value: `${renewablePct}%`, color: renewablePct >= 50 ? 'var(--positive)' : 'var(--warning)' },
-                    { label: 'Green space', value: `${rng(8, 35, 8)}%`, color: 'var(--positive)' },
-                  ].map(({ label, value, color }) => (
-                    <div key={label} className="px-3 py-2.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
-                      <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>{label}</p>
-                      <p className="font-num" style={{ color, fontSize: 16, fontWeight: 700 }}>{value}</p>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Space utilisation by type</p>
-                  {[
-                    { type: 'Academic & research', pct: rng(38, 52, 9), color: 'var(--link)' },
-                    { type: 'Student residences', pct: rng(15, 28, 10), color: 'var(--positive)' },
-                    { type: 'Administrative', pct: rng(8, 16, 11), color: 'var(--warning)' },
-                    { type: 'Commercial / sports', pct: rng(5, 12, 12), color: '#b18ab8' },
-                    { type: 'Other', pct: rng(6, 14, 13), color: 'var(--muted)' },
-                  ].map(({ type, pct, color }) => (
-                    <div key={type} className="flex items-center gap-2 mb-1.5">
-                      <span style={{ color: 'var(--text-2)', fontSize: 11, width: 160, flexShrink: 0 }}>{type}</span>
-                      <div className="flex-1 h-1.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
-                        <div style={{ height: '100%', width: `${pct * 2}%`, backgroundColor: color, borderRadius: 1, opacity: 0.8 }} />
-                      </div>
-                      <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 10.5, width: 28, textAlign: 'right', flexShrink: 0 }}>{pct}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Panel>
-
-            <Panel title="Estate Strategy" subtitle="Key investment programmes and condition ratings">
-              <div className="space-y-3">
-                <div className="px-3 py-2.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3, borderLeft: '3px solid var(--link)' }}>
-                  <p style={{ color: 'var(--link)', fontSize: 11, fontWeight: 600, marginBottom: 3 }}>Active Capital Programmes</p>
-                  <p style={{ color: 'var(--text-2)', fontSize: 11.5, lineHeight: 1.5 }}>
-                    {institution.short_name} is investing £{capexTrend[capexTrend.length - 1]}m in estate modernisation in FY{AVAILABLE_YEARS[0]}.
-                    Priority areas: teaching space, research laboratories, and student welfare facilities.
-                  </p>
-                </div>
-                {[
-                  { label: 'Condition A (Excellent)', pct: rng(15, 35, 14) },
-                  { label: 'Condition B (Good)', pct: rng(30, 45, 15) },
-                  { label: 'Condition C (Poor)', pct: rng(15, 30, 16) },
-                  { label: 'Condition D (Critical)', pct: rng(2, 10, 17) },
-                ].map(({ label, pct }, i) => {
-                  const colors = ['var(--positive)', 'var(--link)', 'var(--warning)', 'var(--negative)']
-                  return (
-                    <div key={label}>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span style={{ color: 'var(--text-2)', fontSize: 11.5 }}>{label}</span>
-                        <span className="font-num" style={{ color: colors[i], fontSize: 11, fontWeight: 600 }}>{pct}%</span>
-                      </div>
-                      <div className="h-1.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
-                        <div style={{ height: '100%', width: `${pct * 2.5}%`, backgroundColor: colors[i], borderRadius: 1, opacity: 0.7 }} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </Panel>
-
-            <Panel title="Student Accommodation" subtitle="Residential provision and affordability">
-              <div className="space-y-3">
-                {[
-                  { label: 'Managed bed spaces', value: `${rng(1200, 8500, 18).toLocaleString()}`, note: 'University-managed PBSA' },
-                  { label: 'Occupancy rate', value: `${rng(88, 99, 19)}%`, note: 'Average across portfolio' },
-                  { label: 'Weekly rent range', value: `£${rng(95, 145, 20)}–£${rng(160, 280, 21)}`, note: 'Standard to en-suite' },
-                  { label: 'Accommodation income', value: `£${rng(8, 45, 22)}m`, note: `FY${latest.fiscal_year}` },
-                  { label: 'First-year guarantee', value: rng(1, 3, 23) > 1 ? 'Yes' : 'Conditional', note: 'Subject to eligibility criteria' },
-                ].map(({ label, value, note }) => (
-                  <div key={label} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--border)' }}>
-                    <div>
-                      <p style={{ color: 'var(--text-2)', fontSize: 11.5 }}>{label}</p>
-                      <p style={{ color: 'var(--muted)', fontSize: 10 }}>{note}</p>
-                    </div>
-                    <span className="font-num" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>{value}</span>
-                  </div>
-                ))}
-              </div>
-            </Panel>
+      {activeTab === 'Estates' && (
+        <Panel title="Estates" subtitle="Awaiting official estates-source rows">
+          <div className="px-3 py-6 text-center">
+            <p style={{ color: 'var(--text-2)', fontSize: 12.5, marginBottom: 4 }}>Estate metrics are pending verification.</p>
+            <p style={{ color: 'var(--muted)', fontSize: 11, lineHeight: 1.5 }}>Floor space, estate value, carbon, and maintenance figures are withheld until official estates returns or audited source documents are available.</p>
           </div>
-        )
-      })()}
+        </Panel>
+      )}
 
       {activeTab === 'Sources' && (() => {
         const provenanceRecords = getInstitutionProvenance(institution.id)

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router'
 import { Map as MapIcon, TrendingUp } from 'lucide-react'
 import { institutions } from '../data/institutions'
-import { getAllLatestFinancials } from '../data/financials'
+import { compareNullableDesc, formatCurrencyM, formatDays, formatNumber, formatPct, getAllLatestFinancials, isKnownNumber } from '../data/financials'
 import { computeHealthScore, getGradeColor } from '../data/health'
 import { INSTITUTION_COORDS, projectToSvg } from '../data/coordinates'
 import { HealthBadge } from '../components/institutions/HealthBadge'
@@ -50,10 +50,10 @@ function getBubbleColor(mode: BubbleColor, fin: ReturnType<typeof getAllLatestFi
     return getGradeColor(h.grade)
   }
   if (mode === 'risk') {
-    return fin.risk_flag === 'Low' ? 'var(--positive)' : fin.risk_flag === 'Medium' ? 'var(--warning)' : 'var(--negative)'
+    return fin.risk_flag === 'Low' ? 'var(--positive)' : fin.risk_flag === 'Medium' ? 'var(--warning)' : fin.risk_flag === 'High' ? 'var(--negative)' : 'var(--muted)'
   }
   if (mode === 'nation') return NATION_COLORS[inst.nation] ?? 'var(--muted)'
-  if (mode === 'surplus') return fin.surplus_margin_pct >= 3 ? 'var(--positive)' : fin.surplus_margin_pct >= 0 ? 'var(--warning)' : 'var(--negative)'
+  if (mode === 'surplus') return isKnownNumber(fin.surplus_margin_pct) ? (fin.surplus_margin_pct >= 3 ? 'var(--positive)' : fin.surplus_margin_pct >= 0 ? 'var(--warning)' : 'var(--negative)') : 'var(--muted)'
   return 'var(--accent)'
 }
 
@@ -78,7 +78,7 @@ export function MapPage() {
         const rawSize =
           bubbleSize === 'revenue' ? fin.revenue_gbp_m :
           bubbleSize === 'research' ? fin.research_income_gbp_m :
-          bubbleSize === 'students' ? fin.student_fte_total / 1000 :
+          bubbleSize === 'students' && isKnownNumber(fin.student_fte_total) ? fin.student_fte_total / 1000 :
           fin.borrowing_gbp_m
         return { inst, fin, x, y, rawSize, color: getBubbleColor(bubbleColor, fin, inst) }
       })
@@ -86,9 +86,10 @@ export function MapPage() {
       .filter((b) => nationFilter === 'All' || b.inst.nation === nationFilter)
   }, [latestFins, bubbleSize, bubbleColor, nationFilter])
 
-  const maxSize = Math.max(...bubbles.map((b) => b.rawSize), 1)
+  const maxSize = Math.max(...bubbles.map((b) => b.rawSize).filter(isKnownNumber), 1)
 
-  function getBubbleR(rawSize: number): number {
+  function getBubbleR(rawSize: number | null): number {
+    if (!isKnownNumber(rawSize)) return 4
     return Math.max(3, Math.sqrt(rawSize / maxSize) * 22)
   }
 
@@ -234,7 +235,7 @@ export function MapPage() {
               <path d={UK_PATH} fill="var(--bg-2)" stroke="var(--border)" strokeWidth={1.5} />
 
               {/* Institution bubbles — render in order of size (large underneath) */}
-              {[...bubbles].sort((a, b) => b.rawSize - a.rawSize).map(({ inst, fin, x, y, rawSize, color }) => {
+              {[...bubbles].sort((a, b) => compareNullableDesc(a.rawSize, b.rawSize)).map(({ inst, fin, x, y, rawSize, color }) => {
                 const r = getBubbleR(rawSize)
                 const isHovered = hovered === inst.id
                 const isSelected = selected === inst.id
@@ -289,7 +290,7 @@ export function MapPage() {
                     <RiskBadge risk={displayInst.fin.risk_flag} size="sm" />
                   </div>
                   <p style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}>{displayInst.inst.canonical_name}</p>
-                  <p style={{ color: 'var(--muted)', fontSize: 11 }}>{displayInst.inst.city} · Est. {displayInst.inst.founded} · UKPRN {displayInst.inst.ukprn}</p>
+                  <p style={{ color: 'var(--muted)', fontSize: 11 }}>{displayInst.inst.city} · Est. {displayInst.inst.founded} · UKPRN {displayInst.inst.ukprn ?? 'pending'}</p>
                 </div>
                 <Link
                   to={`/universities/${displayInst.inst.id}`}
@@ -301,14 +302,14 @@ export function MapPage() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { label: 'Total Income', value: `£${displayInst.fin.revenue_gbp_m.toLocaleString()}m` },
-                  { label: 'Surplus Margin', value: `${displayInst.fin.surplus_margin_pct.toFixed(1)}%`, color: displayInst.fin.surplus_margin_pct >= 0 ? 'var(--positive)' : 'var(--negative)' },
-                  { label: 'Research Income', value: `£${displayInst.fin.research_income_gbp_m}m` },
-                  { label: 'Student FTE', value: displayInst.fin.student_fte_total.toLocaleString() },
-                  { label: 'Cash', value: `£${displayInst.fin.cash_gbp_m}m` },
-                  { label: 'Borrowing', value: `£${displayInst.fin.borrowing_gbp_m}m` },
-                  { label: 'Liquidity Days', value: `${displayInst.fin.liquidity_days}d` },
-                  { label: 'International %', value: `${displayInst.fin.international_fte_pct}%` },
+                  { label: 'Total Income', value: formatCurrencyM(displayInst.fin.revenue_gbp_m) },
+                  { label: 'Surplus Margin', value: formatPct(displayInst.fin.surplus_margin_pct), color: isKnownNumber(displayInst.fin.surplus_margin_pct) && displayInst.fin.surplus_margin_pct >= 0 ? 'var(--positive)' : isKnownNumber(displayInst.fin.surplus_margin_pct) ? 'var(--negative)' : 'var(--muted)' },
+                  { label: 'Research Income', value: formatCurrencyM(displayInst.fin.research_income_gbp_m) },
+                  { label: 'Student FTE', value: formatNumber(displayInst.fin.student_fte_total) },
+                  { label: 'Cash', value: formatCurrencyM(displayInst.fin.cash_gbp_m) },
+                  { label: 'Borrowing', value: formatCurrencyM(displayInst.fin.borrowing_gbp_m) },
+                  { label: 'Liquidity Days', value: formatDays(displayInst.fin.liquidity_days) },
+                  { label: 'International %', value: isKnownNumber(displayInst.fin.international_fte_pct) ? `${displayInst.fin.international_fte_pct.toFixed(1)}%` : 'Pending' },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="px-2.5 py-2 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
                     <p style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 2 }}>{label}</p>

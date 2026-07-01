@@ -1,430 +1,173 @@
-import { FinancialYear } from './types'
+import { institutions } from './institutions'
+import { FinancialYear, MetricKey } from './types'
+import { verifiedFinancialRecords } from './generated/financialRecords'
 
-// ─── 10-year history: 2015-16 through 2024-25 ───────────────────────────────
+// Official coverage target: ten fiscal years, newest first.
 export const AVAILABLE_YEARS = [
   '2024-25', '2023-24', '2022-23', '2021-22', '2020-21',
   '2019-20', '2018-19', '2017-18', '2016-17', '2015-16',
 ]
 
-// ─── Growth model ─────────────────────────────────────────────────────────────
-type TierKey = 'russell-research' | 'russell-civic' | 'pre-92' | 'large' | 'mid' | 'small' | 'spec'
-
-// Annual compound growth rates going FORWARD in time.
-// To reconstruct historical data we reverse-compound these.
-const TIER_GROWTH: Record<TierKey, {
-  revenue: number          // annual revenue CAGR
-  research: number         // annual research income CAGR
-  intl_delta: number       // pp/yr change in international % (positive = higher in recent years)
-  borrowing_decline: number// rate borrowing was lower going back in time
-}> = {
-  'russell-research': { revenue: 0.052, research: 0.048, intl_delta: 1.5, borrowing_decline: 0.035 },
-  'russell-civic':    { revenue: 0.048, research: 0.040, intl_delta: 1.2, borrowing_decline: 0.030 },
-  'pre-92':           { revenue: 0.038, research: 0.028, intl_delta: 0.8, borrowing_decline: 0.025 },
-  'large':            { revenue: 0.033, research: 0.015, intl_delta: 0.6, borrowing_decline: 0.020 },
-  'mid':              { revenue: 0.028, research: 0.012, intl_delta: 0.5, borrowing_decline: 0.018 },
-  'small':            { revenue: 0.024, research: 0.008, intl_delta: 0.4, borrowing_decline: 0.015 },
-  'spec':             { revenue: 0.020, research: 0.005, intl_delta: 0.3, borrowing_decline: 0.010 },
-}
-
-// Growth tier for verified institutions
-const INST_TIER: Record<string, TierKey> = {
-  oxford: 'russell-research', cambridge: 'russell-research',
-  imperial: 'russell-research', ucl: 'russell-research', edinburgh: 'russell-research',
-  manchester: 'russell-civic', bristol: 'russell-civic', lse: 'russell-civic',
-  kcl: 'russell-civic', warwick: 'russell-civic', leeds: 'russell-civic',
-  sheffield: 'russell-civic', birmingham: 'russell-civic', southampton: 'russell-civic',
-  newcastle: 'russell-civic', nottingham: 'russell-civic', glasgow: 'russell-civic',
-  cardiff: 'russell-civic', qub: 'russell-civic',
-  durham: 'pre-92', exeter: 'pre-92', standrews: 'pre-92',
-  strathclyde: 'pre-92', swansea: 'pre-92', aberdeen: 'pre-92',
-}
-
-// ─── Verified explicit records ────────────────────────────────────────────────
-const verifiedRecords: FinancialYear[] = [
-  // OXFORD
-  { institution_id: 'oxford', fiscal_year: '2024-25', published: '2025-12-01', revenue_gbp_m: 2860, surplus_gbp_m: 213, surplus_margin_pct: 7.4, research_income_gbp_m: 742, tuition_fee_income_gbp_m: 518, other_income_gbp_m: 1600, staff_costs_gbp_m: 1574, total_expenditure_gbp_m: 2647, cash_gbp_m: 892, borrowing_gbp_m: 310, liquidity_days: 132, international_fte_pct: 47, student_fte_total: 27900, capital_expenditure_gbp_m: 312, net_assets_gbp_m: 3540, risk_flag: 'Low', source_pdf: 'https://assets-oxweb.admin.ox.ac.uk/Oxford_Financial_Statements_2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'oxford', fiscal_year: '2023-24', published: '2024-12-12', revenue_gbp_m: 2712, surplus_gbp_m: 192, surplus_margin_pct: 7.1, research_income_gbp_m: 710, tuition_fee_income_gbp_m: 498, other_income_gbp_m: 1504, staff_costs_gbp_m: 1490, total_expenditure_gbp_m: 2520, cash_gbp_m: 845, borrowing_gbp_m: 318, liquidity_days: 127, international_fte_pct: 46, student_fte_total: 27200, capital_expenditure_gbp_m: 290, net_assets_gbp_m: 3340, risk_flag: 'Low', source_pdf: 'https://assets-oxweb.admin.ox.ac.uk/Oxford_University_Annual_Report_2023-24.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'oxford', fiscal_year: '2022-23', published: '2023-12-08', revenue_gbp_m: 2551, surplus_gbp_m: 170, surplus_margin_pct: 6.7, research_income_gbp_m: 681, tuition_fee_income_gbp_m: 465, other_income_gbp_m: 1405, staff_costs_gbp_m: 1410, total_expenditure_gbp_m: 2381, cash_gbp_m: 798, borrowing_gbp_m: 330, liquidity_days: 121, international_fte_pct: 45, student_fte_total: 26700, capital_expenditure_gbp_m: 275, net_assets_gbp_m: 3110, risk_flag: 'Low', source_pdf: 'https://assets-oxweb.admin.ox.ac.uk/Oxford_University_Financial_Statements_2022-23.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'oxford', fiscal_year: '2021-22', published: '2022-12-15', revenue_gbp_m: 2388, surplus_gbp_m: 142, surplus_margin_pct: 5.9, research_income_gbp_m: 638, tuition_fee_income_gbp_m: 440, other_income_gbp_m: 1310, staff_costs_gbp_m: 1320, total_expenditure_gbp_m: 2246, cash_gbp_m: 750, borrowing_gbp_m: 340, liquidity_days: 114, international_fte_pct: 44, student_fte_total: 26100, capital_expenditure_gbp_m: 255, net_assets_gbp_m: 2890, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'oxford', fiscal_year: '2020-21', published: '2021-12-10', revenue_gbp_m: 2241, surplus_gbp_m: 98, surplus_margin_pct: 4.4, research_income_gbp_m: 598, tuition_fee_income_gbp_m: 415, other_income_gbp_m: 1228, staff_costs_gbp_m: 1260, total_expenditure_gbp_m: 2143, cash_gbp_m: 698, borrowing_gbp_m: 355, liquidity_days: 107, international_fte_pct: 43, student_fte_total: 25400, capital_expenditure_gbp_m: 230, net_assets_gbp_m: 2640, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // CAMBRIDGE
-  { institution_id: 'cambridge', fiscal_year: '2024-25', published: '2025-11-28', revenue_gbp_m: 2780, surplus_gbp_m: 228, surplus_margin_pct: 8.2, research_income_gbp_m: 780, tuition_fee_income_gbp_m: 490, other_income_gbp_m: 1510, staff_costs_gbp_m: 1540, total_expenditure_gbp_m: 2552, cash_gbp_m: 920, borrowing_gbp_m: 285, liquidity_days: 138, international_fte_pct: 38, student_fte_total: 24800, capital_expenditure_gbp_m: 298, net_assets_gbp_m: 3820, risk_flag: 'Low', source_pdf: 'https://www.cam.ac.uk/system/files/university_of_cambridge_group_annual_reports_financial_statements_2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'cambridge', fiscal_year: '2023-24', published: '2024-11-25', revenue_gbp_m: 2620, surplus_gbp_m: 207, surplus_margin_pct: 7.9, research_income_gbp_m: 748, tuition_fee_income_gbp_m: 470, other_income_gbp_m: 1402, staff_costs_gbp_m: 1455, total_expenditure_gbp_m: 2413, cash_gbp_m: 875, borrowing_gbp_m: 292, liquidity_days: 133, international_fte_pct: 37, student_fte_total: 24200, capital_expenditure_gbp_m: 278, net_assets_gbp_m: 3590, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'cambridge', fiscal_year: '2022-23', published: '2023-11-22', revenue_gbp_m: 2445, surplus_gbp_m: 188, surplus_margin_pct: 7.7, research_income_gbp_m: 712, tuition_fee_income_gbp_m: 448, other_income_gbp_m: 1285, staff_costs_gbp_m: 1370, total_expenditure_gbp_m: 2257, cash_gbp_m: 820, borrowing_gbp_m: 300, liquidity_days: 128, international_fte_pct: 36, student_fte_total: 23600, capital_expenditure_gbp_m: 258, net_assets_gbp_m: 3310, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'cambridge', fiscal_year: '2021-22', published: '2022-11-18', revenue_gbp_m: 2290, surplus_gbp_m: 158, surplus_margin_pct: 6.9, research_income_gbp_m: 674, tuition_fee_income_gbp_m: 425, other_income_gbp_m: 1191, staff_costs_gbp_m: 1285, total_expenditure_gbp_m: 2132, cash_gbp_m: 768, borrowing_gbp_m: 308, liquidity_days: 122, international_fte_pct: 35, student_fte_total: 23000, capital_expenditure_gbp_m: 240, net_assets_gbp_m: 3050, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'cambridge', fiscal_year: '2020-21', published: '2021-11-20', revenue_gbp_m: 2105, surplus_gbp_m: 118, surplus_margin_pct: 5.6, research_income_gbp_m: 628, tuition_fee_income_gbp_m: 395, other_income_gbp_m: 1082, staff_costs_gbp_m: 1200, total_expenditure_gbp_m: 1987, cash_gbp_m: 710, borrowing_gbp_m: 318, liquidity_days: 115, international_fte_pct: 34, student_fte_total: 22500, capital_expenditure_gbp_m: 215, net_assets_gbp_m: 2780, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // IMPERIAL
-  { institution_id: 'imperial', fiscal_year: '2024-25', published: '2025-12-15', revenue_gbp_m: 1420, surplus_gbp_m: 71, surplus_margin_pct: 5.0, research_income_gbp_m: 540, tuition_fee_income_gbp_m: 428, other_income_gbp_m: 452, staff_costs_gbp_m: 828, total_expenditure_gbp_m: 1349, cash_gbp_m: 345, borrowing_gbp_m: 188, liquidity_days: 96, international_fte_pct: 62, student_fte_total: 19800, capital_expenditure_gbp_m: 142, net_assets_gbp_m: 1180, risk_flag: 'Low', source_pdf: 'https://www.imperial.ac.uk/media/imperial-college/administration-and-support-services/finance/public/Annual-Report-2025-FS-web.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'imperial', fiscal_year: '2023-24', published: '2024-12-10', revenue_gbp_m: 1338, surplus_gbp_m: 62, surplus_margin_pct: 4.6, research_income_gbp_m: 512, tuition_fee_income_gbp_m: 405, other_income_gbp_m: 421, staff_costs_gbp_m: 788, total_expenditure_gbp_m: 1276, cash_gbp_m: 312, borrowing_gbp_m: 195, liquidity_days: 91, international_fte_pct: 61, student_fte_total: 19200, capital_expenditure_gbp_m: 130, net_assets_gbp_m: 1095, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'imperial', fiscal_year: '2022-23', published: '2023-12-12', revenue_gbp_m: 1248, surplus_gbp_m: 50, surplus_margin_pct: 4.0, research_income_gbp_m: 480, tuition_fee_income_gbp_m: 378, other_income_gbp_m: 390, staff_costs_gbp_m: 745, total_expenditure_gbp_m: 1198, cash_gbp_m: 285, borrowing_gbp_m: 202, liquidity_days: 86, international_fte_pct: 60, student_fte_total: 18600, capital_expenditure_gbp_m: 118, net_assets_gbp_m: 1010, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'imperial', fiscal_year: '2021-22', published: '2022-12-08', revenue_gbp_m: 1165, surplus_gbp_m: 38, surplus_margin_pct: 3.3, research_income_gbp_m: 448, tuition_fee_income_gbp_m: 352, other_income_gbp_m: 365, staff_costs_gbp_m: 700, total_expenditure_gbp_m: 1127, cash_gbp_m: 258, borrowing_gbp_m: 210, liquidity_days: 80, international_fte_pct: 59, student_fte_total: 18100, capital_expenditure_gbp_m: 108, net_assets_gbp_m: 940, risk_flag: 'Medium', status: 'found', data_source: 'verified' },
-  { institution_id: 'imperial', fiscal_year: '2020-21', published: '2021-12-14', revenue_gbp_m: 1065, surplus_gbp_m: 19, surplus_margin_pct: 1.8, research_income_gbp_m: 410, tuition_fee_income_gbp_m: 320, other_income_gbp_m: 335, staff_costs_gbp_m: 658, total_expenditure_gbp_m: 1046, cash_gbp_m: 228, borrowing_gbp_m: 218, liquidity_days: 72, international_fte_pct: 57, student_fte_total: 17500, capital_expenditure_gbp_m: 95, net_assets_gbp_m: 870, risk_flag: 'Medium', status: 'found', data_source: 'verified' },
-  // UCL
-  { institution_id: 'ucl', fiscal_year: '2024-25', published: '2026-02-18', revenue_gbp_m: 1695, surplus_gbp_m: 28, surplus_margin_pct: 1.7, research_income_gbp_m: 612, tuition_fee_income_gbp_m: 568, other_income_gbp_m: 515, staff_costs_gbp_m: 1032, total_expenditure_gbp_m: 1667, cash_gbp_m: 298, borrowing_gbp_m: 392, liquidity_days: 65, international_fte_pct: 53, student_fte_total: 42100, capital_expenditure_gbp_m: 180, net_assets_gbp_m: 980, risk_flag: 'Medium', source_pdf: 'https://www.ucl.ac.uk/about/sites/about/files/2026-02/UCL-Annual-Report-And-Accounts-2025-18feb26.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'ucl', fiscal_year: '2023-24', published: '2025-02-12', revenue_gbp_m: 1580, surplus_gbp_m: 22, surplus_margin_pct: 1.4, research_income_gbp_m: 582, tuition_fee_income_gbp_m: 540, other_income_gbp_m: 458, staff_costs_gbp_m: 975, total_expenditure_gbp_m: 1558, cash_gbp_m: 275, borrowing_gbp_m: 405, liquidity_days: 61, international_fte_pct: 52, student_fte_total: 41200, capital_expenditure_gbp_m: 165, net_assets_gbp_m: 920, risk_flag: 'Medium', status: 'found', data_source: 'verified' },
-  { institution_id: 'ucl', fiscal_year: '2022-23', published: '2024-02-08', revenue_gbp_m: 1472, surplus_gbp_m: 18, surplus_margin_pct: 1.2, research_income_gbp_m: 550, tuition_fee_income_gbp_m: 508, other_income_gbp_m: 414, staff_costs_gbp_m: 912, total_expenditure_gbp_m: 1454, cash_gbp_m: 248, borrowing_gbp_m: 418, liquidity_days: 58, international_fte_pct: 51, student_fte_total: 40500, capital_expenditure_gbp_m: 148, net_assets_gbp_m: 852, risk_flag: 'Medium', status: 'found', data_source: 'verified' },
-  { institution_id: 'ucl', fiscal_year: '2021-22', published: '2023-02-05', revenue_gbp_m: 1368, surplus_gbp_m: 12, surplus_margin_pct: 0.9, research_income_gbp_m: 518, tuition_fee_income_gbp_m: 475, other_income_gbp_m: 375, staff_costs_gbp_m: 855, total_expenditure_gbp_m: 1356, cash_gbp_m: 222, borrowing_gbp_m: 428, liquidity_days: 54, international_fte_pct: 50, student_fte_total: 39800, capital_expenditure_gbp_m: 132, net_assets_gbp_m: 792, risk_flag: 'Medium', status: 'found', data_source: 'verified' },
-  { institution_id: 'ucl', fiscal_year: '2020-21', published: '2022-02-10', revenue_gbp_m: 1240, surplus_gbp_m: -8, surplus_margin_pct: -0.6, research_income_gbp_m: 475, tuition_fee_income_gbp_m: 438, other_income_gbp_m: 337, staff_costs_gbp_m: 792, total_expenditure_gbp_m: 1248, cash_gbp_m: 195, borrowing_gbp_m: 438, liquidity_days: 49, international_fte_pct: 48, student_fte_total: 39100, capital_expenditure_gbp_m: 118, net_assets_gbp_m: 732, risk_flag: 'High', status: 'found', data_source: 'verified' },
-  // MANCHESTER
-  { institution_id: 'manchester', fiscal_year: '2024-25', published: '2025-11-20', revenue_gbp_m: 1285, surplus_gbp_m: 64, surplus_margin_pct: 5.0, research_income_gbp_m: 378, tuition_fee_income_gbp_m: 498, other_income_gbp_m: 409, staff_costs_gbp_m: 748, total_expenditure_gbp_m: 1221, cash_gbp_m: 218, borrowing_gbp_m: 162, liquidity_days: 78, international_fte_pct: 42, student_fte_total: 44200, capital_expenditure_gbp_m: 128, net_assets_gbp_m: 895, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'manchester', fiscal_year: '2023-24', published: '2024-11-15', revenue_gbp_m: 1198, surplus_gbp_m: 55, surplus_margin_pct: 4.6, research_income_gbp_m: 358, tuition_fee_income_gbp_m: 472, other_income_gbp_m: 368, staff_costs_gbp_m: 702, total_expenditure_gbp_m: 1143, cash_gbp_m: 198, borrowing_gbp_m: 170, liquidity_days: 73, international_fte_pct: 41, student_fte_total: 43500, capital_expenditure_gbp_m: 118, net_assets_gbp_m: 830, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'manchester', fiscal_year: '2022-23', published: '2023-11-18', revenue_gbp_m: 1115, surplus_gbp_m: 44, surplus_margin_pct: 3.9, research_income_gbp_m: 335, tuition_fee_income_gbp_m: 445, other_income_gbp_m: 335, staff_costs_gbp_m: 658, total_expenditure_gbp_m: 1071, cash_gbp_m: 178, borrowing_gbp_m: 178, liquidity_days: 68, international_fte_pct: 40, student_fte_total: 42800, capital_expenditure_gbp_m: 108, net_assets_gbp_m: 762, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'manchester', fiscal_year: '2021-22', published: '2022-11-12', revenue_gbp_m: 1025, surplus_gbp_m: 32, surplus_margin_pct: 3.1, research_income_gbp_m: 310, tuition_fee_income_gbp_m: 418, other_income_gbp_m: 297, staff_costs_gbp_m: 612, total_expenditure_gbp_m: 993, cash_gbp_m: 155, borrowing_gbp_m: 185, liquidity_days: 62, international_fte_pct: 38, student_fte_total: 42100, capital_expenditure_gbp_m: 96, net_assets_gbp_m: 695, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'manchester', fiscal_year: '2020-21', published: '2021-11-14', revenue_gbp_m: 935, surplus_gbp_m: 14, surplus_margin_pct: 1.5, research_income_gbp_m: 285, tuition_fee_income_gbp_m: 388, other_income_gbp_m: 262, staff_costs_gbp_m: 568, total_expenditure_gbp_m: 921, cash_gbp_m: 132, borrowing_gbp_m: 192, liquidity_days: 55, international_fte_pct: 36, student_fte_total: 41400, capital_expenditure_gbp_m: 85, net_assets_gbp_m: 628, risk_flag: 'Medium', status: 'found', data_source: 'verified' },
-  // BRISTOL
-  { institution_id: 'bristol', fiscal_year: '2024-25', published: '2025-12-05', revenue_gbp_m: 852, surplus_gbp_m: 34, surplus_margin_pct: 4.0, research_income_gbp_m: 285, tuition_fee_income_gbp_m: 348, other_income_gbp_m: 219, staff_costs_gbp_m: 525, total_expenditure_gbp_m: 818, cash_gbp_m: 158, borrowing_gbp_m: 145, liquidity_days: 82, international_fte_pct: 35, student_fte_total: 28500, capital_expenditure_gbp_m: 88, net_assets_gbp_m: 648, risk_flag: 'Low', source_pdf: 'https://www.bristol.ac.uk/media-library/sites/finance/documents/UoB_ARFS2025_WEB.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'bristol', fiscal_year: '2023-24', published: '2024-12-02', revenue_gbp_m: 798, surplus_gbp_m: 28, surplus_margin_pct: 3.5, research_income_gbp_m: 268, tuition_fee_income_gbp_m: 328, other_income_gbp_m: 202, staff_costs_gbp_m: 492, total_expenditure_gbp_m: 770, cash_gbp_m: 142, borrowing_gbp_m: 152, liquidity_days: 76, international_fte_pct: 34, student_fte_total: 27900, capital_expenditure_gbp_m: 80, net_assets_gbp_m: 595, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'bristol', fiscal_year: '2022-23', published: '2023-12-04', revenue_gbp_m: 738, surplus_gbp_m: 18, surplus_margin_pct: 2.4, research_income_gbp_m: 248, tuition_fee_income_gbp_m: 305, other_income_gbp_m: 185, staff_costs_gbp_m: 458, total_expenditure_gbp_m: 720, cash_gbp_m: 125, borrowing_gbp_m: 158, liquidity_days: 70, international_fte_pct: 33, student_fte_total: 27200, capital_expenditure_gbp_m: 72, net_assets_gbp_m: 542, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'bristol', fiscal_year: '2021-22', published: '2022-12-01', revenue_gbp_m: 678, surplus_gbp_m: 8, surplus_margin_pct: 1.2, research_income_gbp_m: 228, tuition_fee_income_gbp_m: 282, other_income_gbp_m: 168, staff_costs_gbp_m: 422, total_expenditure_gbp_m: 670, cash_gbp_m: 108, borrowing_gbp_m: 165, liquidity_days: 63, international_fte_pct: 31, student_fte_total: 26600, capital_expenditure_gbp_m: 64, net_assets_gbp_m: 490, risk_flag: 'Medium', status: 'found', data_source: 'verified' },
-  { institution_id: 'bristol', fiscal_year: '2020-21', published: '2021-12-06', revenue_gbp_m: 618, surplus_gbp_m: -4, surplus_margin_pct: -0.6, research_income_gbp_m: 208, tuition_fee_income_gbp_m: 258, other_income_gbp_m: 152, staff_costs_gbp_m: 385, total_expenditure_gbp_m: 622, cash_gbp_m: 92, borrowing_gbp_m: 172, liquidity_days: 55, international_fte_pct: 29, student_fte_total: 26000, capital_expenditure_gbp_m: 56, net_assets_gbp_m: 435, risk_flag: 'High', status: 'found', data_source: 'verified' },
-  // EDINBURGH
-  { institution_id: 'edinburgh', fiscal_year: '2024-25', published: '2026-01-15', revenue_gbp_m: 1248, surplus_gbp_m: 62, surplus_margin_pct: 5.0, research_income_gbp_m: 448, tuition_fee_income_gbp_m: 418, other_income_gbp_m: 382, staff_costs_gbp_m: 742, total_expenditure_gbp_m: 1186, cash_gbp_m: 212, borrowing_gbp_m: 198, liquidity_days: 80, international_fte_pct: 44, student_fte_total: 38800, capital_expenditure_gbp_m: 125, net_assets_gbp_m: 845, risk_flag: 'Low', source_pdf: 'https://uoe-finance.ed.ac.uk/sites/default/files/2026-01/Annual_Report_Accounts_2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'edinburgh', fiscal_year: '2023-24', published: '2025-01-12', revenue_gbp_m: 1168, surplus_gbp_m: 52, surplus_margin_pct: 4.5, research_income_gbp_m: 425, tuition_fee_income_gbp_m: 395, other_income_gbp_m: 348, staff_costs_gbp_m: 698, total_expenditure_gbp_m: 1116, cash_gbp_m: 192, borrowing_gbp_m: 205, liquidity_days: 75, international_fte_pct: 43, student_fte_total: 38100, capital_expenditure_gbp_m: 115, net_assets_gbp_m: 782, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'edinburgh', fiscal_year: '2022-23', published: '2024-01-10', revenue_gbp_m: 1082, surplus_gbp_m: 40, surplus_margin_pct: 3.7, research_income_gbp_m: 398, tuition_fee_income_gbp_m: 368, other_income_gbp_m: 316, staff_costs_gbp_m: 648, total_expenditure_gbp_m: 1042, cash_gbp_m: 172, borrowing_gbp_m: 212, liquidity_days: 70, international_fte_pct: 42, student_fte_total: 37400, capital_expenditure_gbp_m: 105, net_assets_gbp_m: 718, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'edinburgh', fiscal_year: '2021-22', published: '2023-01-08', revenue_gbp_m: 995, surplus_gbp_m: 28, surplus_margin_pct: 2.8, research_income_gbp_m: 368, tuition_fee_income_gbp_m: 338, other_income_gbp_m: 289, staff_costs_gbp_m: 598, total_expenditure_gbp_m: 967, cash_gbp_m: 152, borrowing_gbp_m: 218, liquidity_days: 64, international_fte_pct: 40, student_fte_total: 36700, capital_expenditure_gbp_m: 95, net_assets_gbp_m: 652, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'edinburgh', fiscal_year: '2020-21', published: '2022-01-14', revenue_gbp_m: 905, surplus_gbp_m: 5, surplus_margin_pct: 0.6, research_income_gbp_m: 335, tuition_fee_income_gbp_m: 308, other_income_gbp_m: 262, staff_costs_gbp_m: 548, total_expenditure_gbp_m: 900, cash_gbp_m: 132, borrowing_gbp_m: 225, liquidity_days: 57, international_fte_pct: 38, student_fte_total: 36000, capital_expenditure_gbp_m: 85, net_assets_gbp_m: 588, risk_flag: 'Medium', status: 'found', data_source: 'verified' },
-  // GLASGOW
-  { institution_id: 'glasgow', fiscal_year: '2024-25', published: '2025-11-10', revenue_gbp_m: 892, surplus_gbp_m: 40, surplus_margin_pct: 4.5, research_income_gbp_m: 308, tuition_fee_income_gbp_m: 312, other_income_gbp_m: 272, staff_costs_gbp_m: 548, total_expenditure_gbp_m: 852, cash_gbp_m: 148, borrowing_gbp_m: 125, liquidity_days: 78, international_fte_pct: 32, student_fte_total: 37400, capital_expenditure_gbp_m: 92, net_assets_gbp_m: 618, risk_flag: 'Low', source_pdf: 'https://www.gla.ac.uk/media/Media_1230503_smxx.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'glasgow', fiscal_year: '2023-24', published: '2024-11-08', revenue_gbp_m: 832, surplus_gbp_m: 32, surplus_margin_pct: 3.8, research_income_gbp_m: 288, tuition_fee_income_gbp_m: 292, other_income_gbp_m: 252, staff_costs_gbp_m: 512, total_expenditure_gbp_m: 800, cash_gbp_m: 132, borrowing_gbp_m: 132, liquidity_days: 73, international_fte_pct: 31, student_fte_total: 36800, capital_expenditure_gbp_m: 84, net_assets_gbp_m: 572, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'glasgow', fiscal_year: '2022-23', published: '2023-11-06', revenue_gbp_m: 768, surplus_gbp_m: 22, surplus_margin_pct: 2.9, research_income_gbp_m: 265, tuition_fee_income_gbp_m: 270, other_income_gbp_m: 233, staff_costs_gbp_m: 478, total_expenditure_gbp_m: 746, cash_gbp_m: 118, borrowing_gbp_m: 138, liquidity_days: 68, international_fte_pct: 30, student_fte_total: 36200, capital_expenditure_gbp_m: 76, net_assets_gbp_m: 525, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // CARDIFF
-  { institution_id: 'cardiff', fiscal_year: '2024-25', published: '2025-11-25', revenue_gbp_m: 718, surplus_gbp_m: 22, surplus_margin_pct: 3.1, research_income_gbp_m: 208, tuition_fee_income_gbp_m: 288, other_income_gbp_m: 222, staff_costs_gbp_m: 448, total_expenditure_gbp_m: 696, cash_gbp_m: 112, borrowing_gbp_m: 118, liquidity_days: 72, international_fte_pct: 28, student_fte_total: 32800, capital_expenditure_gbp_m: 72, net_assets_gbp_m: 498, risk_flag: 'Low', source_pdf: 'https://www.cardiff.ac.uk/__data/assets/pdf_file/0007/3018274/Annual-Report-and-Financial-Statements-2025.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'cardiff', fiscal_year: '2023-24', published: '2024-11-22', revenue_gbp_m: 668, surplus_gbp_m: 15, surplus_margin_pct: 2.2, research_income_gbp_m: 192, tuition_fee_income_gbp_m: 268, other_income_gbp_m: 208, staff_costs_gbp_m: 418, total_expenditure_gbp_m: 653, cash_gbp_m: 98, borrowing_gbp_m: 125, liquidity_days: 65, international_fte_pct: 27, student_fte_total: 32100, capital_expenditure_gbp_m: 64, net_assets_gbp_m: 458, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'cardiff', fiscal_year: '2022-23', published: '2023-11-20', revenue_gbp_m: 618, surplus_gbp_m: 8, surplus_margin_pct: 1.3, research_income_gbp_m: 178, tuition_fee_income_gbp_m: 248, other_income_gbp_m: 192, staff_costs_gbp_m: 388, total_expenditure_gbp_m: 610, cash_gbp_m: 85, borrowing_gbp_m: 132, liquidity_days: 58, international_fte_pct: 25, student_fte_total: 31500, capital_expenditure_gbp_m: 56, net_assets_gbp_m: 418, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // LSE
-  { institution_id: 'lse', fiscal_year: '2024-25', published: '2025-12-10', revenue_gbp_m: 548, surplus_gbp_m: 44, surplus_margin_pct: 8.0, research_income_gbp_m: 112, tuition_fee_income_gbp_m: 305, other_income_gbp_m: 131, staff_costs_gbp_m: 308, total_expenditure_gbp_m: 504, cash_gbp_m: 178, borrowing_gbp_m: 42, liquidity_days: 155, international_fte_pct: 72, student_fte_total: 12800, capital_expenditure_gbp_m: 42, net_assets_gbp_m: 642, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'lse', fiscal_year: '2023-24', published: '2024-12-08', revenue_gbp_m: 512, surplus_gbp_m: 38, surplus_margin_pct: 7.4, research_income_gbp_m: 105, tuition_fee_income_gbp_m: 285, other_income_gbp_m: 122, staff_costs_gbp_m: 290, total_expenditure_gbp_m: 474, cash_gbp_m: 162, borrowing_gbp_m: 45, liquidity_days: 148, international_fte_pct: 71, student_fte_total: 12400, capital_expenditure_gbp_m: 38, net_assets_gbp_m: 595, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'lse', fiscal_year: '2022-23', published: '2023-12-06', revenue_gbp_m: 472, surplus_gbp_m: 32, surplus_margin_pct: 6.8, research_income_gbp_m: 98, tuition_fee_income_gbp_m: 262, other_income_gbp_m: 112, staff_costs_gbp_m: 268, total_expenditure_gbp_m: 440, cash_gbp_m: 148, borrowing_gbp_m: 48, liquidity_days: 140, international_fte_pct: 70, student_fte_total: 12000, capital_expenditure_gbp_m: 34, net_assets_gbp_m: 548, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // KCL
-  { institution_id: 'kcl', fiscal_year: '2024-25', published: '2025-12-20', revenue_gbp_m: 1148, surplus_gbp_m: 52, surplus_margin_pct: 4.5, research_income_gbp_m: 362, tuition_fee_income_gbp_m: 438, other_income_gbp_m: 348, staff_costs_gbp_m: 698, total_expenditure_gbp_m: 1096, cash_gbp_m: 188, borrowing_gbp_m: 178, liquidity_days: 75, international_fte_pct: 45, student_fte_total: 35200, capital_expenditure_gbp_m: 112, net_assets_gbp_m: 748, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'kcl', fiscal_year: '2023-24', published: '2024-12-18', revenue_gbp_m: 1068, surplus_gbp_m: 42, surplus_margin_pct: 3.9, research_income_gbp_m: 338, tuition_fee_income_gbp_m: 412, other_income_gbp_m: 318, staff_costs_gbp_m: 652, total_expenditure_gbp_m: 1026, cash_gbp_m: 168, borrowing_gbp_m: 185, liquidity_days: 70, international_fte_pct: 44, student_fte_total: 34500, capital_expenditure_gbp_m: 102, net_assets_gbp_m: 692, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // WARWICK
-  { institution_id: 'warwick', fiscal_year: '2024-25', published: '2025-11-18', revenue_gbp_m: 762, surplus_gbp_m: 46, surplus_margin_pct: 6.0, research_income_gbp_m: 228, tuition_fee_income_gbp_m: 308, other_income_gbp_m: 226, staff_costs_gbp_m: 448, total_expenditure_gbp_m: 716, cash_gbp_m: 145, borrowing_gbp_m: 82, liquidity_days: 95, international_fte_pct: 48, student_fte_total: 28800, capital_expenditure_gbp_m: 76, net_assets_gbp_m: 598, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'warwick', fiscal_year: '2023-24', published: '2024-11-16', revenue_gbp_m: 712, surplus_gbp_m: 40, surplus_margin_pct: 5.6, research_income_gbp_m: 212, tuition_fee_income_gbp_m: 288, other_income_gbp_m: 212, staff_costs_gbp_m: 418, total_expenditure_gbp_m: 672, cash_gbp_m: 130, borrowing_gbp_m: 88, liquidity_days: 89, international_fte_pct: 47, student_fte_total: 28200, capital_expenditure_gbp_m: 68, net_assets_gbp_m: 550, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // DURHAM
-  { institution_id: 'durham', fiscal_year: '2024-25', published: '2025-12-08', revenue_gbp_m: 548, surplus_gbp_m: 33, surplus_margin_pct: 6.0, research_income_gbp_m: 148, tuition_fee_income_gbp_m: 245, other_income_gbp_m: 155, staff_costs_gbp_m: 328, total_expenditure_gbp_m: 515, cash_gbp_m: 118, borrowing_gbp_m: 65, liquidity_days: 105, international_fte_pct: 35, student_fte_total: 22500, capital_expenditure_gbp_m: 55, net_assets_gbp_m: 498, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'durham', fiscal_year: '2023-24', published: '2024-12-05', revenue_gbp_m: 508, surplus_gbp_m: 28, surplus_margin_pct: 5.5, research_income_gbp_m: 138, tuition_fee_income_gbp_m: 228, other_income_gbp_m: 142, staff_costs_gbp_m: 305, total_expenditure_gbp_m: 480, cash_gbp_m: 105, borrowing_gbp_m: 70, liquidity_days: 98, international_fte_pct: 34, student_fte_total: 22000, capital_expenditure_gbp_m: 50, net_assets_gbp_m: 458, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // EXETER
-  { institution_id: 'exeter', fiscal_year: '2024-25', published: '2025-12-12', revenue_gbp_m: 512, surplus_gbp_m: 18, surplus_margin_pct: 3.5, research_income_gbp_m: 128, tuition_fee_income_gbp_m: 238, other_income_gbp_m: 146, staff_costs_gbp_m: 318, total_expenditure_gbp_m: 494, cash_gbp_m: 92, borrowing_gbp_m: 98, liquidity_days: 70, international_fte_pct: 30, student_fte_total: 25800, capital_expenditure_gbp_m: 52, net_assets_gbp_m: 428, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'exeter', fiscal_year: '2023-24', published: '2024-12-10', revenue_gbp_m: 475, surplus_gbp_m: 12, surplus_margin_pct: 2.5, research_income_gbp_m: 118, tuition_fee_income_gbp_m: 220, other_income_gbp_m: 137, staff_costs_gbp_m: 295, total_expenditure_gbp_m: 463, cash_gbp_m: 82, borrowing_gbp_m: 105, liquidity_days: 64, international_fte_pct: 29, student_fte_total: 25300, capital_expenditure_gbp_m: 46, net_assets_gbp_m: 392, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // LEEDS
-  { institution_id: 'leeds', fiscal_year: '2024-25', published: '2025-11-28', revenue_gbp_m: 828, surplus_gbp_m: 38, surplus_margin_pct: 4.6, research_income_gbp_m: 232, tuition_fee_income_gbp_m: 352, other_income_gbp_m: 244, staff_costs_gbp_m: 510, total_expenditure_gbp_m: 790, cash_gbp_m: 152, borrowing_gbp_m: 112, liquidity_days: 84, international_fte_pct: 33, student_fte_total: 38600, capital_expenditure_gbp_m: 82, net_assets_gbp_m: 612, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'leeds', fiscal_year: '2023-24', published: '2024-11-26', revenue_gbp_m: 772, surplus_gbp_m: 30, surplus_margin_pct: 3.9, research_income_gbp_m: 215, tuition_fee_income_gbp_m: 328, other_income_gbp_m: 229, staff_costs_gbp_m: 478, total_expenditure_gbp_m: 742, cash_gbp_m: 138, borrowing_gbp_m: 118, liquidity_days: 79, international_fte_pct: 32, student_fte_total: 38100, capital_expenditure_gbp_m: 74, net_assets_gbp_m: 562, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // SHEFFIELD
-  { institution_id: 'sheffield', fiscal_year: '2024-25', published: '2025-11-22', revenue_gbp_m: 745, surplus_gbp_m: 26, surplus_margin_pct: 3.5, research_income_gbp_m: 215, tuition_fee_income_gbp_m: 312, other_income_gbp_m: 218, staff_costs_gbp_m: 468, total_expenditure_gbp_m: 719, cash_gbp_m: 138, borrowing_gbp_m: 102, liquidity_days: 82, international_fte_pct: 31, student_fte_total: 31500, capital_expenditure_gbp_m: 76, net_assets_gbp_m: 548, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'sheffield', fiscal_year: '2023-24', published: '2024-11-20', revenue_gbp_m: 695, surplus_gbp_m: 20, surplus_margin_pct: 2.9, research_income_gbp_m: 200, tuition_fee_income_gbp_m: 290, other_income_gbp_m: 205, staff_costs_gbp_m: 436, total_expenditure_gbp_m: 675, cash_gbp_m: 124, borrowing_gbp_m: 108, liquidity_days: 76, international_fte_pct: 30, student_fte_total: 31000, capital_expenditure_gbp_m: 68, net_assets_gbp_m: 502, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // BIRMINGHAM
-  { institution_id: 'birmingham', fiscal_year: '2024-25', published: '2025-11-30', revenue_gbp_m: 782, surplus_gbp_m: 22, surplus_margin_pct: 2.8, research_income_gbp_m: 222, tuition_fee_income_gbp_m: 338, other_income_gbp_m: 222, staff_costs_gbp_m: 492, total_expenditure_gbp_m: 760, cash_gbp_m: 132, borrowing_gbp_m: 142, liquidity_days: 72, international_fte_pct: 33, student_fte_total: 36800, capital_expenditure_gbp_m: 78, net_assets_gbp_m: 538, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'birmingham', fiscal_year: '2023-24', published: '2024-11-28', revenue_gbp_m: 728, surplus_gbp_m: 16, surplus_margin_pct: 2.2, research_income_gbp_m: 205, tuition_fee_income_gbp_m: 315, other_income_gbp_m: 208, staff_costs_gbp_m: 458, total_expenditure_gbp_m: 712, cash_gbp_m: 118, borrowing_gbp_m: 148, liquidity_days: 67, international_fte_pct: 32, student_fte_total: 36200, capital_expenditure_gbp_m: 70, net_assets_gbp_m: 492, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // SOUTHAMPTON
-  { institution_id: 'southampton', fiscal_year: '2024-25', published: '2025-11-25', revenue_gbp_m: 658, surplus_gbp_m: 28, surplus_margin_pct: 4.3, research_income_gbp_m: 218, tuition_fee_income_gbp_m: 265, other_income_gbp_m: 175, staff_costs_gbp_m: 405, total_expenditure_gbp_m: 630, cash_gbp_m: 122, borrowing_gbp_m: 85, liquidity_days: 86, international_fte_pct: 34, student_fte_total: 26800, capital_expenditure_gbp_m: 66, net_assets_gbp_m: 492, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // NEWCASTLE
-  { institution_id: 'newcastle', fiscal_year: '2024-25', published: '2025-12-02', revenue_gbp_m: 598, surplus_gbp_m: 24, surplus_margin_pct: 4.0, research_income_gbp_m: 192, tuition_fee_income_gbp_m: 242, other_income_gbp_m: 164, staff_costs_gbp_m: 372, total_expenditure_gbp_m: 574, cash_gbp_m: 108, borrowing_gbp_m: 78, liquidity_days: 80, international_fte_pct: 31, student_fte_total: 27200, capital_expenditure_gbp_m: 60, net_assets_gbp_m: 448, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // NOTTINGHAM
-  { institution_id: 'nottingham', fiscal_year: '2024-25', published: '2025-12-05', revenue_gbp_m: 722, surplus_gbp_m: 29, surplus_margin_pct: 4.0, research_income_gbp_m: 205, tuition_fee_income_gbp_m: 298, other_income_gbp_m: 219, staff_costs_gbp_m: 448, total_expenditure_gbp_m: 693, cash_gbp_m: 132, borrowing_gbp_m: 95, liquidity_days: 84, international_fte_pct: 36, student_fte_total: 35800, capital_expenditure_gbp_m: 72, net_assets_gbp_m: 528, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // QUB
-  { institution_id: 'qub', fiscal_year: '2024-25', published: '2025-11-15', revenue_gbp_m: 412, surplus_gbp_m: 16, surplus_margin_pct: 3.9, research_income_gbp_m: 128, tuition_fee_income_gbp_m: 172, other_income_gbp_m: 112, staff_costs_gbp_m: 252, total_expenditure_gbp_m: 396, cash_gbp_m: 78, borrowing_gbp_m: 52, liquidity_days: 88, international_fte_pct: 22, student_fte_total: 24500, capital_expenditure_gbp_m: 42, net_assets_gbp_m: 318, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // ST ANDREWS
-  { institution_id: 'standrews', fiscal_year: '2024-25', published: '2025-11-20', revenue_gbp_m: 382, surplus_gbp_m: 22, surplus_margin_pct: 5.8, research_income_gbp_m: 98, tuition_fee_income_gbp_m: 178, other_income_gbp_m: 106, staff_costs_gbp_m: 232, total_expenditure_gbp_m: 360, cash_gbp_m: 85, borrowing_gbp_m: 38, liquidity_days: 112, international_fte_pct: 42, student_fte_total: 10800, capital_expenditure_gbp_m: 38, net_assets_gbp_m: 378, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // STRATHCLYDE
-  { institution_id: 'strathclyde', fiscal_year: '2024-25', published: '2025-11-18', revenue_gbp_m: 428, surplus_gbp_m: 20, surplus_margin_pct: 4.7, research_income_gbp_m: 115, tuition_fee_income_gbp_m: 188, other_income_gbp_m: 125, staff_costs_gbp_m: 262, total_expenditure_gbp_m: 408, cash_gbp_m: 82, borrowing_gbp_m: 62, liquidity_days: 86, international_fte_pct: 28, student_fte_total: 21800, capital_expenditure_gbp_m: 44, net_assets_gbp_m: 342, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // SWANSEA
-  { institution_id: 'swansea', fiscal_year: '2024-25', published: '2025-11-22', revenue_gbp_m: 338, surplus_gbp_m: 8, surplus_margin_pct: 2.4, research_income_gbp_m: 88, tuition_fee_income_gbp_m: 155, other_income_gbp_m: 95, staff_costs_gbp_m: 215, total_expenditure_gbp_m: 330, cash_gbp_m: 55, borrowing_gbp_m: 72, liquidity_days: 62, international_fte_pct: 20, student_fte_total: 18900, capital_expenditure_gbp_m: 34, net_assets_gbp_m: 265, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // ABERDEEN
-  { institution_id: 'aberdeen', fiscal_year: '2024-25', published: '2025-11-14', revenue_gbp_m: 312, surplus_gbp_m: 10, surplus_margin_pct: 3.2, research_income_gbp_m: 78, tuition_fee_income_gbp_m: 142, other_income_gbp_m: 92, staff_costs_gbp_m: 195, total_expenditure_gbp_m: 302, cash_gbp_m: 48, borrowing_gbp_m: 45, liquidity_days: 72, international_fte_pct: 24, student_fte_total: 16800, capital_expenditure_gbp_m: 32, net_assets_gbp_m: 248, risk_flag: 'Low', source_pdf: 'https://www.abdn.ac.uk/staffnet/documents/Annual-Report-2025.pdf', status: 'found', data_source: 'verified' },
-  // YORK
-  { institution_id: 'york', fiscal_year: '2024-25', published: '2025-12-12', revenue_gbp_m: 488, surplus_gbp_m: 16, surplus_margin_pct: 3.2, research_income_gbp_m: 175, tuition_fee_income_gbp_m: 195, other_income_gbp_m: 118, staff_costs_gbp_m: 282, total_expenditure_gbp_m: 472, cash_gbp_m: 95, borrowing_gbp_m: 102, liquidity_days: 80, international_fte_pct: 35, student_fte_total: 14500, capital_expenditure_gbp_m: 49, net_assets_gbp_m: 385, risk_flag: 'Low', source_pdf: 'https://www.york.ac.uk/about/organisation/governance/annual-report/annual-report-financial-statements-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'york', fiscal_year: '2023-24', published: '2024-12-10', revenue_gbp_m: 455, surplus_gbp_m: 13, surplus_margin_pct: 2.8, research_income_gbp_m: 162, tuition_fee_income_gbp_m: 182, other_income_gbp_m: 111, staff_costs_gbp_m: 262, total_expenditure_gbp_m: 442, cash_gbp_m: 85, borrowing_gbp_m: 108, liquidity_days: 74, international_fte_pct: 34, student_fte_total: 14100, capital_expenditure_gbp_m: 46, net_assets_gbp_m: 355, risk_flag: 'Low', source_pdf: 'https://www.york.ac.uk/about/organisation/governance/annual-report/annual-report-financial-statements-2023-24.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'york', fiscal_year: '2022-23', published: '2023-12-08', revenue_gbp_m: 422, surplus_gbp_m: 10, surplus_margin_pct: 2.4, research_income_gbp_m: 148, tuition_fee_income_gbp_m: 168, other_income_gbp_m: 106, staff_costs_gbp_m: 245, total_expenditure_gbp_m: 412, cash_gbp_m: 78, borrowing_gbp_m: 115, liquidity_days: 68, international_fte_pct: 33, student_fte_total: 13800, capital_expenditure_gbp_m: 42, net_assets_gbp_m: 322, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // QMUL
-  { institution_id: 'qmul', fiscal_year: '2024-25', published: '2026-01-22', revenue_gbp_m: 668, surplus_gbp_m: 19, surplus_margin_pct: 2.8, research_income_gbp_m: 232, tuition_fee_income_gbp_m: 265, other_income_gbp_m: 171, staff_costs_gbp_m: 408, total_expenditure_gbp_m: 649, cash_gbp_m: 135, borrowing_gbp_m: 155, liquidity_days: 75, international_fte_pct: 51, student_fte_total: 22000, capital_expenditure_gbp_m: 67, net_assets_gbp_m: 520, risk_flag: 'Low', source_pdf: 'https://www.qmul.ac.uk/media/qmul/about/governance/Annual-Report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'qmul', fiscal_year: '2023-24', published: '2025-01-18', revenue_gbp_m: 622, surplus_gbp_m: 14, surplus_margin_pct: 2.2, research_income_gbp_m: 215, tuition_fee_income_gbp_m: 248, other_income_gbp_m: 159, staff_costs_gbp_m: 378, total_expenditure_gbp_m: 608, cash_gbp_m: 118, borrowing_gbp_m: 162, liquidity_days: 70, international_fte_pct: 50, student_fte_total: 21500, capital_expenditure_gbp_m: 62, net_assets_gbp_m: 478, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'qmul', fiscal_year: '2022-23', published: '2024-01-12', revenue_gbp_m: 578, surplus_gbp_m: 10, surplus_margin_pct: 1.7, research_income_gbp_m: 198, tuition_fee_income_gbp_m: 232, other_income_gbp_m: 148, staff_costs_gbp_m: 352, total_expenditure_gbp_m: 568, cash_gbp_m: 105, borrowing_gbp_m: 168, liquidity_days: 64, international_fte_pct: 49, student_fte_total: 21000, capital_expenditure_gbp_m: 58, net_assets_gbp_m: 445, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // LIVERPOOL
-  { institution_id: 'liverpool', fiscal_year: '2024-25', published: '2025-11-28', revenue_gbp_m: 612, surplus_gbp_m: 15, surplus_margin_pct: 2.5, research_income_gbp_m: 198, tuition_fee_income_gbp_m: 255, other_income_gbp_m: 159, staff_costs_gbp_m: 375, total_expenditure_gbp_m: 597, cash_gbp_m: 115, borrowing_gbp_m: 125, liquidity_days: 72, international_fte_pct: 30, student_fte_total: 28000, capital_expenditure_gbp_m: 62, net_assets_gbp_m: 478, risk_flag: 'Low', source_pdf: 'https://www.liverpool.ac.uk/media/livacuk/finance/annual-report/Annual_Report_and_Accounts_2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'liverpool', fiscal_year: '2023-24', published: '2024-11-25', revenue_gbp_m: 572, surplus_gbp_m: 11, surplus_margin_pct: 1.9, research_income_gbp_m: 184, tuition_fee_income_gbp_m: 238, other_income_gbp_m: 150, staff_costs_gbp_m: 348, total_expenditure_gbp_m: 561, cash_gbp_m: 102, borrowing_gbp_m: 132, liquidity_days: 66, international_fte_pct: 29, student_fte_total: 27500, capital_expenditure_gbp_m: 57, net_assets_gbp_m: 442, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'liverpool', fiscal_year: '2022-23', published: '2023-11-22', revenue_gbp_m: 532, surplus_gbp_m: 8, surplus_margin_pct: 1.5, research_income_gbp_m: 170, tuition_fee_income_gbp_m: 222, other_income_gbp_m: 140, staff_costs_gbp_m: 322, total_expenditure_gbp_m: 524, cash_gbp_m: 92, borrowing_gbp_m: 138, liquidity_days: 60, international_fte_pct: 28, student_fte_total: 27000, capital_expenditure_gbp_m: 53, net_assets_gbp_m: 408, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // BATH
-  { institution_id: 'bath', fiscal_year: '2024-25', published: '2025-11-20', revenue_gbp_m: 358, surplus_gbp_m: 16, surplus_margin_pct: 4.5, research_income_gbp_m: 92, tuition_fee_income_gbp_m: 178, other_income_gbp_m: 88, staff_costs_gbp_m: 205, total_expenditure_gbp_m: 342, cash_gbp_m: 82, borrowing_gbp_m: 45, liquidity_days: 108, international_fte_pct: 38, student_fte_total: 18500, capital_expenditure_gbp_m: 36, net_assets_gbp_m: 342, risk_flag: 'Low', source_pdf: 'https://www.bath.ac.uk/publications/annual-report-2024-25/annual-report-financial-statements-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'bath', fiscal_year: '2023-24', published: '2024-11-18', revenue_gbp_m: 335, surplus_gbp_m: 14, surplus_margin_pct: 4.1, research_income_gbp_m: 85, tuition_fee_income_gbp_m: 165, other_income_gbp_m: 85, staff_costs_gbp_m: 192, total_expenditure_gbp_m: 321, cash_gbp_m: 75, borrowing_gbp_m: 48, liquidity_days: 102, international_fte_pct: 37, student_fte_total: 18100, capital_expenditure_gbp_m: 34, net_assets_gbp_m: 315, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  { institution_id: 'bath', fiscal_year: '2022-23', published: '2023-11-15', revenue_gbp_m: 312, surplus_gbp_m: 12, surplus_margin_pct: 3.8, research_income_gbp_m: 78, tuition_fee_income_gbp_m: 152, other_income_gbp_m: 82, staff_costs_gbp_m: 178, total_expenditure_gbp_m: 300, cash_gbp_m: 68, borrowing_gbp_m: 52, liquidity_days: 95, international_fte_pct: 36, student_fte_total: 17700, capital_expenditure_gbp_m: 31, net_assets_gbp_m: 288, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // LOUGHBOROUGH
-  { institution_id: 'loughborough', fiscal_year: '2024-25', published: '2025-11-25', revenue_gbp_m: 372, surplus_gbp_m: 15, surplus_margin_pct: 4.0, research_income_gbp_m: 88, tuition_fee_income_gbp_m: 195, other_income_gbp_m: 89, staff_costs_gbp_m: 218, total_expenditure_gbp_m: 357, cash_gbp_m: 78, borrowing_gbp_m: 52, liquidity_days: 95, international_fte_pct: 28, student_fte_total: 19200, capital_expenditure_gbp_m: 37, net_assets_gbp_m: 318, risk_flag: 'Low', source_pdf: 'https://www.lboro.ac.uk/media/media/schoolanddepartments/finance/Annual-Report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'loughborough', fiscal_year: '2023-24', published: '2024-11-22', revenue_gbp_m: 348, surplus_gbp_m: 13, surplus_margin_pct: 3.7, research_income_gbp_m: 82, tuition_fee_income_gbp_m: 182, other_income_gbp_m: 84, staff_costs_gbp_m: 202, total_expenditure_gbp_m: 335, cash_gbp_m: 70, borrowing_gbp_m: 55, liquidity_days: 88, international_fte_pct: 27, student_fte_total: 18800, capital_expenditure_gbp_m: 35, net_assets_gbp_m: 292, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // SURREY
-  { institution_id: 'surrey', fiscal_year: '2024-25', published: '2025-11-18', revenue_gbp_m: 318, surplus_gbp_m: 10, surplus_margin_pct: 3.0, research_income_gbp_m: 68, tuition_fee_income_gbp_m: 158, other_income_gbp_m: 92, staff_costs_gbp_m: 188, total_expenditure_gbp_m: 308, cash_gbp_m: 62, borrowing_gbp_m: 72, liquidity_days: 78, international_fte_pct: 42, student_fte_total: 16800, capital_expenditure_gbp_m: 32, net_assets_gbp_m: 278, risk_flag: 'Low', source_pdf: 'https://www.surrey.ac.uk/sites/default/files/2025-11/annual-report-and-accounts-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'surrey', fiscal_year: '2023-24', published: '2024-11-15', revenue_gbp_m: 298, surplus_gbp_m: 8, surplus_margin_pct: 2.6, research_income_gbp_m: 62, tuition_fee_income_gbp_m: 148, other_income_gbp_m: 88, staff_costs_gbp_m: 175, total_expenditure_gbp_m: 290, cash_gbp_m: 55, borrowing_gbp_m: 76, liquidity_days: 72, international_fte_pct: 41, student_fte_total: 16400, capital_expenditure_gbp_m: 30, net_assets_gbp_m: 255, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // LANCASTER
-  { institution_id: 'lancaster', fiscal_year: '2024-25', published: '2025-12-05', revenue_gbp_m: 348, surplus_gbp_m: 15, surplus_margin_pct: 4.2, research_income_gbp_m: 82, tuition_fee_income_gbp_m: 178, other_income_gbp_m: 88, staff_costs_gbp_m: 202, total_expenditure_gbp_m: 333, cash_gbp_m: 75, borrowing_gbp_m: 48, liquidity_days: 98, international_fte_pct: 35, student_fte_total: 15500, capital_expenditure_gbp_m: 35, net_assets_gbp_m: 295, risk_flag: 'Low', source_pdf: 'https://www.lancaster.ac.uk/media/lancaster-university/content-assets/documents/finance/Annual-Report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'lancaster', fiscal_year: '2023-24', published: '2024-12-02', revenue_gbp_m: 325, surplus_gbp_m: 13, surplus_margin_pct: 3.9, research_income_gbp_m: 76, tuition_fee_income_gbp_m: 165, other_income_gbp_m: 84, staff_costs_gbp_m: 188, total_expenditure_gbp_m: 312, cash_gbp_m: 68, borrowing_gbp_m: 51, liquidity_days: 92, international_fte_pct: 34, student_fte_total: 15200, capital_expenditure_gbp_m: 33, net_assets_gbp_m: 272, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // READING
-  { institution_id: 'reading', fiscal_year: '2024-25', published: '2025-12-02', revenue_gbp_m: 318, surplus_gbp_m: 6, surplus_margin_pct: 1.8, research_income_gbp_m: 72, tuition_fee_income_gbp_m: 165, other_income_gbp_m: 81, staff_costs_gbp_m: 192, total_expenditure_gbp_m: 312, cash_gbp_m: 52, borrowing_gbp_m: 88, liquidity_days: 62, international_fte_pct: 32, student_fte_total: 19500, capital_expenditure_gbp_m: 32, net_assets_gbp_m: 255, risk_flag: 'Low', source_pdf: 'https://www.reading.ac.uk/about/publications/annual-report-and-financial-statements-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'reading', fiscal_year: '2023-24', published: '2024-11-28', revenue_gbp_m: 298, surplus_gbp_m: 5, surplus_margin_pct: 1.5, research_income_gbp_m: 66, tuition_fee_income_gbp_m: 155, other_income_gbp_m: 77, staff_costs_gbp_m: 178, total_expenditure_gbp_m: 293, cash_gbp_m: 46, borrowing_gbp_m: 92, liquidity_days: 58, international_fte_pct: 31, student_fte_total: 19100, capital_expenditure_gbp_m: 30, net_assets_gbp_m: 232, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // SUSSEX
-  { institution_id: 'sussex', fiscal_year: '2024-25', published: '2025-11-28', revenue_gbp_m: 312, surplus_gbp_m: 7, surplus_margin_pct: 2.2, research_income_gbp_m: 82, tuition_fee_income_gbp_m: 148, other_income_gbp_m: 82, staff_costs_gbp_m: 188, total_expenditure_gbp_m: 305, cash_gbp_m: 58, borrowing_gbp_m: 68, liquidity_days: 72, international_fte_pct: 38, student_fte_total: 20500, capital_expenditure_gbp_m: 31, net_assets_gbp_m: 248, risk_flag: 'Low', source_pdf: 'https://www.sussex.ac.uk/about/documents/annual-report-financial-statements-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'sussex', fiscal_year: '2023-24', published: '2024-11-25', revenue_gbp_m: 292, surplus_gbp_m: 6, surplus_margin_pct: 2.0, research_income_gbp_m: 76, tuition_fee_income_gbp_m: 138, other_income_gbp_m: 78, staff_costs_gbp_m: 175, total_expenditure_gbp_m: 286, cash_gbp_m: 52, borrowing_gbp_m: 72, liquidity_days: 68, international_fte_pct: 37, student_fte_total: 20100, capital_expenditure_gbp_m: 29, net_assets_gbp_m: 228, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // UEA
-  { institution_id: 'uea', fiscal_year: '2024-25', published: '2025-11-22', revenue_gbp_m: 302, surplus_gbp_m: 7, surplus_margin_pct: 2.4, research_income_gbp_m: 72, tuition_fee_income_gbp_m: 155, other_income_gbp_m: 75, staff_costs_gbp_m: 178, total_expenditure_gbp_m: 295, cash_gbp_m: 55, borrowing_gbp_m: 58, liquidity_days: 75, international_fte_pct: 28, student_fte_total: 18200, capital_expenditure_gbp_m: 30, net_assets_gbp_m: 235, risk_flag: 'Low', source_pdf: 'https://www.uea.ac.uk/about/university-information/statutory-and-financial/annual-report-and-accounts/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'uea', fiscal_year: '2023-24', published: '2024-11-20', revenue_gbp_m: 282, surplus_gbp_m: 6, surplus_margin_pct: 2.1, research_income_gbp_m: 66, tuition_fee_income_gbp_m: 145, other_income_gbp_m: 71, staff_costs_gbp_m: 165, total_expenditure_gbp_m: 276, cash_gbp_m: 49, borrowing_gbp_m: 61, liquidity_days: 70, international_fte_pct: 27, student_fte_total: 17800, capital_expenditure_gbp_m: 28, net_assets_gbp_m: 215, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // ESSEX
-  { institution_id: 'essex', fiscal_year: '2024-25', published: '2025-12-10', revenue_gbp_m: 268, surplus_gbp_m: 8, surplus_margin_pct: 3.1, research_income_gbp_m: 52, tuition_fee_income_gbp_m: 138, other_income_gbp_m: 78, staff_costs_gbp_m: 158, total_expenditure_gbp_m: 260, cash_gbp_m: 52, borrowing_gbp_m: 48, liquidity_days: 78, international_fte_pct: 35, student_fte_total: 14800, capital_expenditure_gbp_m: 27, net_assets_gbp_m: 215, risk_flag: 'Low', source_pdf: 'https://www.essex.ac.uk/governance/documents/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'essex', fiscal_year: '2023-24', published: '2024-12-08', revenue_gbp_m: 252, surplus_gbp_m: 7, surplus_margin_pct: 2.8, research_income_gbp_m: 48, tuition_fee_income_gbp_m: 128, other_income_gbp_m: 76, staff_costs_gbp_m: 148, total_expenditure_gbp_m: 245, cash_gbp_m: 46, borrowing_gbp_m: 51, liquidity_days: 72, international_fte_pct: 34, student_fte_total: 14500, capital_expenditure_gbp_m: 25, net_assets_gbp_m: 198, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // KENT
-  { institution_id: 'kent', fiscal_year: '2024-25', published: '2025-12-15', revenue_gbp_m: 248, surplus_gbp_m: 5, surplus_margin_pct: 1.9, research_income_gbp_m: 38, tuition_fee_income_gbp_m: 135, other_income_gbp_m: 75, staff_costs_gbp_m: 152, total_expenditure_gbp_m: 243, cash_gbp_m: 38, borrowing_gbp_m: 68, liquidity_days: 52, international_fte_pct: 26, student_fte_total: 18500, capital_expenditure_gbp_m: 25, net_assets_gbp_m: 188, risk_flag: 'Medium', source_pdf: 'https://www.kent.ac.uk/finance/documents/annual-report-and-accounts-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'kent', fiscal_year: '2023-24', published: '2024-12-12', revenue_gbp_m: 232, surplus_gbp_m: 2, surplus_margin_pct: 0.9, research_income_gbp_m: 35, tuition_fee_income_gbp_m: 126, other_income_gbp_m: 71, staff_costs_gbp_m: 143, total_expenditure_gbp_m: 230, cash_gbp_m: 32, borrowing_gbp_m: 72, liquidity_days: 46, international_fte_pct: 25, student_fte_total: 18100, capital_expenditure_gbp_m: 23, net_assets_gbp_m: 170, risk_flag: 'Medium', status: 'found', data_source: 'verified' },
-  // LEICESTER
-  { institution_id: 'leicester', fiscal_year: '2024-25', published: '2025-12-05', revenue_gbp_m: 338, surplus_gbp_m: 9, surplus_margin_pct: 2.8, research_income_gbp_m: 75, tuition_fee_income_gbp_m: 175, other_income_gbp_m: 88, staff_costs_gbp_m: 198, total_expenditure_gbp_m: 329, cash_gbp_m: 65, borrowing_gbp_m: 58, liquidity_days: 82, international_fte_pct: 30, student_fte_total: 21200, capital_expenditure_gbp_m: 34, net_assets_gbp_m: 268, risk_flag: 'Low', source_pdf: 'https://le.ac.uk/about/strategy-governance/financial-information/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'leicester', fiscal_year: '2023-24', published: '2024-12-02', revenue_gbp_m: 315, surplus_gbp_m: 8, surplus_margin_pct: 2.5, research_income_gbp_m: 69, tuition_fee_income_gbp_m: 162, other_income_gbp_m: 84, staff_costs_gbp_m: 185, total_expenditure_gbp_m: 307, cash_gbp_m: 58, borrowing_gbp_m: 61, liquidity_days: 76, international_fte_pct: 29, student_fte_total: 20800, capital_expenditure_gbp_m: 32, net_assets_gbp_m: 248, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // ASTON
-  { institution_id: 'aston', fiscal_year: '2024-25', published: '2025-12-18', revenue_gbp_m: 188, surplus_gbp_m: 6, surplus_margin_pct: 3.4, research_income_gbp_m: 32, tuition_fee_income_gbp_m: 105, other_income_gbp_m: 51, staff_costs_gbp_m: 112, total_expenditure_gbp_m: 182, cash_gbp_m: 38, borrowing_gbp_m: 28, liquidity_days: 82, international_fte_pct: 38, student_fte_total: 12500, capital_expenditure_gbp_m: 19, net_assets_gbp_m: 165, risk_flag: 'Low', source_pdf: 'https://www.aston.ac.uk/about/governance/financial-statements-and-audit/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'aston', fiscal_year: '2023-24', published: '2024-12-15', revenue_gbp_m: 176, surplus_gbp_m: 5, surplus_margin_pct: 3.1, research_income_gbp_m: 29, tuition_fee_income_gbp_m: 98, other_income_gbp_m: 49, staff_costs_gbp_m: 105, total_expenditure_gbp_m: 171, cash_gbp_m: 34, borrowing_gbp_m: 30, liquidity_days: 76, international_fte_pct: 37, student_fte_total: 12200, capital_expenditure_gbp_m: 18, net_assets_gbp_m: 152, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // HULL
-  { institution_id: 'hull', fiscal_year: '2024-25', published: '2025-12-12', revenue_gbp_m: 218, surplus_gbp_m: 4, surplus_margin_pct: 1.8, research_income_gbp_m: 32, tuition_fee_income_gbp_m: 118, other_income_gbp_m: 68, staff_costs_gbp_m: 135, total_expenditure_gbp_m: 214, cash_gbp_m: 35, borrowing_gbp_m: 48, liquidity_days: 58, international_fte_pct: 22, student_fte_total: 16500, capital_expenditure_gbp_m: 22, net_assets_gbp_m: 172, risk_flag: 'Low', source_pdf: 'https://www.hull.ac.uk/choose-hull/university-and-city/governance/reports-and-accounts/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'hull', fiscal_year: '2023-24', published: '2024-12-10', revenue_gbp_m: 204, surplus_gbp_m: 3, surplus_margin_pct: 1.5, research_income_gbp_m: 29, tuition_fee_income_gbp_m: 110, other_income_gbp_m: 65, staff_costs_gbp_m: 126, total_expenditure_gbp_m: 201, cash_gbp_m: 31, borrowing_gbp_m: 50, liquidity_days: 54, international_fte_pct: 21, student_fte_total: 16100, capital_expenditure_gbp_m: 20, net_assets_gbp_m: 158, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // CITY
-  { institution_id: 'city', fiscal_year: '2024-25', published: '2026-01-12', revenue_gbp_m: 268, surplus_gbp_m: 9, surplus_margin_pct: 3.5, research_income_gbp_m: 38, tuition_fee_income_gbp_m: 148, other_income_gbp_m: 82, staff_costs_gbp_m: 165, total_expenditure_gbp_m: 259, cash_gbp_m: 55, borrowing_gbp_m: 42, liquidity_days: 78, international_fte_pct: 48, student_fte_total: 19500, capital_expenditure_gbp_m: 27, net_assets_gbp_m: 218, risk_flag: 'Low', source_pdf: 'https://www.city.ac.uk/about/governance/council/annual-report/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'city', fiscal_year: '2023-24', published: '2025-01-08', revenue_gbp_m: 251, surplus_gbp_m: 8, surplus_margin_pct: 3.1, research_income_gbp_m: 35, tuition_fee_income_gbp_m: 138, other_income_gbp_m: 78, staff_costs_gbp_m: 155, total_expenditure_gbp_m: 243, cash_gbp_m: 49, borrowing_gbp_m: 44, liquidity_days: 73, international_fte_pct: 47, student_fte_total: 19100, capital_expenditure_gbp_m: 25, net_assets_gbp_m: 202, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // LSHTM
-  { institution_id: 'lshtm', fiscal_year: '2024-25', published: '2025-11-28', revenue_gbp_m: 218, surplus_gbp_m: 14, surplus_margin_pct: 6.2, research_income_gbp_m: 128, tuition_fee_income_gbp_m: 45, other_income_gbp_m: 45, staff_costs_gbp_m: 132, total_expenditure_gbp_m: 204, cash_gbp_m: 48, borrowing_gbp_m: 18, liquidity_days: 98, international_fte_pct: 58, student_fte_total: 6800, capital_expenditure_gbp_m: 22, net_assets_gbp_m: 185, risk_flag: 'Low', source_pdf: 'https://www.lshtm.ac.uk/aboutus/organisation/governance/annual-reports/annual-report-accounts-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'lshtm', fiscal_year: '2023-24', published: '2024-11-25', revenue_gbp_m: 202, surplus_gbp_m: 12, surplus_margin_pct: 5.8, research_income_gbp_m: 118, tuition_fee_income_gbp_m: 42, other_income_gbp_m: 42, staff_costs_gbp_m: 122, total_expenditure_gbp_m: 190, cash_gbp_m: 43, borrowing_gbp_m: 19, liquidity_days: 92, international_fte_pct: 57, student_fte_total: 6500, capital_expenditure_gbp_m: 20, net_assets_gbp_m: 170, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // OPEN UNIVERSITY
-  { institution_id: 'open', fiscal_year: '2024-25', published: '2025-12-20', revenue_gbp_m: 538, surplus_gbp_m: 15, surplus_margin_pct: 2.8, research_income_gbp_m: 32, tuition_fee_income_gbp_m: 395, other_income_gbp_m: 111, staff_costs_gbp_m: 295, total_expenditure_gbp_m: 523, cash_gbp_m: 95, borrowing_gbp_m: 28, liquidity_days: 68, international_fte_pct: 8, student_fte_total: 175000, capital_expenditure_gbp_m: 54, net_assets_gbp_m: 285, risk_flag: 'Low', source_pdf: 'https://www.open.ac.uk/about/governance-open-university/files/annual-report-financial-statements-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'open', fiscal_year: '2023-24', published: '2024-12-18', revenue_gbp_m: 505, surplus_gbp_m: 13, surplus_margin_pct: 2.5, research_income_gbp_m: 29, tuition_fee_income_gbp_m: 372, other_income_gbp_m: 104, staff_costs_gbp_m: 276, total_expenditure_gbp_m: 492, cash_gbp_m: 85, borrowing_gbp_m: 30, liquidity_days: 63, international_fte_pct: 8, student_fte_total: 172000, capital_expenditure_gbp_m: 51, net_assets_gbp_m: 262, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // MMU
-  { institution_id: 'mmu', fiscal_year: '2024-25', published: '2025-12-08', revenue_gbp_m: 425, surplus_gbp_m: 15, surplus_margin_pct: 3.5, research_income_gbp_m: 22, tuition_fee_income_gbp_m: 268, other_income_gbp_m: 135, staff_costs_gbp_m: 258, total_expenditure_gbp_m: 410, cash_gbp_m: 78, borrowing_gbp_m: 52, liquidity_days: 68, international_fte_pct: 16, student_fte_total: 38000, capital_expenditure_gbp_m: 43, net_assets_gbp_m: 295, risk_flag: 'Low', source_pdf: 'https://www.mmu.ac.uk/sites/default/files/2025-12/annual-report-and-accounts-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'mmu', fiscal_year: '2023-24', published: '2024-12-05', revenue_gbp_m: 398, surplus_gbp_m: 13, surplus_margin_pct: 3.2, research_income_gbp_m: 20, tuition_fee_income_gbp_m: 250, other_income_gbp_m: 128, staff_costs_gbp_m: 242, total_expenditure_gbp_m: 385, cash_gbp_m: 70, borrowing_gbp_m: 55, liquidity_days: 64, international_fte_pct: 15, student_fte_total: 37500, capital_expenditure_gbp_m: 40, net_assets_gbp_m: 272, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // SHEFFIELD HALLAM
-  { institution_id: 'shu', fiscal_year: '2024-25', published: '2025-12-12', revenue_gbp_m: 372, surplus_gbp_m: 12, surplus_margin_pct: 3.2, research_income_gbp_m: 18, tuition_fee_income_gbp_m: 235, other_income_gbp_m: 119, staff_costs_gbp_m: 228, total_expenditure_gbp_m: 360, cash_gbp_m: 68, borrowing_gbp_m: 45, liquidity_days: 65, international_fte_pct: 18, student_fte_total: 34000, capital_expenditure_gbp_m: 37, net_assets_gbp_m: 262, risk_flag: 'Low', source_pdf: 'https://www.shu.ac.uk/about-us/our-university/governance/annual-report/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'shu', fiscal_year: '2023-24', published: '2024-12-10', revenue_gbp_m: 348, surplus_gbp_m: 10, surplus_margin_pct: 2.9, research_income_gbp_m: 16, tuition_fee_income_gbp_m: 220, other_income_gbp_m: 112, staff_costs_gbp_m: 213, total_expenditure_gbp_m: 338, cash_gbp_m: 60, borrowing_gbp_m: 47, liquidity_days: 61, international_fte_pct: 17, student_fte_total: 33500, capital_expenditure_gbp_m: 35, net_assets_gbp_m: 242, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // COVENTRY
-  { institution_id: 'coventry', fiscal_year: '2024-25', published: '2025-11-25', revenue_gbp_m: 412, surplus_gbp_m: 16, surplus_margin_pct: 4.0, research_income_gbp_m: 12, tuition_fee_income_gbp_m: 255, other_income_gbp_m: 145, staff_costs_gbp_m: 245, total_expenditure_gbp_m: 396, cash_gbp_m: 75, borrowing_gbp_m: 62, liquidity_days: 68, international_fte_pct: 38, student_fte_total: 32000, capital_expenditure_gbp_m: 41, net_assets_gbp_m: 285, risk_flag: 'Low', source_pdf: 'https://www.coventry.ac.uk/globalassets/about-us/governance/annual-report-and-accounts-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'coventry', fiscal_year: '2023-24', published: '2024-11-22', revenue_gbp_m: 385, surplus_gbp_m: 14, surplus_margin_pct: 3.7, research_income_gbp_m: 11, tuition_fee_income_gbp_m: 238, other_income_gbp_m: 136, staff_costs_gbp_m: 229, total_expenditure_gbp_m: 371, cash_gbp_m: 68, borrowing_gbp_m: 65, liquidity_days: 64, international_fte_pct: 37, student_fte_total: 31500, capital_expenditure_gbp_m: 39, net_assets_gbp_m: 262, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // NORTHUMBRIA
-  { institution_id: 'northumbria', fiscal_year: '2024-25', published: '2025-12-05', revenue_gbp_m: 332, surplus_gbp_m: 14, surplus_margin_pct: 4.2, research_income_gbp_m: 12, tuition_fee_income_gbp_m: 208, other_income_gbp_m: 112, staff_costs_gbp_m: 202, total_expenditure_gbp_m: 318, cash_gbp_m: 62, borrowing_gbp_m: 38, liquidity_days: 72, international_fte_pct: 22, student_fte_total: 28000, capital_expenditure_gbp_m: 33, net_assets_gbp_m: 235, risk_flag: 'Low', source_pdf: 'https://www.northumbria.ac.uk/about-us/leadership-governance/annual-reports-and-accounts/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'northumbria', fiscal_year: '2023-24', published: '2024-12-02', revenue_gbp_m: 312, surplus_gbp_m: 12, surplus_margin_pct: 3.8, research_income_gbp_m: 11, tuition_fee_income_gbp_m: 195, other_income_gbp_m: 106, staff_costs_gbp_m: 189, total_expenditure_gbp_m: 300, cash_gbp_m: 55, borrowing_gbp_m: 40, liquidity_days: 68, international_fte_pct: 21, student_fte_total: 27600, capital_expenditure_gbp_m: 31, net_assets_gbp_m: 215, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // UWE BRISTOL
-  { institution_id: 'uwe', fiscal_year: '2024-25', published: '2025-11-28', revenue_gbp_m: 348, surplus_gbp_m: 12, surplus_margin_pct: 3.5, research_income_gbp_m: 15, tuition_fee_income_gbp_m: 218, other_income_gbp_m: 115, staff_costs_gbp_m: 212, total_expenditure_gbp_m: 336, cash_gbp_m: 62, borrowing_gbp_m: 48, liquidity_days: 66, international_fte_pct: 18, student_fte_total: 31000, capital_expenditure_gbp_m: 35, net_assets_gbp_m: 248, risk_flag: 'Low', source_pdf: 'https://www.uwe.ac.uk/about/governance-and-strategy/financial-statements/annual-report-and-accounts-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'uwe', fiscal_year: '2023-24', published: '2024-11-25', revenue_gbp_m: 326, surplus_gbp_m: 11, surplus_margin_pct: 3.2, research_income_gbp_m: 14, tuition_fee_income_gbp_m: 204, other_income_gbp_m: 108, staff_costs_gbp_m: 198, total_expenditure_gbp_m: 315, cash_gbp_m: 55, borrowing_gbp_m: 50, liquidity_days: 62, international_fte_pct: 17, student_fte_total: 30600, capital_expenditure_gbp_m: 33, net_assets_gbp_m: 228, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // PLYMOUTH
-  { institution_id: 'plymouth', fiscal_year: '2024-25', published: '2025-12-10', revenue_gbp_m: 222, surplus_gbp_m: 4, surplus_margin_pct: 1.8, research_income_gbp_m: 12, tuition_fee_income_gbp_m: 138, other_income_gbp_m: 72, staff_costs_gbp_m: 138, total_expenditure_gbp_m: 218, cash_gbp_m: 38, borrowing_gbp_m: 45, liquidity_days: 62, international_fte_pct: 14, student_fte_total: 20000, capital_expenditure_gbp_m: 22, net_assets_gbp_m: 172, risk_flag: 'Low', source_pdf: 'https://www.plymouth.ac.uk/uploads/production/document/path/30/annual-report-and-accounts-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'plymouth', fiscal_year: '2023-24', published: '2024-12-08', revenue_gbp_m: 208, surplus_gbp_m: 3, surplus_margin_pct: 1.5, research_income_gbp_m: 11, tuition_fee_income_gbp_m: 129, other_income_gbp_m: 68, staff_costs_gbp_m: 129, total_expenditure_gbp_m: 205, cash_gbp_m: 34, borrowing_gbp_m: 47, liquidity_days: 58, international_fte_pct: 13, student_fte_total: 19600, capital_expenditure_gbp_m: 21, net_assets_gbp_m: 158, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // PORTSMOUTH
-  { institution_id: 'portsmouth', fiscal_year: '2024-25', published: '2025-12-05', revenue_gbp_m: 248, surplus_gbp_m: 6, surplus_margin_pct: 2.5, research_income_gbp_m: 15, tuition_fee_income_gbp_m: 155, other_income_gbp_m: 78, staff_costs_gbp_m: 155, total_expenditure_gbp_m: 242, cash_gbp_m: 45, borrowing_gbp_m: 42, liquidity_days: 68, international_fte_pct: 22, student_fte_total: 24000, capital_expenditure_gbp_m: 25, net_assets_gbp_m: 195, risk_flag: 'Low', source_pdf: 'https://www.port.ac.uk/about-us/governance-and-strategy/financial-statements/annual-report-and-accounts-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'portsmouth', fiscal_year: '2023-24', published: '2024-12-02', revenue_gbp_m: 232, surplus_gbp_m: 5, surplus_margin_pct: 2.2, research_income_gbp_m: 14, tuition_fee_income_gbp_m: 145, other_income_gbp_m: 73, staff_costs_gbp_m: 145, total_expenditure_gbp_m: 227, cash_gbp_m: 40, borrowing_gbp_m: 44, liquidity_days: 64, international_fte_pct: 21, student_fte_total: 23600, capital_expenditure_gbp_m: 23, net_assets_gbp_m: 180, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // DUNDEE
-  { institution_id: 'dundee', fiscal_year: '2024-25', published: '2025-11-20', revenue_gbp_m: 312, surplus_gbp_m: 4, surplus_margin_pct: 1.2, research_income_gbp_m: 82, tuition_fee_income_gbp_m: 132, other_income_gbp_m: 98, staff_costs_gbp_m: 198, total_expenditure_gbp_m: 308, cash_gbp_m: 45, borrowing_gbp_m: 58, liquidity_days: 55, international_fte_pct: 28, student_fte_total: 18500, capital_expenditure_gbp_m: 31, net_assets_gbp_m: 238, risk_flag: 'Low', source_pdf: 'https://www.dundee.ac.uk/sites/default/files/2025-11/annual-report-accounts-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'dundee', fiscal_year: '2023-24', published: '2024-11-18', revenue_gbp_m: 292, surplus_gbp_m: 3, surplus_margin_pct: 1.0, research_income_gbp_m: 76, tuition_fee_income_gbp_m: 123, other_income_gbp_m: 93, staff_costs_gbp_m: 185, total_expenditure_gbp_m: 289, cash_gbp_m: 40, borrowing_gbp_m: 61, liquidity_days: 51, international_fte_pct: 27, student_fte_total: 18100, capital_expenditure_gbp_m: 29, net_assets_gbp_m: 218, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // HERIOT-WATT
-  { institution_id: 'heriot', fiscal_year: '2024-25', published: '2025-11-25', revenue_gbp_m: 248, surplus_gbp_m: 8, surplus_margin_pct: 3.2, research_income_gbp_m: 48, tuition_fee_income_gbp_m: 125, other_income_gbp_m: 75, staff_costs_gbp_m: 152, total_expenditure_gbp_m: 240, cash_gbp_m: 48, borrowing_gbp_m: 38, liquidity_days: 72, international_fte_pct: 35, student_fte_total: 13500, capital_expenditure_gbp_m: 25, net_assets_gbp_m: 198, risk_flag: 'Low', source_pdf: 'https://www.hw.ac.uk/uk/about/governance/finance/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'heriot', fiscal_year: '2023-24', published: '2024-11-22', revenue_gbp_m: 232, surplus_gbp_m: 7, surplus_margin_pct: 2.9, research_income_gbp_m: 44, tuition_fee_income_gbp_m: 116, other_income_gbp_m: 72, staff_costs_gbp_m: 142, total_expenditure_gbp_m: 225, cash_gbp_m: 43, borrowing_gbp_m: 40, liquidity_days: 68, international_fte_pct: 34, student_fte_total: 13200, capital_expenditure_gbp_m: 23, net_assets_gbp_m: 182, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // ULSTER
-  { institution_id: 'ulster', fiscal_year: '2024-25', published: '2025-11-28', revenue_gbp_m: 312, surplus_gbp_m: 9, surplus_margin_pct: 2.8, research_income_gbp_m: 62, tuition_fee_income_gbp_m: 148, other_income_gbp_m: 102, staff_costs_gbp_m: 195, total_expenditure_gbp_m: 303, cash_gbp_m: 55, borrowing_gbp_m: 45, liquidity_days: 68, international_fte_pct: 14, student_fte_total: 27500, capital_expenditure_gbp_m: 31, net_assets_gbp_m: 235, risk_flag: 'Low', source_pdf: 'https://www.ulster.ac.uk/about/governance/annual-review-and-financial-statements/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'ulster', fiscal_year: '2023-24', published: '2024-11-25', revenue_gbp_m: 292, surplus_gbp_m: 7, surplus_margin_pct: 2.5, research_income_gbp_m: 57, tuition_fee_income_gbp_m: 138, other_income_gbp_m: 97, staff_costs_gbp_m: 182, total_expenditure_gbp_m: 285, cash_gbp_m: 49, borrowing_gbp_m: 47, liquidity_days: 63, international_fte_pct: 13, student_fte_total: 27100, capital_expenditure_gbp_m: 29, net_assets_gbp_m: 215, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // BANGOR
-  { institution_id: 'bangor', fiscal_year: '2024-25', published: '2025-12-08', revenue_gbp_m: 148, surplus_gbp_m: 3, surplus_margin_pct: 2.0, research_income_gbp_m: 32, tuition_fee_income_gbp_m: 75, other_income_gbp_m: 41, staff_costs_gbp_m: 92, total_expenditure_gbp_m: 145, cash_gbp_m: 25, borrowing_gbp_m: 28, liquidity_days: 62, international_fte_pct: 20, student_fte_total: 9800, capital_expenditure_gbp_m: 15, net_assets_gbp_m: 118, risk_flag: 'Low', source_pdf: 'https://www.bangor.ac.uk/governance/documents/annual-report-financial-statements-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'bangor', fiscal_year: '2023-24', published: '2024-12-05', revenue_gbp_m: 138, surplus_gbp_m: 2, surplus_margin_pct: 1.6, research_income_gbp_m: 29, tuition_fee_income_gbp_m: 70, other_income_gbp_m: 39, staff_costs_gbp_m: 86, total_expenditure_gbp_m: 136, cash_gbp_m: 22, borrowing_gbp_m: 30, liquidity_days: 57, international_fte_pct: 19, student_fte_total: 9500, capital_expenditure_gbp_m: 14, net_assets_gbp_m: 108, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // LJMU
-  { institution_id: 'ljmu', fiscal_year: '2024-25', published: '2025-12-02', revenue_gbp_m: 282, surplus_gbp_m: 8, surplus_margin_pct: 3.0, research_income_gbp_m: 12, tuition_fee_income_gbp_m: 178, other_income_gbp_m: 92, staff_costs_gbp_m: 178, total_expenditure_gbp_m: 274, cash_gbp_m: 48, borrowing_gbp_m: 35, liquidity_days: 65, international_fte_pct: 12, student_fte_total: 26000, capital_expenditure_gbp_m: 28, net_assets_gbp_m: 218, risk_flag: 'Low', source_pdf: 'https://www.ljmu.ac.uk/about-us/governance/financial-statements/annual-report-and-accounts-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'ljmu', fiscal_year: '2023-24', published: '2024-11-28', revenue_gbp_m: 265, surplus_gbp_m: 7, surplus_margin_pct: 2.7, research_income_gbp_m: 11, tuition_fee_income_gbp_m: 167, other_income_gbp_m: 87, staff_costs_gbp_m: 167, total_expenditure_gbp_m: 258, cash_gbp_m: 43, borrowing_gbp_m: 37, liquidity_days: 61, international_fte_pct: 11, student_fte_total: 25600, capital_expenditure_gbp_m: 27, net_assets_gbp_m: 202, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // BCU
-  { institution_id: 'bcu', fiscal_year: '2024-25', published: '2025-12-10', revenue_gbp_m: 285, surplus_gbp_m: 10, surplus_margin_pct: 3.4, research_income_gbp_m: 10, tuition_fee_income_gbp_m: 185, other_income_gbp_m: 90, staff_costs_gbp_m: 178, total_expenditure_gbp_m: 275, cash_gbp_m: 52, borrowing_gbp_m: 38, liquidity_days: 68, international_fte_pct: 25, student_fte_total: 25000, capital_expenditure_gbp_m: 29, net_assets_gbp_m: 215, risk_flag: 'Low', source_pdf: 'https://www.bcu.ac.uk/about-us/corporate-information/annual-reports-and-accounts/annual-report-and-accounts-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'bcu', fiscal_year: '2023-24', published: '2024-12-08', revenue_gbp_m: 268, surplus_gbp_m: 8, surplus_margin_pct: 3.1, research_income_gbp_m: 9, tuition_fee_income_gbp_m: 173, other_income_gbp_m: 86, staff_costs_gbp_m: 167, total_expenditure_gbp_m: 260, cash_gbp_m: 46, borrowing_gbp_m: 40, liquidity_days: 64, international_fte_pct: 24, student_fte_total: 24600, capital_expenditure_gbp_m: 27, net_assets_gbp_m: 198, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // LEEDS BECKETT
-  { institution_id: 'leedsbeckett', fiscal_year: '2024-25', published: '2025-12-05', revenue_gbp_m: 248, surplus_gbp_m: 7, surplus_margin_pct: 2.8, research_income_gbp_m: 8, tuition_fee_income_gbp_m: 158, other_income_gbp_m: 82, staff_costs_gbp_m: 158, total_expenditure_gbp_m: 241, cash_gbp_m: 42, borrowing_gbp_m: 32, liquidity_days: 62, international_fte_pct: 14, student_fte_total: 25000, capital_expenditure_gbp_m: 25, net_assets_gbp_m: 195, risk_flag: 'Low', source_pdf: 'https://www.leedsbeckett.ac.uk/about-us/university-strategy/annual-reports/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'leedsbeckett', fiscal_year: '2023-24', published: '2024-12-02', revenue_gbp_m: 232, surplus_gbp_m: 6, surplus_margin_pct: 2.5, research_income_gbp_m: 7, tuition_fee_income_gbp_m: 148, other_income_gbp_m: 77, staff_costs_gbp_m: 148, total_expenditure_gbp_m: 226, cash_gbp_m: 38, borrowing_gbp_m: 34, liquidity_days: 58, international_fte_pct: 13, student_fte_total: 24600, capital_expenditure_gbp_m: 23, net_assets_gbp_m: 180, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // GCU
-  { institution_id: 'gcu', fiscal_year: '2024-25', published: '2025-11-22', revenue_gbp_m: 188, surplus_gbp_m: 5, surplus_margin_pct: 2.4, research_income_gbp_m: 18, tuition_fee_income_gbp_m: 105, other_income_gbp_m: 65, staff_costs_gbp_m: 118, total_expenditure_gbp_m: 183, cash_gbp_m: 32, borrowing_gbp_m: 28, liquidity_days: 65, international_fte_pct: 18, student_fte_total: 17000, capital_expenditure_gbp_m: 19, net_assets_gbp_m: 148, risk_flag: 'Low', source_pdf: 'https://www.gcu.ac.uk/aboutgcu/universityleadership/governance/annualreport/annual-report-and-financial-statements-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'gcu', fiscal_year: '2023-24', published: '2024-11-18', revenue_gbp_m: 176, surplus_gbp_m: 4, surplus_margin_pct: 2.1, research_income_gbp_m: 16, tuition_fee_income_gbp_m: 98, other_income_gbp_m: 62, staff_costs_gbp_m: 110, total_expenditure_gbp_m: 172, cash_gbp_m: 28, borrowing_gbp_m: 30, liquidity_days: 60, international_fte_pct: 17, student_fte_total: 16600, capital_expenditure_gbp_m: 18, net_assets_gbp_m: 135, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // NAPIER
-  { institution_id: 'napier', fiscal_year: '2024-25', published: '2025-11-18', revenue_gbp_m: 192, surplus_gbp_m: 5, surplus_margin_pct: 2.8, research_income_gbp_m: 15, tuition_fee_income_gbp_m: 108, other_income_gbp_m: 69, staff_costs_gbp_m: 120, total_expenditure_gbp_m: 187, cash_gbp_m: 34, borrowing_gbp_m: 25, liquidity_days: 68, international_fte_pct: 22, student_fte_total: 14500, capital_expenditure_gbp_m: 19, net_assets_gbp_m: 152, risk_flag: 'Low', source_pdf: 'https://www.napier.ac.uk/about-us/governance/statutory-information/financial-statements/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'napier', fiscal_year: '2023-24', published: '2024-11-15', revenue_gbp_m: 180, surplus_gbp_m: 5, surplus_margin_pct: 2.5, research_income_gbp_m: 14, tuition_fee_income_gbp_m: 101, other_income_gbp_m: 65, staff_costs_gbp_m: 112, total_expenditure_gbp_m: 175, cash_gbp_m: 30, borrowing_gbp_m: 27, liquidity_days: 63, international_fte_pct: 21, student_fte_total: 14200, capital_expenditure_gbp_m: 18, net_assets_gbp_m: 140, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // STIRLING
-  { institution_id: 'stirling', fiscal_year: '2024-25', published: '2025-11-25', revenue_gbp_m: 178, surplus_gbp_m: 4, surplus_margin_pct: 2.5, research_income_gbp_m: 28, tuition_fee_income_gbp_m: 95, other_income_gbp_m: 55, staff_costs_gbp_m: 112, total_expenditure_gbp_m: 174, cash_gbp_m: 30, borrowing_gbp_m: 22, liquidity_days: 65, international_fte_pct: 28, student_fte_total: 11500, capital_expenditure_gbp_m: 18, net_assets_gbp_m: 138, risk_flag: 'Low', source_pdf: 'https://www.stir.ac.uk/about/governance/financial-information/annual-report-2024-25.pdf', status: 'found', data_source: 'verified' },
-  { institution_id: 'stirling', fiscal_year: '2023-24', published: '2024-11-22', revenue_gbp_m: 166, surplus_gbp_m: 4, surplus_margin_pct: 2.2, research_income_gbp_m: 26, tuition_fee_income_gbp_m: 88, other_income_gbp_m: 52, staff_costs_gbp_m: 105, total_expenditure_gbp_m: 162, cash_gbp_m: 27, borrowing_gbp_m: 24, liquidity_days: 61, international_fte_pct: 27, student_fte_total: 11200, capital_expenditure_gbp_m: 17, net_assets_gbp_m: 126, risk_flag: 'Low', status: 'found', data_source: 'verified' },
-  // CARDIFF MET
-  { institution_id: 'cardiffmet', fiscal_year: '2024-25', published: '2025-12-02', revenue_gbp_m: 112, surplus_gbp_m: 3, surplus_margin_pct: 2.5, research_income_gbp_m: 8, tuition_fee_income_gbp_m: 68, other_income_gbp_m: 36, staff_costs_gbp_m: 70, total_expenditure_gbp_m: 109, cash_gbp_m: 18, borrowing_gbp_m: 15, liquidity_days: 60, international_fte_pct: 22, student_fte_total: 9200, capital_expenditure_gbp_m: 11, net_assets_gbp_m: 88, risk_flag: 'Low', source_pdf: 'https://www.cardiffmet.ac.uk/governance/Documents/Annual_Report_and_Financial_Statements_2024-25.pdf', status: 'found', data_source: 'verified' },
+export const FINANCIAL_METRIC_KEYS: MetricKey[] = [
+  'revenue_gbp_m',
+  'surplus_gbp_m',
+  'surplus_margin_pct',
+  'research_income_gbp_m',
+  'tuition_fee_income_gbp_m',
+  'staff_costs_gbp_m',
+  'cash_gbp_m',
+  'borrowing_gbp_m',
+  'liquidity_days',
+  'international_fte_pct',
 ]
 
-// ─── Estimated 2024-25 seeds ──────────────────────────────────────────────────
-type EstSeed = [string, 'large' | 'mid' | 'small' | 'spec', number, number, number]
-const estimatedSeeds: EstSeed[] = [
-  ['york', 'large', 488, 3.2, 35], ['qmul', 'large', 668, 2.8, 51], ['liverpool', 'large', 612, 2.5, 30],
-  ['bath', 'mid', 358, 4.5, 38], ['loughborough', 'mid', 372, 4.0, 28], ['surrey', 'mid', 318, 3.0, 42],
-  ['reading', 'mid', 318, 1.8, 32], ['sussex', 'mid', 312, 2.2, 38], ['uea', 'mid', 302, 2.4, 28],
-  ['essex', 'mid', 268, 3.1, 35], ['kent', 'mid', 248, 1.9, 26], ['lancaster', 'mid', 348, 4.2, 35],
-  ['leicester', 'mid', 338, 2.8, 30], ['aston', 'mid', 188, 3.4, 38], ['hull', 'mid', 218, 1.8, 22],
-  ['keele', 'small', 168, 2.0, 18], ['city', 'mid', 268, 3.5, 48], ['royalholloway', 'mid', 195, 2.6, 38],
-  ['soas', 'small', 102, 1.5, 55], ['goldsmiths', 'small', 138, -1.2, 28], ['birkbeck', 'small', 142, -2.0, 22],
-  ['lbs', 'spec', 285, 12.5, 92], ['rvc', 'small', 168, 4.8, 32], ['courtauld', 'spec', 28, 3.0, 45],
-  ['lshtm', 'mid', 218, 6.2, 58], ['open', 'large', 538, 2.8, 8], ['rcm', 'spec', 22, 2.5, 38],
-  ['ram', 'spec', 18, 2.8, 42], ['rca', 'small', 78, 3.8, 65], ['guildhall', 'spec', 28, 2.4, 38],
-  ['trinitylaban', 'spec', 22, 1.8, 32], ['ual', 'mid', 388, 3.2, 52], ['falmouth', 'small', 88, 2.0, 18],
-  ['norwicharts', 'spec', 28, 2.2, 14], ['ravensbourne', 'spec', 32, 1.5, 22],
-  ['mmu', 'large', 425, 3.5, 16], ['shu', 'large', 372, 3.2, 18], ['leedsbeckett', 'mid', 248, 2.8, 14],
-  ['ljmu', 'mid', 282, 3.0, 12], ['bcu', 'mid', 285, 3.4, 25], ['coventry', 'large', 412, 4.0, 38],
-  ['northumbria', 'large', 332, 4.2, 22], ['plymouth', 'mid', 222, 1.8, 14], ['portsmouth', 'mid', 248, 2.5, 22],
-  ['brighton', 'mid', 218, 1.2, 18], ['herts', 'mid', 268, 3.6, 22], ['kingston', 'mid', 195, 2.0, 24],
-  ['greenwich', 'mid', 232, 2.4, 28], ['westminster', 'mid', 228, 2.0, 38], ['brunel', 'mid', 252, 2.2, 35],
-  ['middlesex', 'mid', 218, 1.8, 32], ['uel', 'small', 138, 1.2, 32], ['londonmet', 'small', 95, -1.5, 28],
-  ['lsbu', 'mid', 178, 1.8, 22], ['roehampton', 'small', 108, 0.8, 18], ['beds', 'small', 145, 2.0, 30],
-  ['bournemouth', 'mid', 192, 2.5, 18], ['salford', 'mid', 218, 2.2, 20], ['sunderland', 'small', 128, 1.8, 22],
-  ['teesside', 'small', 142, 1.5, 18], ['anglia', 'mid', 268, 1.8, 22], ['uclan', 'mid', 248, 2.4, 16],
-  ['chester', 'small', 105, 1.2, 12], ['cumbria', 'small', 82, 0.8, 8], ['dmu', 'mid', 232, 2.6, 25],
-  ['derby', 'small', 168, 2.0, 14], ['edgehill', 'small', 142, 3.5, 6], ['glos', 'small', 92, 1.0, 10],
-  ['huddersfield', 'mid', 198, 1.5, 18], ['lhu', 'spec', 38, 0.5, 14], ['northampton', 'small', 122, -2.5, 14],
-  ['brookes', 'mid', 248, 1.8, 22], ['solent', 'small', 88, 1.2, 16], ['staffs', 'small', 142, 1.8, 18],
-  ['suffolk', 'spec', 38, 0.5, 10], ['uwl', 'small', 168, 3.2, 22], ['uwe', 'large', 348, 3.5, 18],
-  ['wlv', 'mid', 198, 2.0, 18], ['worc', 'small', 102, 1.8, 8], ['yorksj', 'small', 78, 1.5, 10],
-  ['bathspa', 'small', 72, 1.8, 12], ['buckingham', 'spec', 52, 5.5, 65], ['lincoln', 'mid', 192, 2.4, 16],
-  ['winchester', 'small', 72, 1.2, 8], ['stmarys', 'small', 48, 0.8, 18], ['chichester', 'small', 58, 1.5, 8],
-  ['bishop', 'spec', 18, 1.2, 6], ['canterbury', 'mid', 158, 1.8, 12], ['arden', 'spec', 42, 8.5, 25],
-  ['bpp', 'spec', 188, 12.0, 35], ['regents', 'spec', 38, 4.5, 78], ['rau', 'spec', 22, 1.8, 14],
-  ['abertay', 'spec', 38, 1.5, 14], ['dundee', 'large', 312, 1.2, 28], ['napier', 'mid', 192, 2.8, 22],
-  ['gcu', 'mid', 188, 2.4, 18], ['heriot', 'mid', 248, 3.2, 35], ['uhi', 'small', 98, 0.8, 8],
-  ['qmu', 'spec', 48, 1.2, 22], ['rgu', 'mid', 162, 1.8, 28], ['rcs', 'spec', 22, 2.0, 38],
-  ['sruc', 'spec', 78, 1.5, 8], ['stirling', 'mid', 178, 2.5, 28], ['uws', 'mid', 142, 1.8, 18],
-  ['aber', 'mid', 158, 2.2, 18], ['bangor', 'mid', 148, 2.0, 20], ['cardiffmet', 'small', 112, 2.5, 22],
-  ['southwales', 'mid', 168, 1.5, 12], ['uwtsd', 'small', 88, 0.8, 14], ['wrexham', 'spec', 52, 0.5, 10],
-  ['ulster', 'large', 312, 2.8, 14], ['stmarysbel', 'spec', 18, 0.5, 4], ['stranmillis', 'spec', 14, 0.2, 4],
-]
+export const ALL_FINANCIAL_VALUE_KEYS = [
+  ...FINANCIAL_METRIC_KEYS,
+  'other_income_gbp_m',
+  'total_expenditure_gbp_m',
+  'student_fte_total',
+  'capital_expenditure_gbp_m',
+  'net_assets_gbp_m',
+] as const
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
-function r1(n: number): number { return Math.round(n * 10) / 10 }
-function startYear(fy: string): number { return parseInt(fy.split('-')[0], 10) }
+export type FinancialValueKey = (typeof ALL_FINANCIAL_VALUE_KEYS)[number]
 
-// ─── Build a single estimated 2024-25 record ─────────────────────────────────
-function buildEstimated(id: string, _tier: string, revenue: number, marginPct: number, intlPct: number): FinancialYear {
-  const surplus = r1(revenue * (marginPct / 100))
-  const totalExp = r1(Math.max(1, revenue - surplus))
-  const staff = r1(revenue * 0.58)
-  const research = r1(revenue * 0.22)
-  const tuition = r1(revenue * 0.42)
-  const other = r1(Math.max(0, revenue - research - tuition))
-  const cash = r1(revenue * 0.16)
-  const borrowing = r1(revenue * 0.18)
-  const liqDays = Math.max(20, Math.round((cash / totalExp) * 365))
-  const studentFte = Math.round(revenue * 25 + 2000)
-  const capex = r1(revenue * 0.1)
-  const netAssets = r1(revenue * 0.6)
-  const risk: FinancialYear['risk_flag'] = marginPct < 0 ? 'High' : marginPct < 2 ? 'Medium' : 'Low'
+function pendingFinancialYear(institution_id: string, fiscal_year: string): FinancialYear {
   return {
-    institution_id: id, fiscal_year: '2024-25', published: '',
-    revenue_gbp_m: revenue, surplus_gbp_m: surplus, surplus_margin_pct: marginPct,
-    research_income_gbp_m: research, tuition_fee_income_gbp_m: tuition, other_income_gbp_m: other,
-    staff_costs_gbp_m: staff, total_expenditure_gbp_m: totalExp, cash_gbp_m: cash,
-    borrowing_gbp_m: borrowing, liquidity_days: liqDays, international_fte_pct: intlPct,
-    student_fte_total: studentFte, capital_expenditure_gbp_m: capex, net_assets_gbp_m: netAssets,
-    risk_flag: risk, status: 'missing', data_source: 'estimated',
+    institution_id,
+    fiscal_year,
+    published: '',
+    revenue_gbp_m: null,
+    surplus_gbp_m: null,
+    surplus_margin_pct: null,
+    research_income_gbp_m: null,
+    tuition_fee_income_gbp_m: null,
+    other_income_gbp_m: null,
+    staff_costs_gbp_m: null,
+    total_expenditure_gbp_m: null,
+    cash_gbp_m: null,
+    borrowing_gbp_m: null,
+    liquidity_days: null,
+    international_fte_pct: null,
+    student_fte_total: null,
+    capital_expenditure_gbp_m: null,
+    net_assets_gbp_m: null,
+    risk_flag: 'Pending',
+    status: 'missing',
+    data_source: 'pending',
+    confidence: 'awaiting',
+    included_in_aggregates: false,
   }
 }
 
-// ─── Build a historical record by reverse-compounding from anchor ─────────────
-function buildHistoricalRecord(anchor: FinancialYear, targetYear: string, tier: TierKey): FinancialYear {
-  const g = TIER_GROWTH[tier]
-  const yearsBack = startYear(anchor.fiscal_year) - startYear(targetYear)
-  if (yearsBack <= 0) return anchor
+// The official primary dataset deliberately contains no modelled estimates.
+// Populate verified rows only from official source extracts with metric-level
+// provenance. Until those extracts are available, each institution/year is kept
+// as an explicit pending row so the decade coverage matrix is complete without
+// inventing numbers.
+const verifiedRecords: FinancialYear[] = verifiedFinancialRecords
 
-  const revenueF = Math.pow(1 + g.revenue, -yearsBack)
-  const researchF = Math.pow(1 + g.research, -yearsBack)
-  // Borrowing was lower in the past (institutions borrowed for estate programmes)
-  const borrowF = Math.pow(1 - g.borrowing_decline, yearsBack)
+function generateFinancialCoverage(): FinancialYear[] {
+  const byKey = new Map<string, FinancialYear>()
 
-  const revenue = r1(Math.max(1, anchor.revenue_gbp_m * revenueF))
-  const research = r1(Math.max(0, anchor.research_income_gbp_m * researchF))
-  const intl = r1(Math.max(2, anchor.international_fte_pct - g.intl_delta * yearsBack))
-
-  // Sector-wide COVID compression in 2020-21; mild drag in 2021-22
-  const covidAdj = targetYear === '2020-21' ? -1.8 : targetYear === '2021-22' ? -0.4 : 0
-  // Pre-2018 margins were generally slightly tighter (tuition fee income lower in real terms)
-  const earlyAdj = targetYear < '2018-19' ? -0.3 : 0
-  const surplusMargin = r1(anchor.surplus_margin_pct + covidAdj + earlyAdj)
-
-  const surplus = r1(revenue * (surplusMargin / 100))
-  const totalExp = r1(Math.max(1, revenue - surplus))
-
-  // Income composition: preserve anchor ratios
-  const tuitionRatio = anchor.revenue_gbp_m > 0 ? anchor.tuition_fee_income_gbp_m / anchor.revenue_gbp_m : 0.42
-  const tuition = r1(Math.max(0, revenue * tuitionRatio))
-  const other = r1(Math.max(0, revenue - research - tuition))
-
-  // Staff costs grew ~0.5% per year faster than revenue (pay awards + pension)
-  const staffRatio = anchor.revenue_gbp_m > 0 ? anchor.staff_costs_gbp_m / anchor.revenue_gbp_m : 0.58
-  const historicStaffRatio = Math.min(0.72, staffRatio * Math.pow(1 + 0.005, yearsBack))
-  const staff = r1(Math.max(0, revenue * historicStaffRatio))
-
-  const cash = r1(Math.max(0, anchor.cash_gbp_m * revenueF))
-  const borrowing = r1(Math.max(0, anchor.borrowing_gbp_m * borrowF))
-  const liqDays = Math.max(15, Math.round((cash / Math.max(1, totalExp)) * 365))
-
-  // Students grew ~1.5–2% per year
-  const students = Math.max(500, Math.round(anchor.student_fte_total * Math.pow(0.982, yearsBack)))
-
-  const capexRatio = anchor.revenue_gbp_m > 0 ? anchor.capital_expenditure_gbp_m / anchor.revenue_gbp_m : 0.1
-  const capex = r1(Math.max(0, revenue * capexRatio))
-
-  // Net assets compound with retained surpluses (~4% growth per year going forward)
-  const netAssets = r1(Math.max(0, anchor.net_assets_gbp_m * Math.pow(0.93, yearsBack)))
-
-  const risk: FinancialYear['risk_flag'] = surplusMargin < 0 ? 'High' : surplusMargin < 2 ? 'Medium' : 'Low'
-
-  return {
-    institution_id: anchor.institution_id, fiscal_year: targetYear, published: '',
-    revenue_gbp_m: revenue, surplus_gbp_m: surplus, surplus_margin_pct: surplusMargin,
-    research_income_gbp_m: research, tuition_fee_income_gbp_m: tuition, other_income_gbp_m: other,
-    staff_costs_gbp_m: staff, total_expenditure_gbp_m: totalExp, cash_gbp_m: cash,
-    borrowing_gbp_m: borrowing, liquidity_days: liqDays, international_fte_pct: intl,
-    student_fte_total: students, capital_expenditure_gbp_m: capex, net_assets_gbp_m: netAssets,
-    risk_flag: risk, status: 'archived', data_source: 'estimated',
-  }
-}
-
-// ─── Build full 10-year dataset ───────────────────────────────────────────────
-function generateAllFinancials(): FinancialYear[] {
-  // 1. Start with all verified records
-  const base: FinancialYear[] = [...verifiedRecords]
-
-  // Track which institution IDs already have verified data
-  const verifiedIds = new Set(verifiedRecords.map((f) => f.institution_id))
-
-  // 2. Build tier lookup; add estimated 2024-25 records only for unverified institutions
-  const tierMap: Record<string, TierKey> = { ...INST_TIER }
-  for (const [id, tier, rev, margin, intl] of estimatedSeeds) {
-    if (!tierMap[id]) tierMap[id] = tier as TierKey
-    // Skip estimated record if this institution already has verified data
-    if (!verifiedIds.has(id)) {
-      base.push(buildEstimated(id, tier, rev, margin, intl))
+  for (const institution of institutions) {
+    for (const year of AVAILABLE_YEARS) {
+      const row = pendingFinancialYear(institution.id, year)
+      byKey.set(`${row.institution_id}:${row.fiscal_year}`, row)
     }
   }
 
-  // 3. Group existing records by institution
-  const byInst = new Map<string, FinancialYear[]>()
-  for (const f of base) {
-    if (!byInst.has(f.institution_id)) byInst.set(f.institution_id, [])
-    byInst.get(f.institution_id)!.push(f)
+  for (const row of verifiedRecords) {
+    byKey.set(`${row.institution_id}:${row.fiscal_year}`, row)
   }
 
-  // 4. Generate missing years for each institution from its earliest record
-  const historical: FinancialYear[] = []
-  for (const [id, records] of byInst) {
-    const existingYears = new Set(records.map((r) => r.fiscal_year))
-    const missingYears = AVAILABLE_YEARS.filter((y) => !existingYears.has(y))
-    if (!missingYears.length) continue
-
-    // Anchor = earliest available record (most historically accurate baseline)
-    const anchor = [...records].sort((a, b) => a.fiscal_year.localeCompare(b.fiscal_year))[0]
-    const tier = tierMap[id] || 'mid'
-
-    for (const year of missingYears) {
-      historical.push(buildHistoricalRecord(anchor, year, tier))
-    }
-  }
-
-  return [...base, ...historical]
+  return [...byKey.values()].sort((a, b) => {
+    const inst = a.institution_id.localeCompare(b.institution_id)
+    if (inst !== 0) return inst
+    return b.fiscal_year.localeCompare(a.fiscal_year)
+  })
 }
 
-export const financials: FinancialYear[] = generateAllFinancials()
+export const financials: FinancialYear[] = generateFinancialCoverage()
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+export function isKnownNumber(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+export function roundNullable(value: number | null | undefined, digits = 0): number | null {
+  if (!isKnownNumber(value)) return null
+  const factor = 10 ** digits
+  return Math.round(value * factor) / factor
+}
+
+export function ratioPct(numerator: number | null | undefined, denominator: number | null | undefined, digits = 1): number | null {
+  if (!isKnownNumber(numerator) || !isKnownNumber(denominator) || denominator === 0) return null
+  return roundNullable((numerator / denominator) * 100, digits)
+}
+
+export function sumKnown(rows: FinancialYear[], key: FinancialValueKey): number | null {
+  const values = rows.map((row) => row[key]).filter(isKnownNumber)
+  if (!values.length) return null
+  return values.reduce((sum, value) => sum + value, 0)
+}
+
+export function averageKnown(rows: FinancialYear[], key: FinancialValueKey): number | null {
+  const values = rows.map((row) => row[key]).filter(isKnownNumber)
+  if (!values.length) return null
+  return values.reduce((sum, value) => sum + value, 0) / values.length
+}
+
+export function compareNullableDesc(a: number | null | undefined, b: number | null | undefined): number {
+  const aKnown = isKnownNumber(a)
+  const bKnown = isKnownNumber(b)
+  if (aKnown && bKnown) return b - a
+  if (aKnown) return -1
+  if (bKnown) return 1
+  return 0
+}
+
+export function compareNullableAsc(a: number | null | undefined, b: number | null | undefined): number {
+  const aKnown = isKnownNumber(a)
+  const bKnown = isKnownNumber(b)
+  if (aKnown && bKnown) return a - b
+  if (aKnown) return -1
+  if (bKnown) return 1
+  return 0
+}
+
+export function hasFinancialMetric(row: FinancialYear, key: FinancialValueKey): boolean {
+  return isKnownNumber(row[key])
+}
+
+export function hasAnyFinancialValue(row: FinancialYear): boolean {
+  return ALL_FINANCIAL_VALUE_KEYS.some((key) => hasFinancialMetric(row, key))
+}
+
+export function isVerifiedFinancial(row: FinancialYear): boolean {
+  return row.data_source === 'verified' && hasAnyFinancialValue(row)
+}
+
+export function isAggregateEligible(row: FinancialYear): boolean {
+  return row.included_in_aggregates && row.data_source === 'verified' && hasAnyFinancialValue(row)
+}
+
+export function formatCurrencyM(value: number | null | undefined): string {
+  return isKnownNumber(value) ? `£${value.toLocaleString()}m` : 'Pending'
+}
+
+export function formatPct(value: number | null | undefined): string {
+  return isKnownNumber(value) ? `${value >= 0 ? '+' : ''}${value.toFixed(1)}%` : 'Pending'
+}
+
+export function formatDays(value: number | null | undefined): string {
+  return isKnownNumber(value) ? `${value}d` : 'Pending'
+}
+
+export function formatNumber(value: number | null | undefined): string {
+  return isKnownNumber(value) ? value.toLocaleString() : 'Pending'
+}
+
+// Public API
 export function getFinancialsByInstitution(id: string): FinancialYear[] {
   return financials
     .filter((f) => f.institution_id === id)
@@ -435,6 +178,10 @@ export function getLatestFinancial(id: string): FinancialYear | undefined {
   return getFinancialsByInstitution(id)[0]
 }
 
+export function getLatestVerifiedFinancial(id: string): FinancialYear | undefined {
+  return getFinancialsByInstitution(id).find(isVerifiedFinancial)
+}
+
 export function getAllLatestFinancials(): FinancialYear[] {
   const latest = new Map<string, FinancialYear>()
   for (const f of financials) {
@@ -442,4 +189,8 @@ export function getAllLatestFinancials(): FinancialYear[] {
     if (!existing || f.fiscal_year > existing.fiscal_year) latest.set(f.institution_id, f)
   }
   return Array.from(latest.values())
+}
+
+export function getAggregateEligibleFinancials(year?: string): FinancialYear[] {
+  return financials.filter((f) => (!year || f.fiscal_year === year) && isAggregateEligible(f))
 }

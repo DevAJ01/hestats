@@ -118,7 +118,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 export function AboutPage() {
   const [activeSection, setActiveSection] = useState<'overview' | 'sources' | 'metrics' | 'confidence' | 'validation' | 'legal'>('overview')
   const verifiedCount = financials.filter((row) => row.data_source === 'verified').length
-  const estimatedCount = financials.filter((row) => row.data_source === 'estimated').length
+  const pendingCount = financials.filter((row) => row.data_source === 'pending').length
 
   const sections = [
     { id: 'overview', label: 'Overview' },
@@ -141,7 +141,7 @@ export function AboutPage() {
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>{DATA_SOURCES.length} official data sources registered</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}>Prototype dataset · estimates explicitly labelled</span>
+        <span style={{ color: 'var(--text-2)' }}>Verified rows · pending gaps explicitly labelled</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
@@ -193,14 +193,13 @@ export function AboutPage() {
                     finance directors, regulators, students and policy makers without cost or registration.
                   </p>
                   <p>
-                    The current public build is a prototype dataset: verified seed rows are mixed with clearly labelled
-                    modelled estimates while the full official ingestion pipeline is being built. Verified rows should be
-                    traced back to annual reports or official datasets; estimated rows must not be cited as audited fact.
+                    The current public build uses verified HESA Finance Open Data rows where official source records are
+                    available. Source gaps remain pending rather than being filled with modelled or inferred values.
                   </p>
                   <p>
                     The production standard is stricter: where provenance cannot be established for a metric, HEStats
-                    should display <strong style={{ color: 'var(--text)' }}> "Awaiting official publication"</strong> or
-                    an explicit estimated/provisional badge rather than silent placeholder numbers.
+                    should display <strong style={{ color: 'var(--text)' }}> "Awaiting official publication"</strong>
+                    rather than silent placeholder numbers.
                   </p>
                 </div>
               </Panel>
@@ -211,7 +210,7 @@ export function AboutPage() {
                     { value: String(institutions.length), label: 'Institutions indexed' },
                     { value: String(AVAILABLE_YEARS.length), label: 'Financial years' },
                     { value: String(DATA_SOURCES.length), label: 'Source registries' },
-                    { value: `${verifiedCount}/${estimatedCount}`, label: 'Verified / estimated rows' },
+                    { value: `${verifiedCount}/${pendingCount}`, label: 'Verified / pending rows' },
                   ].map((s) => (
                     <div key={s.label} className="px-3 py-3 border-r border-b" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)' }}>
                       <p className="font-num" style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700 }}>{s.value}</p>
@@ -337,7 +336,7 @@ export function AboutPage() {
                     ))}
                   </ul>
                   <p className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-2)' }}>
-                    Where provenance cannot be established for a metric, production HEStats should display <strong style={{ color: 'var(--text)' }}>"Awaiting official publication"</strong> or an explicit estimated/provisional badge. The current prototype keeps modelled rows visible only when their data source is labelled.
+                    Where provenance cannot be established for a metric, HEStats displays <strong style={{ color: 'var(--text)' }}>"Awaiting official publication"</strong> and excludes the row from aggregate calculations.
                   </p>
                 </div>
               </Panel>

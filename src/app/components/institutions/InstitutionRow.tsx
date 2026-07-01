@@ -3,6 +3,7 @@ import { Institution, FinancialYear } from '../../data/types'
 import { RiskBadge } from './RiskBadge'
 import { NationBadge } from './NationBadge'
 import { DataSourceBadge } from './DataSourceBadge'
+import { formatCurrencyM, formatDays, formatPct, isKnownNumber } from '../../data/financials'
 
 interface InstitutionRowProps {
   institution: Institution
@@ -11,7 +12,7 @@ interface InstitutionRowProps {
 }
 
 export function InstitutionRow({ institution, financial, rank }: InstitutionRowProps) {
-  const isPositiveSurplus = financial.surplus_margin_pct >= 0
+  const isPositiveSurplus = isKnownNumber(financial.surplus_margin_pct) && financial.surplus_margin_pct >= 0
 
   return (
     <tr
@@ -39,28 +40,28 @@ export function InstitutionRow({ institution, financial, rank }: InstitutionRowP
               {institution.canonical_name}
             </p>
             <p style={{ color: 'var(--muted)', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>
-              {institution.ukprn} · {institution.mission_group ?? '—'}
+              {institution.ukprn ?? 'UKPRN pending'} · {institution.mission_group ?? '—'}
             </p>
           </div>
         </Link>
       </td>
       <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 500 }}>
-        £{financial.revenue_gbp_m.toLocaleString()}m
+        {formatCurrencyM(financial.revenue_gbp_m)}
       </td>
       <td
         className="px-3 py-2 tabular-nums text-right"
         style={{ fontSize: 12, color: isPositiveSurplus ? 'var(--positive)' : 'var(--negative)', fontWeight: 500 }}
       >
-        {isPositiveSurplus ? '+' : ''}{financial.surplus_margin_pct.toFixed(1)}%
+        {formatPct(financial.surplus_margin_pct)}
       </td>
       <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>
-        £{financial.research_income_gbp_m}m
+        {formatCurrencyM(financial.research_income_gbp_m)}
       </td>
       <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>
-        {financial.liquidity_days}d
+        {formatDays(financial.liquidity_days)}
       </td>
       <td className="px-3 py-2 tabular-nums text-right" style={{ color: 'var(--text-2)', fontSize: 12 }}>
-        £{financial.borrowing_gbp_m}m
+        {formatCurrencyM(financial.borrowing_gbp_m)}
       </td>
       <td className="px-3 py-2 text-right">
         <RiskBadge risk={financial.risk_flag} size="sm" />

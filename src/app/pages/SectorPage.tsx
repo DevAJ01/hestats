@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import { AlertCircle, TrendingUp, TrendingDown, ArrowUpRight, Activity } from 'lucide-react'
 import { institutions } from '../data/institutions'
-import { getAllLatestFinancials, getFinancialsByInstitution, AVAILABLE_YEARS } from '../data/financials'
+import { compareNullableDesc, formatCurrencyM, getAllLatestFinancials, getFinancialsByInstitution, AVAILABLE_YEARS, isKnownNumber, ratioPct } from '../data/financials'
 import { computeHealthScore, getGradeColor, getSectorAverageScore, scoreToGrade, getAllHealthScores } from '../data/health'
 import { NationBadge } from '../components/institutions/NationBadge'
 import { HealthBadge } from '../components/institutions/HealthBadge'
@@ -43,22 +43,24 @@ export function SectorPage() {
   bins[bins.length - 1].max = 101
   bins[bins.length - 1].label = '90–100'
   healthScores.forEach(({ score }) => {
+    if (!isKnownNumber(score)) return
     const bin = bins.find((b) => score >= b.min && score < b.max)
     if (bin) bin.count++
   })
   const maxBinCount = Math.max(...bins.map((b) => b.count))
 
   // Distress count (score < 45 = BB or worse)
-  const distressCount = healthScores.filter((h) => h.score < 45).length
+  const distressCount = healthScores.filter((h) => isKnownNumber(h.score) && h.score < 45).length
 
   // Top 10 by borrowing ratio
   const byBorrowingRatio = latestFins
     .map((f) => {
       const inst = institutions.find((i) => i.id === f.institution_id)
-      const ratio = f.revenue_gbp_m > 0 ? f.borrowing_gbp_m / f.revenue_gbp_m : 0
+      const ratioPctValue = ratioPct(f.borrowing_gbp_m, f.revenue_gbp_m, 4)
+      const ratio = isKnownNumber(ratioPctValue) ? ratioPctValue / 100 : null
       return { f, inst, ratio }
     })
-    .filter((x) => x.inst && x.ratio > 0)
+    .filter((x): x is { f: typeof latestFins[number]; inst: typeof institutions[number]; ratio: number } => Boolean(x.inst && isKnownNumber(x.ratio) && x.ratio > 0))
     .sort((a, b) => b.ratio - a.ratio)
     .slice(0, 10)
   const maxBorrowRatio = Math.max(...byBorrowingRatio.map((x) => x.ratio))
@@ -68,13 +70,15 @@ export function SectorPage() {
     .map((f) => {
       const inst = institutions.find((i) => i.id === f.institution_id)
       const prev = getFinancialsByInstitution(f.institution_id).find((p) => p.fiscal_year === AVAILABLE_YEARS[1])
-      const yoy = prev ? ((f.research_income_gbp_m - prev.research_income_gbp_m) / (prev.research_income_gbp_m || 1)) * 100 : 0
+      const yoy = prev && isKnownNumber(f.research_income_gbp_m) && isKnownNumber(prev.research_income_gbp_m) && prev.research_income_gbp_m !== 0
+        ? ((f.research_income_gbp_m - prev.research_income_gbp_m) / Math.abs(prev.research_income_gbp_m)) * 100
+        : null
       return { f, inst, yoy }
     })
-    .filter((x) => x.inst)
-    .sort((a, b) => b.f.research_income_gbp_m - a.f.research_income_gbp_m)
+    .filter((x): x is { f: typeof latestFins[number]; inst: typeof institutions[number]; yoy: number | null } => Boolean(x.inst && isKnownNumber(x.f.research_income_gbp_m)))
+    .sort((a, b) => compareNullableDesc(a.f.research_income_gbp_m, b.f.research_income_gbp_m))
     .slice(0, 10)
-  const maxResearch = Math.max(...byResearch.map((x) => x.f.research_income_gbp_m))
+  const maxResearch = Math.max(...byResearch.map((x) => x.f.research_income_gbp_m).filter(isKnownNumber), 1)
 
   // Institutions in focus
   const sortedByScore = healthScores
@@ -83,8 +87,8 @@ export function SectorPage() {
       const fin = finMap.get(h.institution_id)
       return { ...h, inst, fin }
     })
-    .filter((x) => x.inst && x.fin)
-    .sort((a, b) => b.score - a.score)
+    .filter((x) => x.inst && x.fin && isKnownNumber(x.score))
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
 
   const focusInstitutions = [
     sortedByScore[0],
@@ -99,11 +103,11 @@ export function SectorPage() {
   const missionGroupData = MISSION_GROUPS.map((g) => {
     const groupFins = g.ids.map((id) => finMap.get(id)).filter(Boolean)
     if (!groupFins.length) return { name: g.name, avgScore: 0, totalIncome: 0, count: 0 }
-    const scores = g.ids.map((id) => healthMap.get(id)?.score ?? 0).filter((s) => s > 0)
+    const scores = g.ids.map((id) => healthMap.get(id)?.score).filter(isKnownNumber)
     return {
       name: g.name,
       avgScore: scores.length ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0,
-      totalIncome: groupFins.reduce((s, f) => s + (f?.revenue_gbp_m ?? 0), 0),
+      totalIncome: groupFins.reduce((s, f) => s + (f && isKnownNumber(f.revenue_gbp_m) ? f.revenue_gbp_m : 0), 0),
       count: groupFins.length,
     }
   })
@@ -297,7 +301,7 @@ export function SectorPage() {
               const history = getFinancialsByInstitution(f.institution_id)
                 .sort((a, b) => a.fiscal_year.localeCompare(b.fiscal_year))
                 .map((h) => h.research_income_gbp_m)
-              const barPct = maxResearch > 0 ? (f.research_income_gbp_m / maxResearch) * 100 : 0
+              const barPct = isKnownNumber(f.research_income_gbp_m) && maxResearch > 0 ? (f.research_income_gbp_m / maxResearch) * 100 : 0
               return (
                 <div key={f.institution_id} className="flex items-center gap-2">
                   <span className="font-num" style={{ color: 'var(--muted)', fontSize: 10, width: 16, flexShrink: 0 }}>{i + 1}</span>
@@ -309,15 +313,17 @@ export function SectorPage() {
                     <div style={{ height: '100%', width: `${barPct}%`, backgroundColor: 'var(--positive)', borderRadius: 1 }} />
                   </div>
                   <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 11, width: 40, textAlign: 'right', flexShrink: 0 }}>
-                    £{f.research_income_gbp_m}m
+                    {formatCurrencyM(f.research_income_gbp_m)}
                   </span>
-                  <span
-                    className="font-num flex items-center"
-                    style={{ color: yoy >= 0 ? 'var(--positive)' : 'var(--negative)', fontSize: 10, width: 36, textAlign: 'right', flexShrink: 0 }}
-                  >
-                    {yoy >= 0 ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
-                    {Math.abs(yoy).toFixed(1)}%
-                  </span>
+                  {isKnownNumber(yoy) && (
+                    <span
+                      className="font-num flex items-center"
+                      style={{ color: yoy >= 0 ? 'var(--positive)' : 'var(--negative)', fontSize: 10, width: 36, textAlign: 'right', flexShrink: 0 }}
+                    >
+                      {yoy >= 0 ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+                      {Math.abs(yoy).toFixed(1)}%
+                    </span>
+                  )}
                 </div>
               )
             })}
@@ -352,7 +358,7 @@ export function SectorPage() {
                   <p style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{label}</p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 10 }}>£{h.fin.revenue_gbp_m.toLocaleString()}m</span>
+                  <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 10 }}>{formatCurrencyM(h.fin.revenue_gbp_m)}</span>
                   <Sparkline values={revHistory} width={36} height={11} color={getGradeColor(h.grade)} />
                 </div>
               </Link>
@@ -379,7 +385,7 @@ export function SectorPage() {
             const count = gradeInsts.length
             const color = getGradeColor(grade)
             // Sparkline: show count distribution across score bins within this grade
-            const scoreValues = gradeInsts.map((h) => h.score)
+            const scoreValues = gradeInsts.map((h) => h.score).filter(isKnownNumber)
             const avgScore = scoreValues.length ? Math.round(scoreValues.reduce((s, v) => s + v, 0) / scoreValues.length) : 0
             const revSparkValues = gradeInsts.slice(0, 5).map((h) => h.fin!.revenue_gbp_m)
             return (
@@ -406,7 +412,7 @@ export function SectorPage() {
             const color = getGradeColor(grade)
             const gradeInsts = healthScores
               .filter((h) => h.grade === grade)
-              .sort((a, b) => b.score - a.score)
+              .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
               .slice(0, 3)
               .map((h) => ({
                 ...h,

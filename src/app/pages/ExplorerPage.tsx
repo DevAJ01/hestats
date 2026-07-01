@@ -9,7 +9,7 @@ import {
   ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, Cell,
 } from 'recharts'
 import { institutions } from '../data/institutions'
-import { getAllLatestFinancials } from '../data/financials'
+import { compareNullableDesc, formatCurrencyM, formatDays, formatPct, getAllLatestFinancials, isKnownNumber } from '../data/financials'
 import { computeHealthScore, getGradeColor } from '../data/health'
 import { INSTITUTION_COORDS, projectToSvg } from '../data/coordinates'
 import { Institution } from '../data/types'
@@ -79,10 +79,10 @@ export function ExplorerPage() {
     list.sort((a, b) => {
       const fa = finMap[a.id], fb = finMap[b.id]
       if (sortBy === 'name') return a.canonical_name.localeCompare(b.canonical_name)
-      if (sortBy === 'revenue') return fb.revenue_gbp_m - fa.revenue_gbp_m
-      if (sortBy === 'surplus') return fb.surplus_margin_pct - fa.surplus_margin_pct
-      if (sortBy === 'research') return fb.research_income_gbp_m - fa.research_income_gbp_m
-      if (sortBy === 'liquidity') return fb.liquidity_days - fa.liquidity_days
+      if (sortBy === 'revenue') return compareNullableDesc(fa.revenue_gbp_m, fb.revenue_gbp_m)
+      if (sortBy === 'surplus') return compareNullableDesc(fa.surplus_margin_pct, fb.surplus_margin_pct)
+      if (sortBy === 'research') return compareNullableDesc(fa.research_income_gbp_m, fb.research_income_gbp_m)
+      if (sortBy === 'liquidity') return compareNullableDesc(fa.liquidity_days, fb.liquidity_days)
       return 0
     })
     return list
@@ -102,18 +102,21 @@ export function ExplorerPage() {
       })
       .filter((b): b is NonNullable<typeof b> => b !== null)
   }, [filtered, finMap])
-  const maxRev = Math.max(...bubbles.map((b) => b.fin.revenue_gbp_m), 1)
+  const maxRev = Math.max(...bubbles.map((b) => b.fin.revenue_gbp_m).filter(isKnownNumber), 1)
 
   // Graph data (scatter: research income vs surplus margin, size = revenue)
-  const scatterData = useMemo(() => filtered.map((inst) => {
-    const fin = finMap[inst.id]
-    const h = computeHealthScore(fin)
-    return {
-      id: inst.id, name: inst.short_name,
-      x: fin.research_income_gbp_m, y: fin.surplus_margin_pct, z: fin.revenue_gbp_m,
-      color: getGradeColor(h.grade),
-    }
-  }), [filtered, finMap])
+  const scatterData = useMemo(() => filtered
+    .map((inst) => {
+      const fin = finMap[inst.id]
+      if (!isKnownNumber(fin.research_income_gbp_m) || !isKnownNumber(fin.surplus_margin_pct) || !isKnownNumber(fin.revenue_gbp_m)) return null
+      const h = computeHealthScore(fin)
+      return {
+        id: inst.id, name: inst.short_name,
+        x: fin.research_income_gbp_m, y: fin.surplus_margin_pct, z: fin.revenue_gbp_m,
+        color: getGradeColor(h.grade),
+      }
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null), [filtered, finMap])
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 py-3">
@@ -236,8 +239,8 @@ export function ExplorerPage() {
           <div className="lg:col-span-2 border overflow-hidden" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
             <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ width: '100%', maxHeight: 620, display: 'block' }}>
               <path d={UK_PATH} fill="var(--bg-2)" stroke="var(--border)" strokeWidth={1.5} />
-              {[...bubbles].sort((a, b) => b.fin.revenue_gbp_m - a.fin.revenue_gbp_m).map(({ inst, fin, x, y }) => {
-                const r = Math.max(3, Math.sqrt(fin.revenue_gbp_m / maxRev) * 22)
+              {[...bubbles].sort((a, b) => compareNullableDesc(a.fin.revenue_gbp_m, b.fin.revenue_gbp_m)).map(({ inst, fin, x, y }) => {
+                const r = isKnownNumber(fin.revenue_gbp_m) ? Math.max(3, Math.sqrt(fin.revenue_gbp_m / maxRev) * 22) : 4
                 const h = computeHealthScore(fin)
                 const color = getGradeColor(h.grade)
                 const active = hovered === inst.id
@@ -264,7 +267,7 @@ export function ExplorerPage() {
                   <p style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}>{b.inst.canonical_name}</p>
                   <p style={{ color: 'var(--muted)', fontSize: 11, marginBottom: 10 }}>{b.inst.city} · {b.inst.nation}</p>
                   <div className="grid grid-cols-2 gap-2 mb-3">
-                    {[['Income', `£${b.fin.revenue_gbp_m.toLocaleString()}m`], ['Margin', `${b.fin.surplus_margin_pct.toFixed(1)}%`], ['Research', `£${b.fin.research_income_gbp_m}m`], ['Liquidity', `${b.fin.liquidity_days}d`]].map(([l, v]) => (
+                    {[['Income', formatCurrencyM(b.fin.revenue_gbp_m)], ['Margin', formatPct(b.fin.surplus_margin_pct)], ['Research', formatCurrencyM(b.fin.research_income_gbp_m)], ['Liquidity', formatDays(b.fin.liquidity_days)]].map(([l, v]) => (
                       <div key={l} className="px-2 py-1.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
                         <p style={{ color: 'var(--muted)', fontSize: 9, textTransform: 'uppercase' }}>{l}</p>
                         <p className="font-num" style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600 }}>{v}</p>
@@ -324,7 +327,7 @@ export function ExplorerPage() {
           <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
             {filtered.map((inst, i) => {
               const fin = finMap[inst.id]
-              const pct = (fin.revenue_gbp_m / maxRev) * 100
+              const pct = isKnownNumber(fin.revenue_gbp_m) ? (fin.revenue_gbp_m / maxRev) * 100 : 0
               return (
                 <Link key={inst.id} to={`/universities/${inst.id}`} className="flex items-center gap-3 px-4 py-2 transition-colors" style={{ borderBottom: '1px solid var(--border)' }}>
                   <span className="font-num" style={{ color: 'var(--muted)', fontSize: 11, width: 26 }}>{i + 1}</span>
@@ -332,7 +335,7 @@ export function ExplorerPage() {
                   <div className="hidden sm:block" style={{ width: '40%', height: 8, backgroundColor: 'var(--bg-2)', borderRadius: 2, overflow: 'hidden' }}>
                     <div style={{ width: `${pct}%`, height: '100%', backgroundColor: 'var(--accent)' }} />
                   </div>
-                  <span className="font-num" style={{ color: 'var(--text)', fontSize: 12, width: 80, textAlign: 'right' }}>£{fin.revenue_gbp_m.toLocaleString()}m</span>
+                  <span className="font-num" style={{ color: 'var(--text)', fontSize: 12, width: 80, textAlign: 'right' }}>{formatCurrencyM(fin.revenue_gbp_m)}</span>
                 </Link>
               )
             })}

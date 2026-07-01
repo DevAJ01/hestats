@@ -158,9 +158,9 @@ export function OpenDataPage() {
               HEStats Open Data
             </p>
             <p style={{ color: 'var(--text-2)', fontSize: 12.5, lineHeight: 1.6, maxWidth: 700 }}>
-              Prototype financial datasets are available free of charge under <strong style={{ color: 'var(--text)' }}>CC BY 4.0</strong>.
-              Rows marked <strong style={{ color: 'var(--positive)' }}>verified</strong> are intended to trace to official annual reports or open datasets;
-              rows marked <strong style={{ color: 'var(--warning)' }}>estimated</strong> are modelled placeholders and should not be cited as audited fact.
+              Verified financial datasets are available free of charge under <strong style={{ color: 'var(--text)' }}>CC BY 4.0</strong>.
+              Rows marked <strong style={{ color: 'var(--positive)' }}>verified</strong> trace to official open datasets;
+              pending cells remain blank until an official source is attached.
             </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-shrink-0">

@@ -4,7 +4,7 @@ import { Institution, FinancialYear } from '../../data/types'
 import { RiskBadge } from './RiskBadge'
 import { NationBadge } from './NationBadge'
 import { DataSourceBadge } from './DataSourceBadge'
-import { getFinancialsByInstitution } from '../../data/financials'
+import { formatCurrencyM, formatDays, formatPct, getFinancialsByInstitution, isKnownNumber } from '../../data/financials'
 import { Sparkline } from '../charts/Sparkline'
 
 interface InstitutionCardProps {
@@ -17,7 +17,7 @@ export function InstitutionCard({ institution, financial }: InstitutionCardProps
     a.fiscal_year.localeCompare(b.fiscal_year),
   )
   const sparkValues = history.map((h) => h.revenue_gbp_m)
-  const isPositiveSurplus = financial.surplus_margin_pct >= 0
+  const isPositiveSurplus = isKnownNumber(financial.surplus_margin_pct) && financial.surplus_margin_pct >= 0
 
   return (
     <Link
@@ -31,7 +31,7 @@ export function InstitutionCard({ institution, financial }: InstitutionCardProps
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <span style={{ color: 'var(--muted)', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>
-              {institution.ukprn}
+              {institution.ukprn ?? 'UKPRN pending'}
             </span>
             <NationBadge nation={institution.nation} size="sm" />
             <DataSourceBadge source={financial.data_source} size="sm" />
@@ -49,16 +49,16 @@ export function InstitutionCard({ institution, financial }: InstitutionCardProps
       <div className="px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-2.5">
         <Metric
           label="Revenue"
-          value={`£${financial.revenue_gbp_m.toLocaleString()}m`}
+          value={formatCurrencyM(financial.revenue_gbp_m)}
           spark={<Sparkline values={sparkValues} width={56} height={14} color="#7396c2" />}
         />
         <Metric
           label="Margin"
-          value={`${financial.surplus_margin_pct.toFixed(1)}%`}
+          value={formatPct(financial.surplus_margin_pct)}
           valueColor={isPositiveSurplus ? 'var(--positive)' : 'var(--negative)'}
         />
-        <Metric label="Research" value={`£${financial.research_income_gbp_m}m`} />
-        <Metric label="Liquidity" value={`${financial.liquidity_days}d`} />
+        <Metric label="Research" value={formatCurrencyM(financial.research_income_gbp_m)} />
+        <Metric label="Liquidity" value={formatDays(financial.liquidity_days)} />
       </div>
 
       <div

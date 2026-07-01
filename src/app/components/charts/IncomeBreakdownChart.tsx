@@ -1,15 +1,16 @@
 import { useState, useCallback } from 'react'
 import { FinancialYear } from '../../data/types'
+import { FinancialValueKey, isKnownNumber } from '../../data/financials'
 
 interface IncomeBreakdownChartProps {
   financials: FinancialYear[]
   height?: number
 }
 
-const SERIES = [
-  { key: 'tuition_fee_income_gbp_m' as keyof FinancialYear, label: 'Tuition Fees', color: '#7396c2' },
-  { key: 'research_income_gbp_m' as keyof FinancialYear, label: 'Research', color: '#5fa97b' },
-  { key: 'other_income_gbp_m' as keyof FinancialYear, label: 'Other Income', color: '#c2945a' },
+const SERIES: { key: FinancialValueKey; label: string; color: string }[] = [
+  { key: 'tuition_fee_income_gbp_m', label: 'Tuition Fees', color: '#7396c2' },
+  { key: 'research_income_gbp_m', label: 'Research', color: '#5fa97b' },
+  { key: 'other_income_gbp_m', label: 'Other Income', color: '#c2945a' },
 ]
 
 interface TooltipInfo {
@@ -38,16 +39,24 @@ export function IncomeBreakdownChart({ financials, height = 240 }: IncomeBreakdo
 
   if (!sorted.length) return null
 
-  const barData = sorted.map((f) => ({
-    year: f.fiscal_year,
-    values: SERIES.map((s) => f[s.key] as number),
-    total: SERIES.reduce((sum, s) => sum + (f[s.key] as number), 0),
-  }))
+  const barData = sorted
+    .map((f) => {
+      const values = SERIES.map((s) => f[s.key])
+      if (!values.every(isKnownNumber)) return null
+      return {
+        year: f.fiscal_year,
+        values,
+        total: values.reduce((sum, value) => sum + value, 0),
+      }
+    })
+    .filter((row): row is { year: string; values: number[]; total: number } => row !== null)
+
+  if (!barData.length) return null
 
   const maxTotal = Math.max(...barData.map((d) => d.total))
   const yMax = maxTotal * 1.1 || 1
 
-  const barGroupW = innerW / sorted.length
+  const barGroupW = innerW / barData.length
   const barW = Math.min(barGroupW * 0.65, 48)
 
   const tickCount = 4
@@ -68,7 +77,7 @@ export function IncomeBreakdownChart({ financials, height = 240 }: IncomeBreakdo
       const rect = e.currentTarget.getBoundingClientRect()
       const svgX = ((e.clientX - rect.left) / rect.width) * chartW
       const idx = Math.floor((svgX - PAD.left) / barGroupW)
-      const clamped = Math.max(0, Math.min(sorted.length - 1, idx))
+      const clamped = Math.max(0, Math.min(barData.length - 1, idx))
       const d = barData[clamped]
       if (!d) return
       setTooltip({
@@ -77,7 +86,7 @@ export function IncomeBreakdownChart({ financials, height = 240 }: IncomeBreakdo
         values: SERIES.map((s, si) => ({ label: s.label, color: s.color, value: d.values[si] })),
       })
     },
-    [barData, sorted.length, barGroupW],
+    [barData, barGroupW],
   )
 
   return (

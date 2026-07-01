@@ -131,6 +131,20 @@ function EmployerCard({ emp, expanded, onToggle }: { emp: Employer; expanded: bo
 }
 
 export function EmployersPage() {
+  return (
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-8">
+      <Panel title="Employer Intelligence" subtitle="Awaiting official source rows">
+        <div className="px-3 py-8 text-center">
+          <Building2 className="w-6 h-6 mx-auto mb-3" style={{ color: 'var(--muted)' }} />
+          <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 4 }}>Employer statistics are pending verification.</p>
+          <p style={{ color: 'var(--muted)', fontSize: 11.5, lineHeight: 1.6 }}>
+            Graduate intake, salary, retention, AI exposure, and university-supplier figures are withheld from the verified platform until each claim has source provenance.
+          </p>
+        </div>
+      </Panel>
+    </div>
+  )
+
   const [search, setSearch] = useState('')
   const [sectorFilter, setSectorFilter] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)

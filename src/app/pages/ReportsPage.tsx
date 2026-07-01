@@ -33,10 +33,11 @@ export function ReportsPage() {
     .sort((a, b) => a.inst.canonical_name.localeCompare(b.inst.canonical_name))
 
   const verifiedCount = rows.filter((r) => r.f.data_source === 'verified').length
-  const withPdfCount = rows.filter((r) => r.f.source_pdf).length
+  const pendingCount = rows.length - verifiedCount
+  const withSourceCount = rows.filter((r) => r.f.source_pdf).length
 
   function downloadCsv() {
-    const header = 'Institution,UKPRN,Fiscal Year,Published,Data Source,Status,PDF URL\n'
+    const header = 'Institution,UKPRN,Fiscal Year,Published,Data Source,Status,Source URL\n'
     const lines = rows.map((r) =>
       [
         `"${r.inst.canonical_name}"`,
@@ -68,11 +69,11 @@ export function ReportsPage() {
         <span style={{ color: 'var(--muted)', letterSpacing: '0.06em' }}>ANNUAL REPORTS REGISTRY</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          <span className="font-num" style={{ color: 'var(--positive)' }}>{verifiedCount}</span> verified · <span className="font-num">{rows.length - verifiedCount}</span> estimated
+          <span className="font-num" style={{ color: 'var(--positive)' }}>{verifiedCount}</span> verified · <span className="font-num">{pendingCount}</span> pending
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          <span className="font-num" style={{ color: 'var(--text)' }}>{withPdfCount}</span> PDFs linked
+          <span className="font-num" style={{ color: 'var(--text)' }}>{withSourceCount}</span> source links
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>FY <span className="font-num" style={{ color: 'var(--text)' }}>{activeYear}</span></span>
@@ -134,7 +135,7 @@ export function ReportsPage() {
           <table className="w-full">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-2)' }}>
-                {['Institution', 'Nation', 'UKPRN', 'Published', 'Data Source', 'Status', 'Annual Report'].map((h, i) => (
+                {['Institution', 'Nation', 'UKPRN', 'Published', 'Data Source', 'Status', 'Source'].map((h, i) => (
                   <th
                     key={h}
                     className="px-3 py-2"
@@ -198,7 +199,7 @@ export function ReportsPage() {
                         className="inline-flex items-center gap-1 px-2 py-1 transition-colors hover:underline"
                         style={{ color: 'var(--link)', fontSize: 11, border: '1px solid var(--border)', borderRadius: 2 }}
                       >
-                        <FileText className="w-3 h-3" /> PDF
+                        <FileText className="w-3 h-3" /> Source
                         <ArrowUpRight className="w-3 h-3" />
                       </a>
                     ) : (
@@ -226,13 +227,13 @@ export function ReportsPage() {
       >
         <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Key</span>
         <span className="flex items-center gap-1.5" style={{ fontSize: 11, color: 'var(--text-2)' }}>
-          <CheckCircle className="w-3 h-3" style={{ color: 'var(--positive)' }} /> Found — source PDF ingested and verified
+          <CheckCircle className="w-3 h-3" style={{ color: 'var(--positive)' }} /> Found — official source ingested and verified
         </span>
         <span className="flex items-center gap-1.5" style={{ fontSize: 11, color: 'var(--text-2)' }}>
           <Clock className="w-3 h-3" style={{ color: 'var(--warning)' }} /> Archived — located but not yet processed
         </span>
         <span className="flex items-center gap-1.5" style={{ fontSize: 11, color: 'var(--text-2)' }}>
-          <AlertCircle className="w-3 h-3" style={{ color: 'var(--muted)' }} /> Missing — not yet located
+          <AlertCircle className="w-3 h-3" style={{ color: 'var(--muted)' }} /> Missing — awaiting official source
         </span>
         <Link to="/support" className="ml-auto hover:underline flex items-center gap-1" style={{ color: 'var(--link)', fontSize: 11 }}>
           Help us add missing reports <ArrowUpRight className="w-3 h-3" />
