@@ -2,15 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { ALL_FINANCIAL_VALUE_KEYS, AVAILABLE_YEARS, financials } from './financials'
 import { DEGREES } from './degrees'
 import { EMPLOYERS } from './employers'
+import { ESTATE_VALUE_KEYS, ESTATE_YEARS, estateRecords } from './estates'
 import { institutions } from './institutions'
 import { INTELLIGENCE_RECORDS } from './intelligence'
 import { nationalStudentFinanceRecords } from './nationalStudentFinance'
 import { providerFinanceCoverage } from './providerFinanceCoverage'
 import { providerSourceCoverage } from './providerSourceCoverage'
 import { HESA_STUDENT_PROVIDER_COUNT_2024_25, providerUniverse } from './providers'
+import { STAFF_VALUE_KEYS, STAFF_YEARS, staffRecords } from './staff'
 import { STUDENT_YEARS, studentEnrolments } from './students'
+import { TEF_ASSESSMENT_YEARS, tefRecords } from './tef'
 import { OUTCOMES } from './outcomes'
-import { blockingIssues, validateData, validateDegreeIntelligence, validateEmployerMarkets, validateFinancials, validateGraduateOutcomes, validateInstitutionCoordinates, validateInstitutions, validateIntelligenceRecords, validateMapOutline, validateNationalStudentFinance, validateProviderFinanceCoverage, validateProviderSourceCoverage, validateProviderUniverse, validateStudentEnrolments } from './validation'
+import { blockingIssues, validateData, validateDegreeIntelligence, validateEmployerMarkets, validateEstateRecords, validateFinancials, validateGraduateOutcomes, validateInstitutionCoordinates, validateInstitutions, validateIntelligenceRecords, validateMapOutline, validateNationalStudentFinance, validateProviderFinanceCoverage, validateProviderSourceCoverage, validateProviderUniverse, validateStaffRecords, validateStudentEnrolments, validateTefRecords } from './validation'
 
 describe('HEStats data validation', () => {
   it('has no blocking errors in the bundled verified dataset', () => {
@@ -141,11 +144,47 @@ describe('HEStats data validation', () => {
     }
   })
 
-  it('keeps explicit provider coverage rows for students, outcomes, staff and estates', () => {
-    expect(providerSourceCoverage).toHaveLength(providerUniverse.length * 4)
+  it('keeps explicit provider coverage rows for students, outcomes, staff, estates and TEF', () => {
+    expect(providerSourceCoverage).toHaveLength(providerUniverse.length * 5)
     expect(blockingIssues(validateProviderSourceCoverage())).toEqual([])
     expect(providerSourceCoverage.every((row) => row.source_url.startsWith('https://'))).toBe(true)
-    expect(providerSourceCoverage.every((row) => !row.included_in_aggregates)).toBe(true)
+    expect(providerSourceCoverage.filter((row) => row.source_status === 'pending').every((row) => !row.included_in_aggregates)).toBe(true)
+    expect(providerSourceCoverage.filter((row) => row.domain === 'outcomes' && row.source_status === 'verified').length).toBeGreaterThan(200)
+  })
+
+  it('keeps complete staff coverage across the decade panel', () => {
+    const keys = new Set(staffRecords.map((row) => `${row.institution_id}:${row.academic_year}`))
+    expect(staffRecords).toHaveLength(institutions.length * STAFF_YEARS.length)
+    expect(keys.size).toBe(staffRecords.length)
+    expect(blockingIssues(validateStaffRecords())).toEqual([])
+
+    const pendingRows = staffRecords.filter((row) => row.source_status === 'pending')
+    expect(pendingRows.length).toBeGreaterThan(0)
+    expect(pendingRows.every((row) => !row.included_in_aggregates)).toBe(true)
+    expect(pendingRows.every((row) => STAFF_VALUE_KEYS.every((key) => row[key] === null))).toBe(true)
+  })
+
+  it('keeps complete estates coverage for published HESA estates years', () => {
+    const keys = new Set(estateRecords.map((row) => `${row.institution_id}:${row.academic_year}`))
+    expect(estateRecords).toHaveLength(institutions.length * ESTATE_YEARS.length)
+    expect(keys.size).toBe(estateRecords.length)
+    expect(blockingIssues(validateEstateRecords())).toEqual([])
+    expect(ESTATE_YEARS).not.toContain('2024-25')
+
+    const pendingRows = estateRecords.filter((row) => row.source_status === 'pending')
+    expect(pendingRows.length).toBeGreaterThan(0)
+    expect(pendingRows.every((row) => !row.included_in_aggregates)).toBe(true)
+    expect(pendingRows.every((row) => ESTATE_VALUE_KEYS.every((key) => row[key] === null))).toBe(true)
+  })
+
+  it('keeps TEF coverage as assessment ratings rather than annual rankings', () => {
+    const keys = new Set(tefRecords.map((row) => `${row.institution_id}:${row.assessment_year}`))
+    expect(tefRecords).toHaveLength(institutions.length * TEF_ASSESSMENT_YEARS.length)
+    expect(keys.size).toBe(tefRecords.length)
+    expect(blockingIssues(validateTefRecords())).toEqual([])
+    expect(tefRecords.every((row) => row.source_id === 'ofs-tef')).toBe(true)
+    expect(tefRecords.every((row) => row.source_reference.toLowerCase().includes('not annual ranking'))).toBe(true)
+    expect(tefRecords.filter((row) => row.source_status === 'pending').every((row) => row.overall_rating === null && !row.included_in_aggregates)).toBe(true)
   })
 
   it('keeps national student finance records source-backed and excludes forecasts from aggregates', () => {

@@ -5,6 +5,7 @@ import { DEGREES, type Degree } from '../data/degrees'
 import { EMPLOYERS, type Employer } from '../data/employers'
 import { institutions } from '../data/institutions'
 import { getOutcomesByInstitution } from '../data/outcomes'
+import { getTefByInstitution } from '../data/tef'
 
 type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6
 
@@ -90,15 +91,16 @@ function StepUniversities({ degree }: { degree: Degree }) {
   const topInsts = degree.top_institutions.slice(0, 6).map((id) => {
     const inst = institutions.find((i) => i.id === id)
     const outcome = getOutcomesByInstitution(id)
-    return { inst, outcome }
-  }).filter((x): x is { inst: NonNullable<typeof x.inst>; outcome: NonNullable<typeof x.outcome> } => !!x.inst && !!x.outcome)
+    const tef = getTefByInstitution(id)
+    return { inst, outcome, tef }
+  }).filter((x): x is { inst: NonNullable<typeof x.inst>; outcome: NonNullable<typeof x.outcome>; tef: ReturnType<typeof getTefByInstitution> } => !!x.inst && !!x.outcome)
 
   return (
     <div>
       <h2 style={{ color: 'var(--text)', fontSize: 17, fontWeight: 700, marginBottom: 4 }}>Top universities for {degree.name}</h2>
       <p style={{ color: 'var(--text-2)', fontSize: 12.5, marginBottom: 16 }}>Ranked by research strength, graduate outcomes, and subject reputation.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {topInsts.map(({ inst, outcome }, i) => (
+        {topInsts.map(({ inst, outcome, tef }, i) => (
           <div key={inst.id} className="border p-3" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 4 }}>
             <div className="flex items-center gap-2 mb-2">
               <span className="font-num" style={{ color: 'var(--muted)', fontSize: 11 }}>#{i + 1}</span>
@@ -110,7 +112,7 @@ function StepUniversities({ degree }: { degree: Degree }) {
                 { l: 'LEO YAG1', v: fmtPct(outcome.employment_rate_15mo), c: 'var(--positive)' },
                 { l: 'Median earnings', v: fmtK(outcome.median_salary_k), c: 'var(--text)' },
                 { l: 'NSS score', v: `${outcome.nss_overall_pct}%`, c: 'var(--link)' },
-                { l: 'TEF', v: outcome.tef_rating, c: outcome.tef_rating === 'Gold' ? 'var(--warning)' : 'var(--muted)' },
+                { l: 'TEF', v: tef?.overall_rating ?? 'Pending', c: tef?.overall_rating === 'Gold' ? 'var(--warning)' : 'var(--muted)' },
               ].map(({ l, v, c }) => (
                 <div key={l} className="px-2 py-1.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 2 }}>
                   <p style={{ color: 'var(--muted)', fontSize: 8.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{l}</p>

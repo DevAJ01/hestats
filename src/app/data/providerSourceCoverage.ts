@@ -1,6 +1,11 @@
 import { providerUniverse } from './providers'
+import { estateRecords } from './estates'
+import { OUTCOMES } from './outcomes'
+import { staffRecords } from './staff'
+import { studentEnrolments } from './students'
+import { tefRecords } from './tef'
 
-export type ProviderDomain = 'students' | 'outcomes' | 'staff' | 'estates'
+export type ProviderDomain = 'students' | 'outcomes' | 'staff' | 'estates' | 'tef'
 export type ProviderDomainCoverageStatus = 'verified' | 'pending'
 
 export interface ProviderSourceCoverageRecord {
@@ -44,15 +49,117 @@ const DOMAIN_SOURCE: Record<ProviderDomain, Pick<ProviderSourceCoverageRecord, '
   },
   estates: {
     source_id: 'hesa-estates',
-    source_url: 'https://www.hesa.ac.uk/data-and-analysis/estates',
-    source_reference: 'HESA Estates open data; provider-level metrics awaiting internal source row reconciliation',
-    period: 'Latest available estates year',
+    source_url: 'https://www.hesa.ac.uk/data-and-analysis/estates/environmental',
+    source_reference: 'HESA Estates open data tables 1-5; provider-level metrics awaiting internal source row reconciliation',
+    period: '2015-16 to 2023-24',
   },
+  tef: {
+    source_id: 'ofs-tef',
+    source_url: 'https://www.officeforstudents.org.uk/for-providers/quality-and-standards/tef-2023-ratings/',
+    source_reference: 'OfS TEF 2023 ratings; ratings are assessment ratings and not annual rankings',
+    period: 'TEF 2023 rating cycle',
+  },
+}
+
+function coverageForDomain(
+  provider: (typeof providerUniverse)[number],
+  domain: ProviderDomain,
+): Pick<ProviderSourceCoverageRecord, 'source_status' | 'source_id' | 'source_url' | 'source_reference' | 'period' | 'confidence' | 'included_in_aggregates' | 'notes'> {
+  const fallback = DOMAIN_SOURCE[domain]
+  const institutionId = provider.institution_id
+
+  if (institutionId && domain === 'students') {
+    const row = studentEnrolments.find((item) => item.institution_id === institutionId)
+    if (row?.source_status === 'verified') {
+      return {
+        period: row.academic_year,
+        source_status: 'verified',
+        source_id: row.source_id,
+        source_url: row.source_url,
+        source_reference: row.source_reference,
+        confidence: row.confidence,
+        included_in_aggregates: row.included_in_aggregates,
+        notes: row.notes ?? 'Verified HESA Student Statistics provider row.',
+      }
+    }
+  }
+
+  if (institutionId && domain === 'outcomes') {
+    const row = OUTCOMES.find((item) => item.institution_id === institutionId)
+    if (row?.source_status === 'verified') {
+      return {
+        period: row.tax_year,
+        source_status: 'verified',
+        source_id: row.source_id,
+        source_url: row.source_url,
+        source_reference: row.source_reference,
+        confidence: row.confidence,
+        included_in_aggregates: row.included_in_aggregates,
+        notes: row.notes ?? 'Verified DfE LEO graduate outcome provider row.',
+      }
+    }
+  }
+
+  if (institutionId && domain === 'staff') {
+    const row = staffRecords.find((item) => item.institution_id === institutionId && item.source_status === 'verified')
+    if (row) {
+      return {
+        period: row.academic_year,
+        source_status: 'verified',
+        source_id: row.source_id,
+        source_url: row.source_url,
+        source_reference: row.source_reference,
+        confidence: row.confidence,
+        included_in_aggregates: row.included_in_aggregates,
+        notes: row.notes ?? 'Verified HESA Staff provider row.',
+      }
+    }
+  }
+
+  if (institutionId && domain === 'estates') {
+    const row = estateRecords.find((item) => item.institution_id === institutionId && item.source_status === 'verified')
+    if (row) {
+      return {
+        period: row.academic_year,
+        source_status: 'verified',
+        source_id: row.source_id,
+        source_url: row.source_url,
+        source_reference: row.source_reference,
+        confidence: row.confidence,
+        included_in_aggregates: row.included_in_aggregates,
+        notes: row.notes ?? 'Verified HESA Estates provider row.',
+      }
+    }
+  }
+
+  if (institutionId && domain === 'tef') {
+    const row = tefRecords.find((item) => item.institution_id === institutionId)
+    if (row?.source_status === 'verified') {
+      return {
+        period: `TEF ${row.assessment_year}`,
+        source_status: 'verified',
+        source_id: row.source_id,
+        source_url: row.source_url,
+        source_reference: row.source_reference,
+        confidence: row.confidence,
+        included_in_aggregates: row.included_in_aggregates,
+        notes: row.notes ?? 'Verified OfS TEF provider rating row.',
+      }
+    }
+  }
+
+  return {
+    ...fallback,
+    source_status: 'pending',
+    confidence: 'awaiting',
+    included_in_aggregates: false,
+    notes: 'Coverage row is present so the platform can show explicit gaps. Numeric metrics remain null until an official provider-level source row is loaded.',
+  }
 }
 
 export const providerSourceCoverage: ProviderSourceCoverageRecord[] = providerUniverse.flatMap((provider) =>
   (Object.keys(DOMAIN_SOURCE) as ProviderDomain[]).map((domain) => {
-    const source = DOMAIN_SOURCE[domain]
+    const source = coverageForDomain(provider, domain)
     return {
       provider_id: provider.provider_id,
       institution_id: provider.institution_id,
@@ -60,15 +167,15 @@ export const providerSourceCoverage: ProviderSourceCoverageRecord[] = providerUn
       canonical_name: provider.canonical_name,
       domain,
       period: source.period,
-      source_status: 'pending',
+      source_status: source.source_status,
       source_id: source.source_id,
       source_url: source.source_url,
       source_reference: source.source_reference,
       retrieved_date: RETRIEVED_DATE,
       last_verified: RETRIEVED_DATE,
-      confidence: 'awaiting',
-      included_in_aggregates: false,
-      notes: 'Coverage row is present so the platform can show explicit gaps. Numeric metrics remain null until an official provider-level source row is loaded.',
+      confidence: source.confidence,
+      included_in_aggregates: source.included_in_aggregates,
+      notes: source.notes,
     }
   }),
 )

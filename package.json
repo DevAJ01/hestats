@@ -14,7 +14,10 @@
     "validate:data": "vitest run src/app/data/validation.test.ts",
     "ingest:hesa-finance": "node scripts/ingest-hesa-finance.mjs",
     "ingest:hesa-students": "node scripts/ingest-hesa-students.mjs",
-    "ingest:dfe-leo": "node scripts/ingest-dfe-leo.mjs"
+    "ingest:dfe-leo": "node scripts/ingest-dfe-leo.mjs",
+    "ingest:hesa-staff": "node scripts/ingest-hesa-staff.mjs",
+    "ingest:hesa-estates": "node scripts/ingest-hesa-estates.mjs",
+    "ingest:ofs-tef": "node scripts/ingest-ofs-tef.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

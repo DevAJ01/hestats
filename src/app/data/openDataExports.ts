@@ -2,6 +2,7 @@ import { computeHealthScore } from './health'
 import { DEGREES } from './degrees'
 import { EMPLOYERS } from './employers'
 import { INTELLIGENCE_RECORDS } from './intelligence'
+import { estateRecords } from './estates'
 import { financials, getAllLatestFinancials } from './financials'
 import { institutions } from './institutions'
 import { nationalStudentFinanceRecords } from './nationalStudentFinance'
@@ -10,7 +11,9 @@ import { providerFinanceCoverage } from './providerFinanceCoverage'
 import { providerSourceCoverage } from './providerSourceCoverage'
 import { providerUniverse } from './providers'
 import { getProvenance } from './sources'
+import { staffRecords } from './staff'
 import { studentEnrolments } from './students'
+import { tefRecords } from './tef'
 
 export type Format = 'csv' | 'json'
 
@@ -297,6 +300,95 @@ export function generateGraduateOutcomesJson() {
   return JSON.stringify(OUTCOMES, null, 2)
 }
 
+export function generateStaffRecordsCsv() {
+  const header = 'institution_id,ukprn,academic_year,total_staff_fte,academic_staff_fte,non_academic_staff_fte,total_staff_headcount,academic_staff_headcount,non_academic_staff_headcount,female_staff_pct,non_uk_staff_pct,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates,notes'
+  const rows = staffRecords.map((row) => [
+    row.institution_id,
+    row.ukprn ?? '',
+    row.academic_year,
+    csvNullable(row.total_staff_fte),
+    csvNullable(row.academic_staff_fte),
+    csvNullable(row.non_academic_staff_fte),
+    csvNullable(row.total_staff_headcount),
+    csvNullable(row.academic_staff_headcount),
+    csvNullable(row.non_academic_staff_headcount),
+    csvNullable(row.female_staff_pct),
+    csvNullable(row.non_uk_staff_pct),
+    row.source_status,
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    row.included_in_aggregates,
+    csvText(row.notes),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateStaffRecordsJson() {
+  return JSON.stringify(staffRecords, null, 2)
+}
+
+export function generateEstateRecordsCsv() {
+  const header = 'institution_id,ukprn,academic_year,total_estate_area_sqm,academic_estate_area_sqm,residential_estate_area_sqm,scope1_2_emissions_tonnes_co2e,energy_consumption_kwh,water_consumption_m3,waste_tonnes,condition_a_b_pct,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates,notes'
+  const rows = estateRecords.map((row) => [
+    row.institution_id,
+    row.ukprn ?? '',
+    row.academic_year,
+    csvNullable(row.total_estate_area_sqm),
+    csvNullable(row.academic_estate_area_sqm),
+    csvNullable(row.residential_estate_area_sqm),
+    csvNullable(row.scope1_2_emissions_tonnes_co2e),
+    csvNullable(row.energy_consumption_kwh),
+    csvNullable(row.water_consumption_m3),
+    csvNullable(row.waste_tonnes),
+    csvNullable(row.condition_a_b_pct),
+    row.source_status,
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    row.included_in_aggregates,
+    csvText(row.notes),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateEstateRecordsJson() {
+  return JSON.stringify(estateRecords, null, 2)
+}
+
+export function generateTefRatingsCsv() {
+  const header = 'institution_id,ukprn,assessment_year,valid_academic_years,overall_rating,student_experience_rating,student_outcomes_rating,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates,notes'
+  const rows = tefRecords.map((row) => [
+    row.institution_id,
+    row.ukprn ?? '',
+    row.assessment_year,
+    csvText(row.valid_academic_years.join('|')),
+    row.overall_rating ?? '',
+    row.student_experience_rating ?? '',
+    row.student_outcomes_rating ?? '',
+    row.source_status,
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    row.included_in_aggregates,
+    csvText(row.notes),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateTefRatingsJson() {
+  return JSON.stringify(tefRecords, null, 2)
+}
+
 export function generateDegreeIntelligenceCsv() {
   const header = 'id,name,annual_graduations,employment_rate_yag1_pct,sustained_employment_only_pct,no_sustained_destination_pct,further_study_pct,median_salary_1yr_k,median_salary_3yr_k,median_salary_5yr_k,median_salary_10yr_k,ai_automation_risk_pct,ai_augmentation_pct,ai_source_status,top_institutions,industry_destinations_json,regional_destinations_json,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates'
   const rows = DEGREES.map((row) => [
@@ -402,6 +494,9 @@ export function getDataset(id: string, fmt: Format): string {
   if (id === 'health-scores') return fmt === 'csv' ? generateHealthScoresCsv() : generateHealthScoresJson()
   if (id === 'student-enrolments') return fmt === 'csv' ? generateStudentEnrolmentsCsv() : generateStudentEnrolmentsJson()
   if (id === 'graduate-outcomes') return fmt === 'csv' ? generateGraduateOutcomesCsv() : generateGraduateOutcomesJson()
+  if (id === 'staff-records') return fmt === 'csv' ? generateStaffRecordsCsv() : generateStaffRecordsJson()
+  if (id === 'estate-records') return fmt === 'csv' ? generateEstateRecordsCsv() : generateEstateRecordsJson()
+  if (id === 'tef-ratings') return fmt === 'csv' ? generateTefRatingsCsv() : generateTefRatingsJson()
   if (id === 'degree-intelligence') return fmt === 'csv' ? generateDegreeIntelligenceCsv() : generateDegreeIntelligenceJson()
   if (id === 'employer-markets') return fmt === 'csv' ? generateEmployerMarketsCsv() : generateEmployerMarketsJson()
   if (id === 'intelligence') return fmt === 'csv' ? generateIntelligenceCsv() : generateIntelligenceJson()

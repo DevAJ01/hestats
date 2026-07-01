@@ -63,6 +63,32 @@ describe('open data exports', () => {
     expect(markets.every((row: { market_type: string }) => row.market_type === 'industry_section')).toBe(true)
   })
 
+  it('exports staff, estates and TEF coverage datasets with source metadata', () => {
+    const staff = JSON.parse(getDataset('staff-records', 'json'))
+    const staffHeader = getDataset('staff-records', 'csv').split('\n')[0]
+    const estates = JSON.parse(getDataset('estate-records', 'json'))
+    const estatesHeader = getDataset('estate-records', 'csv').split('\n')[0]
+    const tef = JSON.parse(getDataset('tef-ratings', 'json'))
+    const tefHeader = getDataset('tef-ratings', 'csv').split('\n')[0]
+
+    expect(staff).toHaveLength(3040)
+    expect(staffHeader).toContain('total_staff_fte')
+    expect(staffHeader).toContain('source_reference')
+    expect(staff.filter((row: { source_status: string }) => row.source_status === 'pending')
+      .every((row: { included_in_aggregates: boolean; total_staff_fte: number | null }) => !row.included_in_aggregates && row.total_staff_fte === null)).toBe(true)
+
+    expect(estates).toHaveLength(2736)
+    expect(estatesHeader).toContain('total_estate_area_sqm')
+    expect(estatesHeader).toContain('source_reference')
+    expect(estates.filter((row: { source_status: string }) => row.source_status === 'pending')
+      .every((row: { included_in_aggregates: boolean; total_estate_area_sqm: number | null }) => !row.included_in_aggregates && row.total_estate_area_sqm === null)).toBe(true)
+
+    expect(tef).toHaveLength(304)
+    expect(tefHeader).toContain('overall_rating')
+    expect(tefHeader).toContain('source_reference')
+    expect(tef.every((row: { source_id: string; source_reference: string }) => row.source_id === 'ofs-tef' && row.source_reference.includes('not annual rankings'))).toBe(true)
+  })
+
   it('exports provider universe and finance coverage datasets', () => {
     const providers = JSON.parse(getDataset('provider-universe', 'json'))
     const providerHeader = getDataset('provider-universe', 'csv').split('\n')[0]
@@ -90,7 +116,7 @@ describe('open data exports', () => {
     expect(nationalHeader).toContain('included_in_aggregates')
     expect(national.filter((row: { source_status: string }) => row.source_status === 'forecast')
       .every((row: { included_in_aggregates: boolean }) => !row.included_in_aggregates)).toBe(true)
-    expect(sourceCoverage).toHaveLength(1216)
+    expect(sourceCoverage).toHaveLength(1520)
     expect(sourceHeader).toContain('domain')
     expect(sourceHeader).toContain('source_reference')
   })
@@ -178,6 +204,41 @@ describe('open data exports', () => {
     expect(payload.meta.coverage.total_institutions).toBeGreaterThan(100)
     expect(payload.meta.coverage.pending).toBe(payload.meta.coverage.total_institutions - payload.meta.coverage.verified)
     expect(payload.meta.coverage.included_in_aggregates).toBe(payload.meta.coverage.verified)
+  })
+
+  it('reports staff, estates and TEF coverage through the API simulator', async () => {
+    const staffResponse = await dispatchRequest('GET', '/v1/staff-records', '?academic_year=2024-25&limit=400')
+    expect(staffResponse.status).toBe(200)
+    const staffPayload = staffResponse.data as {
+      data: { source_status: string; included_in_aggregates: boolean; total_staff_fte: number | null }[]
+      meta: { coverage: { total_institutions: number; verified: number; pending: number } }
+    }
+    expect(staffPayload.data).toHaveLength(304)
+    expect(staffPayload.meta.coverage.total_institutions).toBe(304)
+    expect(staffPayload.meta.coverage.verified + staffPayload.meta.coverage.pending).toBe(304)
+    expect(staffPayload.data.filter((row) => row.source_status === 'pending').every((row) => !row.included_in_aggregates && row.total_staff_fte === null)).toBe(true)
+
+    const estateResponse = await dispatchRequest('GET', '/v1/estate-records', '?academic_year=2023-24&limit=400')
+    expect(estateResponse.status).toBe(200)
+    const estatePayload = estateResponse.data as {
+      data: { source_status: string; included_in_aggregates: boolean; total_estate_area_sqm: number | null }[]
+      meta: { coverage: { total_institutions: number; verified: number; pending: number } }
+    }
+    expect(estatePayload.data).toHaveLength(304)
+    expect(estatePayload.meta.coverage.total_institutions).toBe(304)
+    expect(estatePayload.meta.coverage.verified + estatePayload.meta.coverage.pending).toBe(304)
+    expect(estatePayload.data.filter((row) => row.source_status === 'pending').every((row) => !row.included_in_aggregates && row.total_estate_area_sqm === null)).toBe(true)
+
+    const tefResponse = await dispatchRequest('GET', '/v1/tef-ratings', '?limit=400')
+    expect(tefResponse.status).toBe(200)
+    const tefPayload = tefResponse.data as {
+      data: { source_status: string; source_documents: { source_reference: string }[] }[]
+      meta: { coverage: { total_institutions: number; pending: number }; note: string }
+    }
+    expect(tefPayload.data).toHaveLength(304)
+    expect(tefPayload.meta.coverage.total_institutions).toBe(304)
+    expect(tefPayload.meta.note).toContain('not annual rankings')
+    expect(tefPayload.data.every((row) => row.source_documents[0].source_reference.includes('not annual rankings'))).toBe(true)
   })
 
   it('reports intelligence coverage and labels external analysis in the API simulator', async () => {

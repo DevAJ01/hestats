@@ -18,6 +18,13 @@ import { computeHealthScore, getAllHealthScores, getSectorAverageScore, scoreToG
 import { INTELLIGENCE_RECORDS, IntelligenceRecord } from '../data/intelligence'
 import { nationalStudentFinanceRecords } from '../data/nationalStudentFinance'
 import {
+  ESTATE_YEARS,
+  estateRecords,
+  getEstateCoverage,
+  getEstateRecordsByInstitution,
+  isVerifiedEstateRecord,
+} from '../data/estates'
+import {
   getProviderFinanceCoverageSummary,
   providerFinanceCoverage,
 } from '../data/providerFinanceCoverage'
@@ -30,12 +37,20 @@ import {
 import { getProvenance } from '../data/sources'
 import { OUTCOMES, getSectorOutcomes } from '../data/outcomes'
 import {
+  STAFF_YEARS,
+  getStaffByInstitution,
+  getStaffCoverage,
+  isVerifiedStaffRecord,
+  staffRecords,
+} from '../data/staff'
+import {
   STUDENT_YEARS,
   getStudentCoverage,
   getStudentEnrolmentsByInstitution,
   isVerifiedStudentRecord,
   studentEnrolments,
 } from '../data/students'
+import { getTefByInstitution, getTefCoverage, tefRecords } from '../data/tef'
 import { FinancialYear } from '../data/types'
 
 export interface ApiResponse {
@@ -132,6 +147,86 @@ function buildStudent(row: (typeof studentEnrolments)[number]) {
     uk_enrolments: row.uk_enrolments,
     non_uk_enrolments: row.non_uk_enrolments,
     unknown_domicile_enrolments: row.unknown_domicile_enrolments,
+    source_status: row.source_status,
+    confidence: row.confidence,
+    included_in_aggregates: row.included_in_aggregates,
+    source_documents: [{
+      source_id: row.source_id,
+      source_url: row.source_url,
+      source_reference: row.source_reference,
+      retrieved_date: row.retrieved_date,
+      last_verified: row.last_verified,
+      confidence: row.confidence,
+      notes: row.notes ?? null,
+    }],
+  }
+}
+
+function buildStaff(row: (typeof staffRecords)[number]) {
+  return {
+    institution_id: row.institution_id,
+    ukprn: row.ukprn,
+    academic_year: row.academic_year,
+    total_staff_fte: row.total_staff_fte,
+    academic_staff_fte: row.academic_staff_fte,
+    non_academic_staff_fte: row.non_academic_staff_fte,
+    total_staff_headcount: row.total_staff_headcount,
+    academic_staff_headcount: row.academic_staff_headcount,
+    non_academic_staff_headcount: row.non_academic_staff_headcount,
+    female_staff_pct: row.female_staff_pct,
+    non_uk_staff_pct: row.non_uk_staff_pct,
+    source_status: row.source_status,
+    confidence: row.confidence,
+    included_in_aggregates: row.included_in_aggregates,
+    source_documents: [{
+      source_id: row.source_id,
+      source_url: row.source_url,
+      source_reference: row.source_reference,
+      retrieved_date: row.retrieved_date,
+      last_verified: row.last_verified,
+      confidence: row.confidence,
+      notes: row.notes ?? null,
+    }],
+  }
+}
+
+function buildEstate(row: (typeof estateRecords)[number]) {
+  return {
+    institution_id: row.institution_id,
+    ukprn: row.ukprn,
+    academic_year: row.academic_year,
+    total_estate_area_sqm: row.total_estate_area_sqm,
+    academic_estate_area_sqm: row.academic_estate_area_sqm,
+    residential_estate_area_sqm: row.residential_estate_area_sqm,
+    scope1_2_emissions_tonnes_co2e: row.scope1_2_emissions_tonnes_co2e,
+    energy_consumption_kwh: row.energy_consumption_kwh,
+    water_consumption_m3: row.water_consumption_m3,
+    waste_tonnes: row.waste_tonnes,
+    condition_a_b_pct: row.condition_a_b_pct,
+    source_status: row.source_status,
+    confidence: row.confidence,
+    included_in_aggregates: row.included_in_aggregates,
+    source_documents: [{
+      source_id: row.source_id,
+      source_url: row.source_url,
+      source_reference: row.source_reference,
+      retrieved_date: row.retrieved_date,
+      last_verified: row.last_verified,
+      confidence: row.confidence,
+      notes: row.notes ?? null,
+    }],
+  }
+}
+
+function buildTef(row: (typeof tefRecords)[number]) {
+  return {
+    institution_id: row.institution_id,
+    ukprn: row.ukprn,
+    assessment_year: row.assessment_year,
+    valid_academic_years: row.valid_academic_years,
+    overall_rating: row.overall_rating,
+    student_experience_rating: row.student_experience_rating,
+    student_outcomes_rating: row.student_outcomes_rating,
     source_status: row.source_status,
     confidence: row.confidence,
     included_in_aggregates: row.included_in_aggregates,
@@ -577,6 +672,59 @@ export async function dispatchRequest(method: string, path: string, search: stri
     }))
   }
 
+  // ── GET /institutions/:id/staff ─────────────────────────────────────────────
+  if (segments[0] === 'institutions' && segments[1] && segments[2] === 'staff') {
+    const inst = getInstitutionById(segments[1]) ?? institutions.find((i) => i.ukprn === segments[1])
+    if (!inst) return err(404, `Institution '${segments[1]}' not found.`)
+    let rows = getStaffByInstitution(inst.id)
+    if (params.academic_year) {
+      if (!(STAFF_YEARS as readonly string[]).includes(params.academic_year)) return err(422, `Unknown academic_year '${params.academic_year}'. Available: ${STAFF_YEARS.join(', ')}.`)
+      rows = rows.filter((row) => row.academic_year === params.academic_year)
+    }
+    return respond(ok(rows.map(buildStaff), {
+      institution_id: inst.id,
+      years_available: rows.length,
+      coverage: {
+        verified: rows.filter(isVerifiedStaffRecord).length,
+        pending: rows.filter((row) => row.source_status === 'pending').length,
+        included_in_aggregates: rows.filter((row) => row.included_in_aggregates).length,
+      },
+    }))
+  }
+
+  // ── GET /institutions/:id/estates ───────────────────────────────────────────
+  if (segments[0] === 'institutions' && segments[1] && segments[2] === 'estates') {
+    const inst = getInstitutionById(segments[1]) ?? institutions.find((i) => i.ukprn === segments[1])
+    if (!inst) return err(404, `Institution '${segments[1]}' not found.`)
+    let rows = getEstateRecordsByInstitution(inst.id)
+    if (params.academic_year) {
+      if (!(ESTATE_YEARS as readonly string[]).includes(params.academic_year)) return err(422, `Unknown academic_year '${params.academic_year}'. Available: ${ESTATE_YEARS.join(', ')}.`)
+      rows = rows.filter((row) => row.academic_year === params.academic_year)
+    }
+    return respond(ok(rows.map(buildEstate), {
+      institution_id: inst.id,
+      years_available: rows.length,
+      coverage: {
+        verified: rows.filter(isVerifiedEstateRecord).length,
+        pending: rows.filter((row) => row.source_status === 'pending').length,
+        included_in_aggregates: rows.filter((row) => row.included_in_aggregates).length,
+      },
+    }))
+  }
+
+  // ── GET /institutions/:id/tef ───────────────────────────────────────────────
+  if (segments[0] === 'institutions' && segments[1] && segments[2] === 'tef') {
+    const inst = getInstitutionById(segments[1]) ?? institutions.find((i) => i.ukprn === segments[1])
+    if (!inst) return err(404, `Institution '${segments[1]}' not found.`)
+    const row = getTefByInstitution(inst.id)
+    if (!row) return err(404, `No TEF coverage row for '${inst.id}'.`)
+    return respond(ok(buildTef(row), {
+      institution_id: inst.id,
+      note: 'TEF rows are OfS assessment ratings, not annual rankings.',
+      coverage: getTefCoverage(),
+    }))
+  }
+
   // ── GET /institutions/:id/health ─────────────────────────────────────────────
   if (segments[0] === 'institutions' && segments[1] && segments[2] === 'health') {
     const inst = getInstitutionById(segments[1]) ?? institutions.find((i) => i.ukprn === segments[1])
@@ -708,6 +856,71 @@ export async function dispatchRequest(method: string, path: string, search: stri
       limit,
       offset,
       coverage: getStudentCoverage(year),
+    }))
+  }
+
+  // ── GET /staff-records ──────────────────────────────────────────────────────
+  if (segments[0] === 'staff-records' || segments[0] === 'staff') {
+    const requestedYear = params.academic_year ?? STAFF_YEARS[0]
+    if (!(STAFF_YEARS as readonly string[]).includes(requestedYear)) return err(422, `Unknown academic_year '${requestedYear}'. Available: ${STAFF_YEARS.join(', ')}.`)
+    const year = requestedYear as (typeof STAFF_YEARS)[number]
+    let rows = staffRecords.filter((row) => row.academic_year === year)
+    if (params.source_status) rows = rows.filter((row) => row.source_status === params.source_status)
+    if (params.nation) {
+      const nationInsts = new Set(institutions.filter((i) => i.nation.toLowerCase() === params.nation.toLowerCase()).map((i) => i.id))
+      rows = rows.filter((row) => nationInsts.has(row.institution_id))
+    }
+    const limit = Math.min(Number(params.limit ?? 50), 304)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(rows, limit, offset)
+    return respond(ok(items.map(buildStaff), {
+      total,
+      limit,
+      offset,
+      coverage: getStaffCoverage(year),
+    }))
+  }
+
+  // ── GET /estate-records ─────────────────────────────────────────────────────
+  if (segments[0] === 'estate-records' || segments[0] === 'estates') {
+    const requestedYear = params.academic_year ?? ESTATE_YEARS[0]
+    if (!(ESTATE_YEARS as readonly string[]).includes(requestedYear)) return err(422, `Unknown academic_year '${requestedYear}'. Available: ${ESTATE_YEARS.join(', ')}.`)
+    const year = requestedYear as (typeof ESTATE_YEARS)[number]
+    let rows = estateRecords.filter((row) => row.academic_year === year)
+    if (params.source_status) rows = rows.filter((row) => row.source_status === params.source_status)
+    if (params.nation) {
+      const nationInsts = new Set(institutions.filter((i) => i.nation.toLowerCase() === params.nation.toLowerCase()).map((i) => i.id))
+      rows = rows.filter((row) => nationInsts.has(row.institution_id))
+    }
+    const limit = Math.min(Number(params.limit ?? 50), 304)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(rows, limit, offset)
+    return respond(ok(items.map(buildEstate), {
+      total,
+      limit,
+      offset,
+      coverage: getEstateCoverage(year),
+    }))
+  }
+
+  // ── GET /tef-ratings ────────────────────────────────────────────────────────
+  if (segments[0] === 'tef-ratings') {
+    let rows = [...tefRecords]
+    if (params.source_status) rows = rows.filter((row) => row.source_status === params.source_status)
+    if (params.institution_id) rows = rows.filter((row) => row.institution_id === params.institution_id || row.ukprn === params.institution_id)
+    if (params.nation) {
+      const nationInsts = new Set(institutions.filter((i) => i.nation.toLowerCase() === params.nation.toLowerCase()).map((i) => i.id))
+      rows = rows.filter((row) => nationInsts.has(row.institution_id))
+    }
+    const limit = Math.min(Number(params.limit ?? 50), 304)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(rows, limit, offset)
+    return respond(ok(items.map(buildTef), {
+      total,
+      limit,
+      offset,
+      coverage: getTefCoverage(),
+      note: 'TEF rows are OfS assessment ratings, not annual rankings.',
     }))
   }
 

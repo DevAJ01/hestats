@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router'
-import { ArrowLeft, FileText, Globe, CheckCircle, Clock, AlertCircle, ArrowUpRight, GitCompare, Star, Users } from 'lucide-react'
+import { ArrowLeft, FileText, Globe, CheckCircle, Clock, AlertCircle, ArrowUpRight, GitCompare, Star, Users, Briefcase, Award, Building2 } from 'lucide-react'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { getInstitutionById } from '../data/institutions'
+import { formatEstateValue, getEstateRecordsByInstitution, getLatestEstate } from '../data/estates'
 import { formatCurrencyM, formatDays, formatNumber, formatPct, getFinancialsByInstitution, getAllLatestFinancials, AVAILABLE_YEARS, isKnownNumber, ratioPct } from '../data/financials'
+import { getOutcomesByInstitution } from '../data/outcomes'
+import { formatStaffValue, getLatestStaff, getStaffByInstitution } from '../data/staff'
 import { formatStudentCount, getLatestStudentEnrolment } from '../data/students'
+import { getTefByInstitution } from '../data/tef'
 import { FinancialYear } from '../data/types'
 import { computeHealthScore, getGradeColor } from '../data/health'
 import { getInstitutionProvenance, getProvenance, getSourceById, CONFIDENCE_META, DATA_SOURCES } from '../data/sources'
@@ -189,6 +193,12 @@ export function InstitutionProfilePage() {
   const financials = id ? getFinancialsByInstitution(id) : []
   const latest = financials[0]
   const latestStudent = id ? getLatestStudentEnrolment(id) : undefined
+  const outcome = id ? getOutcomesByInstitution(id) : undefined
+  const staffRows = id ? getStaffByInstitution(id) : []
+  const latestStaff = id ? getLatestStaff(id) : undefined
+  const estateRows = id ? getEstateRecordsByInstitution(id) : []
+  const latestEstate = id ? getLatestEstate(id) : undefined
+  const tef = id ? getTefByInstitution(id) : undefined
   const [activeTab, setActiveTab] = useState<Tab>('Overview')
   const { isWatched, toggleWatch, recordView } = useWorkspace()
 
@@ -731,24 +741,123 @@ export function InstitutionProfilePage() {
       )}
 
       {activeTab === 'Outcomes' && (
-        <Panel title="Outcomes" subtitle="Awaiting official outcome-source rows">
-          <div className="flex items-start gap-3 px-3 py-5">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
-            <div style={{ color: 'var(--text-2)', fontSize: 12.5, lineHeight: 1.6 }}>
-              <p style={{ marginBottom: 6 }}>Graduate outcomes, NSS, TEF, REF-derived claims, employer destinations and subject-level metrics are pending verification for {institution.short_name}.</p>
-              <p style={{ color: 'var(--muted)', fontSize: 11 }}>No institution-specific outcome values are displayed until each metric has official source provenance, URL, table reference, retrieved date, last verified date and confidence metadata.</p>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="lg:col-span-2">
+            <Panel title="Graduate Outcomes" subtitle={outcome ? `DfE LEO tax year ${outcome.tax_year}` : 'Awaiting source row'} padded={false}>
+              {outcome ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <tbody>
+                      {[
+                        { label: 'Graduates in cohort', value: formatNumber(outcome.graduates_yag1) },
+                        { label: 'Sustained employment or study', value: formatPct(outcome.employment_rate_15mo) },
+                        { label: 'Sustained employment only', value: formatPct(outcome.graduate_role_pct) },
+                        { label: 'Further study', value: formatPct(outcome.further_study_pct) },
+                        { label: 'No sustained destination', value: formatPct(outcome.unemployed_pct) },
+                        { label: 'Median earnings YAG1', value: outcome.salary_1yr_k === null ? 'Pending' : `£${outcome.salary_1yr_k}k` },
+                        { label: 'Median earnings YAG3', value: outcome.salary_3yr_k === null ? 'Pending' : `£${outcome.salary_3yr_k}k` },
+                        { label: 'Median earnings YAG5', value: outcome.salary_5yr_k === null ? 'Pending' : `£${outcome.salary_5yr_k}k` },
+                      ].map(({ label, value }) => (
+                        <tr key={label} style={{ borderBottom: '1px solid var(--border)' }}>
+                          <td className="px-3 py-2" style={{ color: 'var(--text-2)', fontSize: 12 }}>{label}</td>
+                          <td className="px-3 py-2 text-right font-num tabular-nums" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 500 }}>{value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <PendingNotice title="Outcome row pending" body={`No verified graduate outcome row is attached for ${institution.short_name}.`} />
+              )}
+            </Panel>
           </div>
-        </Panel>
+          <div className="space-y-3">
+            <Panel title="Outcome Source" subtitle={outcome?.source_status === 'verified' ? 'Verified official row' : 'Pending row'}>
+              <SourceBlock
+                icon={<Briefcase className="w-4 h-4" />}
+                status={outcome?.source_status ?? 'pending'}
+                reference={outcome?.source_reference ?? 'DfE LEO provider-level outcome record pending'}
+                url={outcome?.source_url}
+                lastVerified={outcome?.last_verified}
+                notes={outcome?.notes}
+              />
+            </Panel>
+            <Panel title="TEF 2023" subtitle="OfS assessment rating, not annual ranking">
+              <div className="space-y-2">
+                {[
+                  { label: 'Overall', value: tef?.overall_rating ?? 'Pending' },
+                  { label: 'Student experience', value: tef?.student_experience_rating ?? 'Pending' },
+                  { label: 'Student outcomes', value: tef?.student_outcomes_rating ?? 'Pending' },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex items-center justify-between gap-3">
+                    <span style={{ color: 'var(--text-2)', fontSize: 11.5 }}>{label}</span>
+                    <span style={{ color: value === 'Pending' ? 'var(--muted)' : 'var(--warning)', fontSize: 11.5, fontWeight: 600 }}>{value}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
+                <SourceBlock
+                  icon={<Award className="w-4 h-4" />}
+                  status={tef?.source_status ?? 'pending'}
+                  reference={tef?.source_reference ?? 'OfS TEF 2023 rating row pending'}
+                  url={tef?.source_url}
+                  lastVerified={tef?.last_verified}
+                  notes={tef?.notes}
+                />
+              </div>
+            </Panel>
+          </div>
+        </div>
       )}
 
       {activeTab === 'Staff' && (
-        <Panel title="Staff" subtitle="Awaiting official staff-source rows">
-          <div className="px-3 py-6 text-center">
-            <p style={{ color: 'var(--text-2)', fontSize: 12.5, marginBottom: 4 }}>Staff metrics are pending verification.</p>
-            <p style={{ color: 'var(--muted)', fontSize: 11, lineHeight: 1.5 }}>HEStats will display staff FTE, cost ratios, and workforce composition only after HESA staff or institution-level source rows have been attached.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="lg:col-span-2">
+            <Panel title="Staff Data" subtitle={latestStaff ? `Latest coverage row ${latestStaff.academic_year}` : 'Awaiting source row'} padded={false}>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <tbody>
+                    {[
+                      { label: 'Total staff FTE', value: formatStaffValue(latestStaff?.total_staff_fte) },
+                      { label: 'Academic staff FTE', value: formatStaffValue(latestStaff?.academic_staff_fte) },
+                      { label: 'Non-academic staff FTE', value: formatStaffValue(latestStaff?.non_academic_staff_fte) },
+                      { label: 'Total staff headcount', value: formatStaffValue(latestStaff?.total_staff_headcount) },
+                      { label: 'Female staff', value: formatStaffValue(latestStaff?.female_staff_pct, '%') },
+                      { label: 'Non-UK staff', value: formatStaffValue(latestStaff?.non_uk_staff_pct, '%') },
+                    ].map(({ label, value }) => (
+                      <tr key={label} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td className="px-3 py-2" style={{ color: 'var(--text-2)', fontSize: 12 }}>{label}</td>
+                        <td className="px-3 py-2 text-right font-num tabular-nums" style={{ color: value === 'Pending' ? 'var(--muted)' : 'var(--text)', fontSize: 12, fontWeight: 500 }}>{value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
           </div>
-        </Panel>
+          <Panel title="Staff Source" subtitle="HESA Staff open data">
+            <SourceBlock
+              icon={<Users className="w-4 h-4" />}
+              status={latestStaff?.source_status ?? 'pending'}
+              reference={latestStaff?.source_reference ?? 'HESA Staff provider row pending'}
+              url={latestStaff?.source_url}
+              lastVerified={latestStaff?.last_verified}
+              notes={latestStaff?.notes}
+            />
+          </Panel>
+          <div className="lg:col-span-3">
+            <CoverageTable
+              title="Staff Coverage By Year"
+              rows={staffRows.map((row) => ({
+                year: row.academic_year,
+                status: row.source_status,
+                value: formatStaffValue(row.total_staff_fte),
+                source: row.source_reference,
+                url: row.source_url,
+              }))}
+            />
+          </div>
+        </div>
       )}
 
       {activeTab === 'Timeline' && (() => {
@@ -756,12 +865,12 @@ export function InstitutionProfilePage() {
         const EVENTS: { year: string; type: 'milestone' | 'risk' | 'positive' | 'regulatory'; title: string; body: string }[] = [
           { year: '2015-16', type: 'milestone', title: 'Baseline year', body: `${institution.short_name} enters HEStats 10-year tracking period. Income: ${formatCurrencyM(historyAscAll[0]?.revenue_gbp_m)}.` },
           { year: '2016-17', type: 'positive', title: 'Pending source row', body: 'No verified institution-level narrative event is attached for this year yet.' },
-          { year: '2017-18', type: 'regulatory', title: 'TEF framework introduced', body: 'Teaching Excellence Framework comes into force. Institution achieves TEF award reflecting teaching quality.' },
+          { year: '2017-18', type: 'regulatory', title: 'TEF framework introduced', body: 'Sector event: the Teaching Excellence Framework was introduced. Institution-level TEF ratings are shown only when an OfS source row is attached.' },
           { year: '2018-19', type: 'positive', title: 'Research income', body: `Research income: ${formatCurrencyM(historyAscAll[3]?.research_income_gbp_m)}.` },
           { year: '2019-20', type: 'milestone', title: 'Income row', body: `Income: ${formatCurrencyM(historyAscAll[4]?.revenue_gbp_m)}.` },
           { year: '2020-21', type: 'risk', title: 'Pending source row', body: 'No verified institution-level narrative event is attached for this year yet.' },
           { year: '2021-22', type: 'positive', title: 'Surplus row', body: `Surplus: ${formatCurrencyM(historyAscAll[6]?.surplus_gbp_m)}.` },
-          { year: '2022-23', type: 'regulatory', title: 'OfS enhanced monitoring', body: 'Office for Students intensifies financial sustainability monitoring following sector-wide deficit concerns.' },
+          { year: '2022-23', type: 'regulatory', title: 'Regulatory source row', body: 'Institution-specific regulatory events are pending unless an official OfS or devolved regulator source row is attached.' },
           { year: '2023-24', type: 'milestone', title: 'Capital expenditure row', body: `Capital expenditure: ${formatCurrencyM(historyAscAll[8]?.capital_expenditure_gbp_m)}.` },
           { year: '2024-25', type: 'positive', title: 'Latest financial row', body: `FY${latest.fiscal_year}: ${formatCurrencyM(latest.revenue_gbp_m)} income, ${formatPct(latest.surplus_margin_pct)} margin, ${latest.risk_flag} risk.` },
         ]
@@ -872,12 +981,55 @@ export function InstitutionProfilePage() {
       })()}
 
       {activeTab === 'Estates' && (
-        <Panel title="Estates" subtitle="Awaiting official estates-source rows">
-          <div className="px-3 py-6 text-center">
-            <p style={{ color: 'var(--text-2)', fontSize: 12.5, marginBottom: 4 }}>Estate metrics are pending verification.</p>
-            <p style={{ color: 'var(--muted)', fontSize: 11, lineHeight: 1.5 }}>Floor space, estate value, carbon, and maintenance figures are withheld until official estates returns or audited source documents are available.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="lg:col-span-2">
+            <Panel title="Estate Data" subtitle={latestEstate ? `Latest public estates coverage row ${latestEstate.academic_year}` : 'Awaiting source row'} padded={false}>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <tbody>
+                    {[
+                      { label: 'Total estate area', value: formatEstateValue(latestEstate?.total_estate_area_sqm, ' sqm') },
+                      { label: 'Academic estate area', value: formatEstateValue(latestEstate?.academic_estate_area_sqm, ' sqm') },
+                      { label: 'Residential estate area', value: formatEstateValue(latestEstate?.residential_estate_area_sqm, ' sqm') },
+                      { label: 'Scope 1 and 2 emissions', value: formatEstateValue(latestEstate?.scope1_2_emissions_tonnes_co2e, ' tCO2e') },
+                      { label: 'Energy consumption', value: formatEstateValue(latestEstate?.energy_consumption_kwh, ' kWh') },
+                      { label: 'Water consumption', value: formatEstateValue(latestEstate?.water_consumption_m3, ' m3') },
+                      { label: 'Waste', value: formatEstateValue(latestEstate?.waste_tonnes, ' tonnes') },
+                      { label: 'Condition A/B estate', value: formatEstateValue(latestEstate?.condition_a_b_pct, '%') },
+                    ].map(({ label, value }) => (
+                      <tr key={label} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td className="px-3 py-2" style={{ color: 'var(--text-2)', fontSize: 12 }}>{label}</td>
+                        <td className="px-3 py-2 text-right font-num tabular-nums" style={{ color: value === 'Pending' ? 'var(--muted)' : 'var(--text)', fontSize: 12, fontWeight: 500 }}>{value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
           </div>
-        </Panel>
+          <Panel title="Estates Source" subtitle="HESA Estates open data">
+            <SourceBlock
+              icon={<Building2 className="w-4 h-4" />}
+              status={latestEstate?.source_status ?? 'pending'}
+              reference={latestEstate?.source_reference ?? 'HESA Estates provider row pending'}
+              url={latestEstate?.source_url}
+              lastVerified={latestEstate?.last_verified}
+              notes={latestEstate?.notes}
+            />
+          </Panel>
+          <div className="lg:col-span-3">
+            <CoverageTable
+              title="Estates Coverage By Year"
+              rows={estateRows.map((row) => ({
+                year: row.academic_year,
+                status: row.source_status,
+                value: formatEstateValue(row.total_estate_area_sqm, ' sqm'),
+                source: row.source_reference,
+                url: row.source_url,
+              }))}
+            />
+          </div>
+        </div>
       )}
 
       {activeTab === 'Sources' && (() => {
@@ -994,7 +1146,7 @@ export function InstitutionProfilePage() {
             {/* Data sources used */}
             <Panel title="Data sources for this institution" subtitle="Official publications used to populate financial metrics">
               <div className="space-y-2">
-                {DATA_SOURCES.filter((s) => ['institution-accounts', 'hesa-finance', 'hesa-students'].includes(s.id)).map((source) => (
+                {DATA_SOURCES.filter((s) => ['institution-accounts', 'hesa-finance', 'hesa-students', 'dfe-leo', 'hesa-staff', 'hesa-estates', 'ofs-tef'].includes(s.id)).map((source) => (
                   <div key={source.id} className="flex items-start gap-3 px-3 py-2.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
                     <div
                       className="flex-shrink-0 w-5 h-5 flex items-center justify-center mt-0.5"
@@ -1017,7 +1169,7 @@ export function InstitutionProfilePage() {
               </div>
               <p className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)', color: 'var(--muted)', fontSize: 11, lineHeight: 1.5 }}>
                 Financial figures are sourced from Tier 6 (audited institutional accounts) as the primary source, cross-referenced against Tier 1 (HESA Finance Open Data) where available.
-                Student figures use Tier 1 (HESA Student Open Data).
+                Student, staff and estates figures use HESA open data where provider rows have been ingested. Outcome metrics use DfE LEO where attached. TEF uses OfS ratings and is not treated as an annual ranking.
                 All sources are used under their respective licences.
               </p>
             </Panel>
@@ -1025,6 +1177,117 @@ export function InstitutionProfilePage() {
         )
       })()}
     </div>
+  )
+}
+
+function PendingNotice({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="flex items-start gap-3 px-3 py-5">
+      <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
+      <div style={{ color: 'var(--text-2)', fontSize: 12.5, lineHeight: 1.6 }}>
+        <p style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 4 }}>{title}</p>
+        <p>{body}</p>
+      </div>
+    </div>
+  )
+}
+
+function SourceBlock({
+  icon,
+  status,
+  reference,
+  url,
+  lastVerified,
+  notes,
+}: {
+  icon: React.ReactNode
+  status: string
+  reference: string
+  url?: string
+  lastVerified?: string
+  notes?: string
+}) {
+  const verified = status === 'verified'
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <span style={{ color: verified ? 'var(--positive)' : 'var(--warning)' }}>{icon}</span>
+        <span style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>
+          {verified ? 'Verified source row' : 'Pending source row'}
+        </span>
+      </div>
+      <div>
+        <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>Reference</p>
+        <p style={{ color: 'var(--text-2)', fontSize: 11.5, lineHeight: 1.5 }}>{reference}</p>
+      </div>
+      <div>
+        <p style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>Last verified</p>
+        <p className="font-num" style={{ color: 'var(--text-2)', fontSize: 11.5 }}>{lastVerified ?? 'Pending'}</p>
+      </div>
+      {notes && <p style={{ color: 'var(--muted)', fontSize: 11, lineHeight: 1.5 }}>{notes}</p>}
+      {url && (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5"
+          style={{ border: '1px solid var(--border)', borderRadius: 3, color: 'var(--link)', fontSize: 11.5 }}
+        >
+          Open source <ArrowUpRight className="w-3 h-3" />
+        </a>
+      )}
+    </div>
+  )
+}
+
+function CoverageTable({
+  title,
+  rows,
+}: {
+  title: string
+  rows: { year: string; status: string; value: string; source: string; url?: string }[]
+}) {
+  return (
+    <Panel title={title} subtitle="Rows exist for every supported period; pending rows keep numeric values blank" padded={false}>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr style={{ backgroundColor: 'var(--bg-2)', borderBottom: '1px solid var(--border)' }}>
+              {['Year', 'Status', 'Primary metric', 'Source'].map((h) => (
+                <th key={h} className="px-3 py-2" style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500, textAlign: 'left' }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const verified = row.status === 'verified'
+              return (
+                <tr key={row.year} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td className="px-3 py-2 font-num" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 500 }}>{row.year}</td>
+                  <td className="px-3 py-2">
+                    <span className="inline-flex items-center gap-1.5" style={{ color: verified ? 'var(--positive)' : 'var(--warning)', fontSize: 11.5, fontWeight: 600 }}>
+                      {verified ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                      {verified ? 'Verified' : 'Pending'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 font-num tabular-nums" style={{ color: row.value === 'Pending' ? 'var(--muted)' : 'var(--text)', fontSize: 12 }}>{row.value}</td>
+                  <td className="px-3 py-2" style={{ color: 'var(--text-2)', fontSize: 11.5, maxWidth: 520 }}>
+                    {row.url ? (
+                      <a href={row.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:underline" style={{ color: 'var(--link)' }}>
+                        <span>{row.source}</span>
+                        <ArrowUpRight className="w-3 h-3 flex-shrink-0" />
+                      </a>
+                    ) : row.source}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
   )
 }
 

@@ -20,8 +20,28 @@ import {
 } from './providers'
 import { DataQualityIssue, isOfficialUkprn } from './schema'
 import { DATA_SOURCES, PROVENANCE } from './sources'
+import {
+  ESTATE_VALUE_KEYS,
+  ESTATE_YEARS,
+  EstateRecord,
+  isVerifiedEstateRecord,
+  estateRecords,
+} from './estates'
 import { GraduateOutcome, OUTCOMES } from './outcomes'
+import {
+  STAFF_VALUE_KEYS,
+  STAFF_YEARS,
+  StaffRecord,
+  isVerifiedStaffRecord,
+  staffRecords,
+} from './staff'
 import { STUDENT_YEARS, StudentEnrolmentRecord, isKnownStudentNumber, studentEnrolments } from './students'
+import {
+  TEF_ASSESSMENT_YEARS,
+  TefRecord,
+  getTefCoverage,
+  tefRecords,
+} from './tef'
 import { FinancialYear, Institution } from './types'
 import { UK_OUTLINE_PATH, UK_OUTLINE_SOURCE } from './ukOutline'
 
@@ -172,6 +192,7 @@ export function validateProviderSourceCoverage(
     if (seen.has(key)) issues.push(issue('error', 'provider_source.duplicate_domain', `Duplicate provider source coverage row for ${key}.`, details))
     seen.add(key)
     if (!providerIds.has(row.provider_id)) issues.push(issue('error', 'provider_source.orphan_provider', 'Provider source coverage row references unknown provider.', details))
+    if (!['verified', 'pending'].includes(row.source_status)) issues.push(issue('error', 'provider_source.status_invalid', `Invalid source status '${row.source_status}'.`, details))
     if (!sourceIds.has(row.source_id)) issues.push(issue('error', 'provider_source.source_unknown', `Provider source coverage row references unknown source '${row.source_id}'.`, details))
     if (!row.source_url.startsWith('https://') || !row.source_reference.trim() || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
       issues.push(issue('error', 'provider_source.provenance_incomplete', 'Provider source coverage rows require source URL, reference, retrieved date, and last verified date.', details))
@@ -181,7 +202,7 @@ export function validateProviderSourceCoverage(
     }
   }
 
-  const expectedRows = providers.length * 4
+  const expectedRows = providers.length * 5
   if (seen.size !== expectedRows) {
     issues.push(issue('error', 'provider_source.coverage_count_mismatch', `Expected ${expectedRows} provider-domain rows, found ${seen.size}.`))
   }
@@ -400,6 +421,166 @@ export function validateGraduateOutcomes(
   return issues
 }
 
+export function validateStaffRecords(
+  rows: StaffRecord[] = staffRecords,
+  institutionRows: Institution[] = institutions,
+): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const institutionIds = new Set(institutionRows.map((row) => row.id))
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+  const seen = new Set<string>()
+
+  for (const row of rows) {
+    const details = { institution_id: row.institution_id, fiscal_year: row.academic_year }
+    const key = `${row.institution_id}:${row.academic_year}`
+
+    if (seen.has(key)) issues.push(issue('error', 'staff.duplicate_year', `Duplicate staff row for ${key}.`, details))
+    seen.add(key)
+    if (!institutionIds.has(row.institution_id)) issues.push(issue('error', 'staff.orphan_institution', 'Staff row references an unknown institution.', details))
+    if (!FISCAL_YEAR.test(row.academic_year) || !(STAFF_YEARS as readonly string[]).includes(row.academic_year)) issues.push(issue('error', 'staff.year_invalid', `Academic year '${row.academic_year}' is outside the supported range.`, details))
+    if (!['verified', 'pending'].includes(row.source_status)) issues.push(issue('error', 'staff.source_status_invalid', `Invalid source status '${row.source_status}'.`, details))
+    if (!['high', 'awaiting'].includes(row.confidence)) issues.push(issue('error', 'staff.confidence_invalid', `Invalid confidence '${row.confidence}'.`, details))
+    if (!sourceIds.has(row.source_id) || row.source_id !== 'hesa-staff') issues.push(issue('error', 'staff.source_unknown', `Staff row references unknown source '${row.source_id}'.`, details))
+    if (!row.source_url.startsWith('https://') || !row.source_reference.trim() || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
+      issues.push(issue('error', 'staff.provenance_incomplete', 'Staff rows require source URL, reference, retrieved date, and last verified date.', details))
+    }
+
+    if (row.source_status === 'pending') {
+      if (row.included_in_aggregates) issues.push(issue('error', 'staff.pending_in_aggregates', 'Pending staff rows must be excluded from aggregates.', details))
+      if (STAFF_VALUE_KEYS.some((metric) => row[metric] !== null)) issues.push(issue('error', 'staff.pending_has_value', 'Pending staff rows must not contain numeric values.', details))
+    }
+    if (row.source_status === 'verified') {
+      if (!row.included_in_aggregates) issues.push(issue('error', 'staff.verified_not_in_aggregates', 'Verified staff rows should be included in aggregates.', details))
+      if (!isVerifiedStaffRecord(row)) issues.push(issue('error', 'staff.verified_missing_values', 'Verified staff rows require at least one numeric metric.', details))
+    }
+
+    for (const metric of STAFF_VALUE_KEYS) {
+      const value = row[metric]
+      if (value !== null && (!Number.isFinite(value) || value < 0)) issues.push(issue('error', 'staff.metric_invalid', `Metric '${metric}' must be a non-negative finite number or null.`, details))
+      if ((metric === 'female_staff_pct' || metric === 'non_uk_staff_pct') && value !== null && value > 100) issues.push(issue('error', 'staff.percent_invalid', `Metric '${metric}' must not exceed 100.`, details))
+    }
+  }
+
+  for (const institution of institutionRows) {
+    for (const year of STAFF_YEARS) {
+      const key = `${institution.id}:${year}`
+      if (!seen.has(key)) issues.push(issue('error', 'staff.coverage_missing', `Missing staff coverage row for ${key}.`, { institution_id: institution.id, fiscal_year: year }))
+    }
+  }
+
+  const expectedRows = institutionRows.length * STAFF_YEARS.length
+  if (seen.size !== expectedRows) issues.push(issue('error', 'staff.coverage_count_mismatch', `Expected ${expectedRows} institution-year rows, found ${seen.size}.`))
+
+  return issues
+}
+
+export function validateEstateRecords(
+  rows: EstateRecord[] = estateRecords,
+  institutionRows: Institution[] = institutions,
+): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const institutionIds = new Set(institutionRows.map((row) => row.id))
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+  const seen = new Set<string>()
+
+  for (const row of rows) {
+    const details = { institution_id: row.institution_id, fiscal_year: row.academic_year }
+    const key = `${row.institution_id}:${row.academic_year}`
+
+    if (seen.has(key)) issues.push(issue('error', 'estates.duplicate_year', `Duplicate estates row for ${key}.`, details))
+    seen.add(key)
+    if (!institutionIds.has(row.institution_id)) issues.push(issue('error', 'estates.orphan_institution', 'Estates row references an unknown institution.', details))
+    if (!FISCAL_YEAR.test(row.academic_year) || !(ESTATE_YEARS as readonly string[]).includes(row.academic_year)) issues.push(issue('error', 'estates.year_invalid', `Academic year '${row.academic_year}' is outside the supported range.`, details))
+    if (!['verified', 'pending'].includes(row.source_status)) issues.push(issue('error', 'estates.source_status_invalid', `Invalid source status '${row.source_status}'.`, details))
+    if (!['high', 'awaiting'].includes(row.confidence)) issues.push(issue('error', 'estates.confidence_invalid', `Invalid confidence '${row.confidence}'.`, details))
+    if (!sourceIds.has(row.source_id) || row.source_id !== 'hesa-estates') issues.push(issue('error', 'estates.source_unknown', `Estates row references unknown source '${row.source_id}'.`, details))
+    if (!row.source_url.startsWith('https://') || !row.source_reference.trim() || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
+      issues.push(issue('error', 'estates.provenance_incomplete', 'Estates rows require source URL, reference, retrieved date, and last verified date.', details))
+    }
+
+    if (row.source_status === 'pending') {
+      if (row.included_in_aggregates) issues.push(issue('error', 'estates.pending_in_aggregates', 'Pending estates rows must be excluded from aggregates.', details))
+      if (ESTATE_VALUE_KEYS.some((metric) => row[metric] !== null)) issues.push(issue('error', 'estates.pending_has_value', 'Pending estates rows must not contain numeric values.', details))
+    }
+    if (row.source_status === 'verified') {
+      if (!row.included_in_aggregates) issues.push(issue('error', 'estates.verified_not_in_aggregates', 'Verified estates rows should be included in aggregates.', details))
+      if (!isVerifiedEstateRecord(row)) issues.push(issue('error', 'estates.verified_missing_values', 'Verified estates rows require at least one numeric metric.', details))
+    }
+
+    for (const metric of ESTATE_VALUE_KEYS) {
+      const value = row[metric]
+      if (value !== null && (!Number.isFinite(value) || value < 0)) issues.push(issue('error', 'estates.metric_invalid', `Metric '${metric}' must be a non-negative finite number or null.`, details))
+      if (metric === 'condition_a_b_pct' && value !== null && value > 100) issues.push(issue('error', 'estates.percent_invalid', `Metric '${metric}' must not exceed 100.`, details))
+    }
+  }
+
+  for (const institution of institutionRows) {
+    for (const year of ESTATE_YEARS) {
+      const key = `${institution.id}:${year}`
+      if (!seen.has(key)) issues.push(issue('error', 'estates.coverage_missing', `Missing estates coverage row for ${key}.`, { institution_id: institution.id, fiscal_year: year }))
+    }
+  }
+
+  const expectedRows = institutionRows.length * ESTATE_YEARS.length
+  if (seen.size !== expectedRows) issues.push(issue('error', 'estates.coverage_count_mismatch', `Expected ${expectedRows} institution-year rows, found ${seen.size}.`))
+
+  return issues
+}
+
+export function validateTefRecords(
+  rows: TefRecord[] = tefRecords,
+  institutionRows: Institution[] = institutions,
+): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const institutionIds = new Set(institutionRows.map((row) => row.id))
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+  const seen = new Set<string>()
+  const validRatings = new Set(['Gold', 'Silver', 'Bronze', 'Requires improvement', null])
+
+  for (const row of rows) {
+    const details = { institution_id: row.institution_id, fiscal_year: row.assessment_year }
+    const key = `${row.institution_id}:${row.assessment_year}`
+
+    if (seen.has(key)) issues.push(issue('error', 'tef.duplicate_assessment', `Duplicate TEF row for ${key}.`, details))
+    seen.add(key)
+    if (!institutionIds.has(row.institution_id)) issues.push(issue('error', 'tef.orphan_institution', 'TEF row references an unknown institution.', details))
+    if (!(TEF_ASSESSMENT_YEARS as readonly string[]).includes(row.assessment_year)) issues.push(issue('error', 'tef.assessment_year_invalid', `Assessment year '${row.assessment_year}' is outside the supported range.`, details))
+    if (!row.valid_academic_years.length) issues.push(issue('error', 'tef.valid_years_missing', 'TEF rows require valid academic years.', details))
+    if (!['verified', 'pending'].includes(row.source_status)) issues.push(issue('error', 'tef.source_status_invalid', `Invalid source status '${row.source_status}'.`, details))
+    if (!['high', 'awaiting'].includes(row.confidence)) issues.push(issue('error', 'tef.confidence_invalid', `Invalid confidence '${row.confidence}'.`, details))
+    if (!sourceIds.has(row.source_id) || row.source_id !== 'ofs-tef') issues.push(issue('error', 'tef.source_unknown', `TEF row references unknown source '${row.source_id}'.`, details))
+    if (!row.source_url.startsWith('https://') || !row.source_reference.trim() || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
+      issues.push(issue('error', 'tef.provenance_incomplete', 'TEF rows require source URL, reference, retrieved date, and last verified date.', details))
+    }
+    if (![row.overall_rating, row.student_experience_rating, row.student_outcomes_rating].every((rating) => validRatings.has(rating))) {
+      issues.push(issue('error', 'tef.rating_invalid', 'TEF rating must be Gold, Silver, Bronze, Requires improvement or null.', details))
+    }
+
+    if (row.source_status === 'pending') {
+      if (row.included_in_aggregates) issues.push(issue('error', 'tef.pending_in_aggregates', 'Pending TEF rows must be excluded from aggregates.', details))
+      if (row.overall_rating !== null || row.student_experience_rating !== null || row.student_outcomes_rating !== null) issues.push(issue('error', 'tef.pending_has_rating', 'Pending TEF rows must not contain ratings.', details))
+    }
+    if (row.source_status === 'verified' && row.overall_rating === null) {
+      issues.push(issue('error', 'tef.verified_overall_missing', 'Verified TEF rows require an overall rating.', details))
+    }
+  }
+
+  for (const institution of institutionRows) {
+    for (const year of TEF_ASSESSMENT_YEARS) {
+      const key = `${institution.id}:${year}`
+      if (!seen.has(key)) issues.push(issue('error', 'tef.coverage_missing', `Missing TEF coverage row for ${key}.`, { institution_id: institution.id, fiscal_year: year }))
+    }
+  }
+
+  const expectedRows = institutionRows.length * TEF_ASSESSMENT_YEARS.length
+  if (seen.size !== expectedRows) issues.push(issue('error', 'tef.coverage_count_mismatch', `Expected ${expectedRows} institution-assessment rows, found ${seen.size}.`))
+
+  const coverage = getTefCoverage()
+  if (coverage.total_institutions !== institutionRows.length) issues.push(issue('error', 'tef.coverage_summary_mismatch', 'TEF coverage summary does not match institution count.'))
+
+  return issues
+}
+
 export function validateDegreeIntelligence(rows: Degree[] = DEGREES): DataQualityIssue[] {
   const issues: DataQualityIssue[] = []
   const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
@@ -594,6 +775,9 @@ export function validateData(): DataQualityIssue[] {
     ...validateProviderFinanceCoverage(),
     ...validateStudentEnrolments(),
     ...validateGraduateOutcomes(),
+    ...validateStaffRecords(),
+    ...validateEstateRecords(),
+    ...validateTefRecords(),
     ...validateDegreeIntelligence(),
     ...validateEmployerMarkets(),
     ...validateProviderSourceCoverage(),

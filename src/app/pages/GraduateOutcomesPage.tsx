@@ -5,6 +5,7 @@ import { getAllOutcomes, getSectorOutcomes, getOutcomesByInstitution, type Gradu
 import { institutions } from '../data/institutions'
 import { DEGREES, getSectorDegreeStats } from '../data/degrees'
 import { EMPLOYERS, getTopEmployersForInstitution } from '../data/employers'
+import { getTefByInstitution, getTefCoverage } from '../data/tef'
 import { NationBadge } from '../components/institutions/NationBadge'
 import { Panel } from '../components/layout/Panel'
 import { Sparkline } from '../components/charts/Sparkline'
@@ -60,8 +61,9 @@ export function GraduateOutcomesPage() {
 
   const topEmp = [...allOutcomes].sort((a, b) => valueForSort(b.employment_rate_15mo) - valueForSort(a.employment_rate_15mo)).slice(0, 5)
   const topSalary = [...allOutcomes].sort((a, b) => valueForSort(b.avg_salary_k) - valueForSort(a.avg_salary_k)).slice(0, 5)
-  const tef_gold = institutions.filter((i) => getOutcomesByInstitution(i.id)?.tef_rating === 'Gold').length
-  const tef_silver = institutions.filter((i) => getOutcomesByInstitution(i.id)?.tef_rating === 'Silver').length
+  const tefCoverage = getTefCoverage()
+  const tefGold = institutions.filter((i) => getTefByInstitution(i.id)?.overall_rating === 'Gold').length
+  const tefSilver = institutions.filter((i) => getTefByInstitution(i.id)?.overall_rating === 'Silver').length
 
   return (
     <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-2.5 space-y-2.5">
@@ -76,7 +78,7 @@ export function GraduateOutcomesPage() {
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}><span className="font-num" style={{ color: 'var(--text)' }}>{sector.total_graduates_annually === null ? 'Pending' : sector.total_graduates_annually.toLocaleString()}</span> graduates/year</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}><span className="font-num" style={{ color: 'var(--warning)' }}>TEF Gold: {tef_gold}</span> · Silver: {tef_silver}</span>
+        <span style={{ color: 'var(--text-2)' }}><span className="font-num" style={{ color: 'var(--warning)' }}>TEF Gold: {tefGold}</span> · Silver: {tefSilver} · Pending: {tefCoverage.pending}</span>
         <div className="ml-auto flex items-center gap-2">
           <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.04em' }}>Source: Graduate Outcomes Survey · HESA</span>
         </div>
@@ -260,6 +262,8 @@ export function GraduateOutcomesPage() {
                 <tbody>
                   {tableRows.map(({ inst, outcome }, idx) => {
                     const sort = SORT_OPTIONS.find((s) => s.key === sortKey)!
+                    const tef = getTefByInstitution(inst.id)
+                    const tefRating = tef?.overall_rating ?? 'Pending'
                     return (
                       <tr key={inst.id} className="transition-colors group" style={{ borderBottom: '1px solid var(--border)' }}
                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--panel-hover)')}
@@ -284,9 +288,9 @@ export function GraduateOutcomesPage() {
                         })}
                         <td className="hidden md:table-cell px-2 py-2 text-right">
                           <span style={{ fontSize: 9.5, padding: '1px 5px', borderRadius: 2,
-                            backgroundColor: outcome.tef_rating === 'Gold' ? '#c2945a22' : outcome.tef_rating === 'Silver' ? 'var(--border)' : 'var(--bg-2)',
-                            color: outcome.tef_rating === 'Gold' ? 'var(--warning)' : 'var(--muted)', fontWeight: 600 }}>
-                            {outcome.tef_rating ?? 'Pending'}
+                            backgroundColor: tefRating === 'Gold' ? '#c2945a22' : tefRating === 'Silver' ? 'var(--border)' : 'var(--bg-2)',
+                            color: tefRating === 'Gold' ? 'var(--warning)' : 'var(--muted)', fontWeight: 600 }}>
+                            {tefRating}
                           </span>
                         </td>
                       </tr>

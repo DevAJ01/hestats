@@ -5,15 +5,18 @@ import { financials, getAllLatestFinancials, AVAILABLE_YEARS } from '../data/fin
 import { STUDENT_YEARS, studentEnrolments } from '../data/students'
 import { DEGREES } from '../data/degrees'
 import { EMPLOYERS } from '../data/employers'
+import { ESTATE_YEARS, estateRecords } from '../data/estates'
 import { INTELLIGENCE_RECORDS } from '../data/intelligence'
 import { nationalStudentFinanceRecords } from '../data/nationalStudentFinance'
 import { OUTCOMES } from '../data/outcomes'
 import { providerFinanceCoverage } from '../data/providerFinanceCoverage'
 import { providerSourceCoverage } from '../data/providerSourceCoverage'
 import { providerUniverse } from '../data/providers'
+import { STAFF_YEARS, staffRecords } from '../data/staff'
 import { computeHealthScore } from '../data/health'
 import { Panel } from '../components/layout/Panel'
 import { getDataset, type Format } from '../data/openDataExports'
+import { tefRecords } from '../data/tef'
 
 const LICENCE = 'Creative Commons Attribution 4.0 International (CC BY 4.0)'
 const VERSION = 'verified-2026.1'
@@ -98,6 +101,39 @@ const DATASETS = [
     tier: 'core',
   },
   {
+    id: 'staff-records',
+    name: 'Staff Coverage Records',
+    description: 'HESA Staff provider-year coverage for all 304 institutions across 2015-16 to 2024-25. Pending rows remain null until official HESA Staff rows are ingested.',
+    rows: staffRecords.length,
+    columns: 20,
+    years: `${STAFF_YEARS[STAFF_YEARS.length - 1]}-${STAFF_YEARS[0]}`,
+    formats: ['csv', 'json'],
+    size: '~650 KB',
+    tier: 'core',
+  },
+  {
+    id: 'estate-records',
+    name: 'Estate Coverage Records',
+    description: 'HESA Estates Management provider-year coverage for all 304 institutions across the latest public 2015-16 to 2023-24 estate release window.',
+    rows: estateRecords.length,
+    columns: 20,
+    years: `${ESTATE_YEARS[ESTATE_YEARS.length - 1]}-${ESTATE_YEARS[0]}`,
+    formats: ['csv', 'json'],
+    size: '~590 KB',
+    tier: 'core',
+  },
+  {
+    id: 'tef-ratings',
+    name: 'TEF Ratings Coverage',
+    description: 'OfS TEF 2023 provider rating coverage. TEF is represented as assessment ratings, not annual rankings, with pending rows where official provider ratings have not been ingested.',
+    rows: tefRecords.length,
+    columns: 16,
+    years: 'TEF 2023 cycle',
+    formats: ['csv', 'json'],
+    size: '~70 KB',
+    tier: 'core',
+  },
+  {
     id: 'degree-intelligence',
     name: 'Degree Intelligence',
     description: 'Source-backed CAH2 subject outcomes, earnings, industry destinations and regional destinations from DfE LEO 2023-24. AI fields are labelled external analysis.',
@@ -122,7 +158,7 @@ const DATASETS = [
   {
     id: 'provider-source-coverage',
     name: 'Provider Source Coverage',
-    description: 'Provider-domain coverage matrix for students, outcomes, staff and estates. The dataset makes missing provider-level source rows explicit.',
+    description: 'Provider-domain coverage matrix for students, outcomes, staff, estates and TEF. The dataset makes missing provider-level source rows explicit.',
     rows: providerSourceCoverage.length,
     columns: 15,
     years: 'Latest available',
@@ -230,6 +266,7 @@ export function OpenDataPage() {
     confidence: exampleFinancial.confidence,
     included_in_aggregates: exampleFinancial.included_in_aggregates,
   }, null, 2)
+  const totalRecords = financials.length + studentEnrolments.length + providerUniverse.length + providerFinanceCoverage.length + providerSourceCoverage.length + nationalStudentFinanceRecords.length + OUTCOMES.length + DEGREES.length + EMPLOYERS.length + INTELLIGENCE_RECORDS.length + staffRecords.length + estateRecords.length + tefRecords.length
 
   function handleDownload(id: string, fmt: Format) {
     const content = getDataset(id, fmt)
@@ -259,7 +296,7 @@ export function OpenDataPage() {
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          <span className="font-num" style={{ color: 'var(--text)' }}>{(financials.length + studentEnrolments.length + providerUniverse.length + providerFinanceCoverage.length + providerSourceCoverage.length + nationalStudentFinanceRecords.length).toLocaleString()}</span> records
+          <span className="font-num" style={{ color: 'var(--text)' }}>{totalRecords.toLocaleString()}</span> records
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
@@ -293,7 +330,7 @@ export function OpenDataPage() {
             {[
               { label: 'Providers', value: providerUniverse.length },
               { label: 'Financial years', value: AVAILABLE_YEARS.length },
-              { label: 'Total records', value: (financials.length + studentEnrolments.length + providerUniverse.length + providerFinanceCoverage.length + providerSourceCoverage.length + nationalStudentFinanceRecords.length).toLocaleString() },
+              { label: 'Total records', value: totalRecords.toLocaleString() },
               { label: 'Data version', value: VERSION },
             ].map(({ label, value }) => (
               <div key={label} className="text-center px-3 py-2" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 3, border: '1px solid var(--border)' }}>
