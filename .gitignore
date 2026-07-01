@@ -2,3 +2,20 @@ node_modules/
 dist/
 coverage/
 .vite/
+
+# Local operating-system/editor files
+.DS_Store
+
+# Local secrets and deployment configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local scratch, generated planning notes, and imported prompt material
+plans/
+src/imports/
+*.local
