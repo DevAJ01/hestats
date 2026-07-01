@@ -13,6 +13,7 @@ import { compareNullableDesc, formatCurrencyM, formatDays, formatPct, getAllLate
 import { computeHealthScore, getGradeColor } from '../data/health'
 import { INSTITUTION_COORDS, projectToSvg } from '../data/coordinates'
 import { UK_OUTLINE_PATH, UK_OUTLINE_SOURCE } from '../data/ukOutline'
+import { providerUniverse } from '../data/providers'
 import { Institution } from '../data/types'
 import { InstitutionCard } from '../components/institutions/InstitutionCard'
 import { InstitutionRow } from '../components/institutions/InstitutionRow'
@@ -50,6 +51,10 @@ export function ExplorerPage() {
   const [hovered, setHovered] = useState<string | null>(null)
 
   const finMap = useMemo(() => Object.fromEntries(getAllLatestFinancials().map((f) => [f.institution_id, f])), [])
+  const geocodedProfiledProviders = useMemo(() =>
+    institutions.filter((inst) => INSTITUTION_COORDS[inst.id] && finMap[inst.id]).length,
+  [finMap])
+  const unplottedProviderRows = Math.max(0, providerUniverse.length - geocodedProfiledProviders)
 
   // Persist all filter state to the URL (replace, so back button isn't polluted).
   useEffect(() => {
@@ -125,10 +130,12 @@ export function ExplorerPage() {
         <span style={{ color: 'var(--muted)', letterSpacing: '0.06em' }}>EXPLORER</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          <span className="font-num" style={{ color: 'var(--text)' }}>{filtered.length}</span> / {institutions.length} universities
+          <span className="font-num" style={{ color: 'var(--text)' }}>{filtered.length}</span> / {institutions.length} profiled universities
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}>One dataset · {VIEWS.length} synchronised views</span>
+        <span style={{ color: 'var(--text-2)' }}>{providerUniverse.length} HESA provider records · {unplottedProviderRows} not geocoded</span>
+        <span style={{ color: 'var(--border-strong)' }}>│</span>
+        <span style={{ color: 'var(--text-2)' }}>One source-backed workspace · {VIEWS.length} synchronised views</span>
       </div>
 
       {/* Toolbar: views + filters */}
@@ -266,6 +273,9 @@ export function ExplorerPage() {
               <span style={{ color: 'var(--muted)', fontSize: 10 }}>
                 Boundary: {UK_OUTLINE_SOURCE.publisher} · {UK_OUTLINE_SOURCE.source_reference}
               </span>
+              <span style={{ color: 'var(--muted)', fontSize: 10 }}>
+                Plotted: {bubbles.length} geocoded profiles · {unplottedProviderRows} HESA provider records not geocoded
+              </span>
               <a href={UK_OUTLINE_SOURCE.source_url} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--link)', fontSize: 10 }}>
                 Source
               </a>
@@ -277,7 +287,7 @@ export function ExplorerPage() {
             </p>
             {(() => {
               const b = bubbles.find((x) => x.inst.id === hovered)
-              if (!b) return <p style={{ color: 'var(--muted)', fontSize: 12 }}>Bubble size = total income · colour = financial health.</p>
+              if (!b) return <p style={{ color: 'var(--muted)', fontSize: 12 }}>Bubble size = total income · colour = financial health. Provider records without verified coordinates remain in coverage tables and exports, not on the map.</p>
               return (
                 <div>
                   <p style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}>{b.inst.canonical_name}</p>

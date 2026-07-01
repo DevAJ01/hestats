@@ -7,6 +7,7 @@ import { computeHealthScore, getGradeColor } from '../data/health'
 import { INSTITUTION_COORDS, projectToSvg } from '../data/coordinates'
 import { formatStudentCount, getLatestStudentEnrolment } from '../data/students'
 import { UK_OUTLINE_PATH, UK_OUTLINE_SOURCE } from '../data/ukOutline'
+import { providerUniverse } from '../data/providers'
 import { HealthBadge } from '../components/institutions/HealthBadge'
 import { NationBadge } from '../components/institutions/NationBadge'
 import { RiskBadge } from '../components/institutions/RiskBadge'
@@ -47,6 +48,7 @@ export function MapPage() {
   const latestFins = getAllLatestFinancials()
   // Use a plain object to avoid any Map constructor collision with lucide Map icon
   const finLookup = Object.fromEntries(latestFins.map((f) => [f.institution_id, f]))
+  const plotEligibleProviders = institutions.filter((inst) => INSTITUTION_COORDS[inst.id] && finLookup[inst.id]).length
 
   const bubbles = useMemo(() => {
     return institutions
@@ -90,6 +92,10 @@ export function MapPage() {
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
           <span className="font-num" style={{ color: 'var(--text)' }}>{bubbles.length}</span> institutions plotted
+        </span>
+        <span style={{ color: 'var(--border-strong)' }}>│</span>
+        <span style={{ color: 'var(--text-2)' }}>
+          <span className="font-num" style={{ color: 'var(--text)' }}>{(providerUniverse.length - plotEligibleProviders).toLocaleString()}</span> HESA provider records not geocoded
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>Bubble size = {bubbleSize} · Colour = {bubbleColor}</span>

@@ -5,6 +5,7 @@ import { institutions } from '../data/institutions'
 import { compareNullableDesc, financials, formatCurrencyM, formatNumber, formatPct, getAllLatestFinancials, getFinancialsByInstitution, AVAILABLE_YEARS, isAggregateEligible, isKnownNumber } from '../data/financials'
 import { getStudentCoverage } from '../data/students'
 import { getLatestIntelligence } from '../data/intelligence'
+import { nationalStudentFinanceRecords } from '../data/nationalStudentFinance'
 import { getSectorAverageScore, getAllHealthScores, scoreToGrade, computeHealthScore, getGradeColor } from '../data/health'
 import { SUPPORT_LINKS } from '../data/links'
 import { Sparkline } from '../components/charts/Sparkline'
@@ -90,6 +91,12 @@ export function HomePage() {
   const prevStudentTotal = prev.studentsCount ? prev.students : null
   const latestIntelligence = getLatestIntelligence(3)
   const careerIntelligence = latestIntelligence.filter((row) => ['graduate-outcomes', 'labour-market', 'ai-exposure', 'policy'].includes(row.category))
+  const nationalFinanceCards = [
+    'england-total-student-support-2024-25',
+    'england-support-recipients-2024-25',
+    'england-average-maintenance-loan-2024-25',
+    'england-full-time-ug-average-borrowing-forecast-2024-25',
+  ].map((id) => nationalStudentFinanceRecords.find((row) => row.id === id)).filter(Boolean) as typeof nationalStudentFinanceRecords
 
   const numYears = sortedYears.length - 1
 
@@ -560,13 +567,27 @@ export function HomePage() {
       })()}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-2.5">
-        <Panel title="National student finance" subtitle="Awaiting source-row ingestion">
-          <div className="flex items-start gap-2 px-1 py-1">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
-            <p style={{ color: 'var(--text-2)', fontSize: 11.5, lineHeight: 1.6 }}>
-              SLC, DfE, OBR and IFS student-finance claims are withheld until each displayed statistic has source URL,
-              table reference, retrieved date and last verified date.
-            </p>
+        <Panel title="National student finance" subtitle="SLC England 2025 and DfE forecasts">
+          <div className="grid grid-cols-2 gap-2">
+            {nationalFinanceCards.map((row) => {
+              const value =
+                row.unit === 'GBP billion' ? `£${row.value}bn` :
+                row.unit === 'GBP' ? `£${row.value?.toLocaleString()}` :
+                row.unit === 'students' ? row.value?.toLocaleString() :
+                `${row.value}${row.unit === 'percent' ? '%' : ''}`
+              return (
+                <Link
+                  key={row.id}
+                  to="/open-data"
+                  className="p-2 border"
+                  style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3, textDecoration: 'none' }}
+                >
+                  <p className="font-num" style={{ color: row.source_status === 'forecast' ? 'var(--warning)' : 'var(--positive)', fontSize: 17, fontWeight: 700 }}>{value}</p>
+                  <p style={{ color: 'var(--text)', fontSize: 11, fontWeight: 600, lineHeight: 1.25 }}>{row.metric}</p>
+                  <p style={{ color: 'var(--muted)', fontSize: 9.5, marginTop: 3 }}>{row.source_status} · {row.academic_year ?? row.financial_year}</p>
+                </Link>
+              )
+            })}
           </div>
         </Panel>
         <Panel title="Sector intelligence feed" subtitle="Latest source-backed records">

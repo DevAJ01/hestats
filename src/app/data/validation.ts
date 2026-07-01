@@ -8,6 +8,14 @@ import {
 import { institutions } from './institutions'
 import { INSTITUTION_COORDS, UK_BOUNDS } from './coordinates'
 import { INTELLIGENCE_RECORDS, IntelligenceRecord } from './intelligence'
+import { NationalStudentFinanceRecord, nationalStudentFinanceRecords } from './nationalStudentFinance'
+import { providerFinanceCoverage, ProviderFinanceCoverageRecord } from './providerFinanceCoverage'
+import { providerSourceCoverage, ProviderSourceCoverageRecord } from './providerSourceCoverage'
+import {
+  HESA_STUDENT_PROVIDER_COUNT_2024_25,
+  ProviderUniverseRecord,
+  providerUniverse,
+} from './providers'
 import { DataQualityIssue, isOfficialUkprn } from './schema'
 import { DATA_SOURCES, PROVENANCE } from './sources'
 import { STUDENT_YEARS, StudentEnrolmentRecord, isKnownStudentNumber, studentEnrolments } from './students'
@@ -56,6 +64,119 @@ export function validateInstitutions(rows: Institution[] = institutions): DataQu
     if (matches.length > 1) {
       issues.push(issue('error', 'institution.ukprn_duplicate', `Official UKPRN '${ukprn}' is shared by ${matches.join(', ')}.`))
     }
+  }
+
+  return issues
+}
+
+export function validateProviderUniverse(
+  rows: ProviderUniverseRecord[] = providerUniverse,
+): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+  const providerIds = new Set<string>()
+  const ukprns = new Set<string>()
+
+  if (rows.length !== HESA_STUDENT_PROVIDER_COUNT_2024_25) {
+    issues.push(issue('error', 'provider_universe.count_mismatch', `Expected ${HESA_STUDENT_PROVIDER_COUNT_2024_25} HESA 2024-25 student-reporting provider rows, found ${rows.length}.`))
+  }
+
+  for (const row of rows) {
+    if (providerIds.has(row.provider_id)) issues.push(issue('error', 'provider_universe.duplicate_id', `Duplicate provider id '${row.provider_id}'.`, { institution_id: row.institution_id ?? row.provider_id }))
+    providerIds.add(row.provider_id)
+
+    if (!row.canonical_name.trim()) issues.push(issue('error', 'provider_universe.name_missing', 'Provider row requires a name or unreconciled slot label.', { institution_id: row.institution_id ?? row.provider_id }))
+    if (row.ukprn !== null) {
+      if (!isOfficialUkprn(row.ukprn)) issues.push(issue('error', 'provider_universe.ukprn_invalid', `UKPRN '${row.ukprn}' is not in official 100xxxxx format.`, { institution_id: row.institution_id ?? row.provider_id }))
+      if (ukprns.has(row.ukprn)) issues.push(issue('error', 'provider_universe.ukprn_duplicate', `Duplicate provider UKPRN '${row.ukprn}'.`, { institution_id: row.institution_id ?? row.provider_id }))
+      ukprns.add(row.ukprn)
+    }
+    if (!sourceIds.has(row.source_id)) issues.push(issue('error', 'provider_universe.source_unknown', `Provider row references unknown source '${row.source_id}'.`, { institution_id: row.institution_id ?? row.provider_id }))
+    if (!row.source_url.startsWith('http') || !row.source_reference.trim() || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
+      issues.push(issue('error', 'provider_universe.provenance_incomplete', 'Provider rows require source URL, reference, retrieved date, and last verified date.', { institution_id: row.institution_id ?? row.provider_id }))
+    }
+    if (!['verified', 'matched', 'pending'].includes(row.source_status)) {
+      issues.push(issue('error', 'provider_universe.status_invalid', `Invalid provider source status '${row.source_status}'.`, { institution_id: row.institution_id ?? row.provider_id }))
+    }
+    if (row.source_status === 'pending' && (row.ukprn !== null || row.hesa_instid !== null)) {
+      issues.push(issue('error', 'provider_universe.pending_has_identifier', 'Pending unreconciled providers must not invent UKPRN or HESA identifiers.', { institution_id: row.provider_id }))
+    }
+  }
+
+  return issues
+}
+
+export function validateProviderFinanceCoverage(
+  rows: ProviderFinanceCoverageRecord[] = providerFinanceCoverage,
+  providers: ProviderUniverseRecord[] = providerUniverse,
+): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const providerIds = new Set(providers.map((row) => row.provider_id))
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+  const seen = new Set<string>()
+
+  for (const row of rows) {
+    const details = { institution_id: row.institution_id ?? row.provider_id, fiscal_year: row.fiscal_year }
+    const key = `${row.provider_id}:${row.fiscal_year}`
+    if (seen.has(key)) issues.push(issue('error', 'provider_finance.duplicate_year', `Duplicate provider finance coverage row for ${key}.`, details))
+    seen.add(key)
+    if (!providerIds.has(row.provider_id)) issues.push(issue('error', 'provider_finance.orphan_provider', 'Provider finance row references unknown provider.', details))
+    if (!FISCAL_YEAR.test(row.fiscal_year) || !AVAILABLE_YEARS.includes(row.fiscal_year)) issues.push(issue('error', 'provider_finance.year_invalid', `Fiscal year '${row.fiscal_year}' is outside the supported range.`, details))
+    if (!['verified', 'pending'].includes(row.source_status)) issues.push(issue('error', 'provider_finance.status_invalid', `Invalid source status '${row.source_status}'.`, details))
+    if (!sourceIds.has(row.source_id)) issues.push(issue('error', 'provider_finance.source_unknown', `Provider finance row references unknown source '${row.source_id}'.`, details))
+    if (!row.source_url.startsWith('https://') || !row.source_reference.trim() || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
+      issues.push(issue('error', 'provider_finance.provenance_incomplete', 'Provider finance coverage rows require source URL, reference, retrieved date, and last verified date.', details))
+    }
+    if (row.source_status === 'pending' && (row.has_any_value || row.verified_metric_count !== 0 || row.included_in_aggregates)) {
+      issues.push(issue('error', 'provider_finance.pending_has_value', 'Pending provider finance rows must not contain values or aggregate inclusion.', details))
+    }
+    if (row.source_status === 'verified' && (!row.has_any_value || row.verified_metric_count <= 0)) {
+      issues.push(issue('error', 'provider_finance.verified_missing_values', 'Verified provider finance rows require at least one numeric metric.', details))
+    }
+  }
+
+  for (const provider of providers) {
+    for (const year of AVAILABLE_YEARS) {
+      const key = `${provider.provider_id}:${year}`
+      if (!seen.has(key)) issues.push(issue('error', 'provider_finance.coverage_missing', `Missing provider finance coverage row for ${key}.`, { institution_id: provider.institution_id ?? provider.provider_id, fiscal_year: year }))
+    }
+  }
+
+  const expectedRows = providers.length * AVAILABLE_YEARS.length
+  if (seen.size !== expectedRows) {
+    issues.push(issue('error', 'provider_finance.coverage_count_mismatch', `Expected ${expectedRows} provider-year rows, found ${seen.size}.`))
+  }
+
+  return issues
+}
+
+export function validateProviderSourceCoverage(
+  rows: ProviderSourceCoverageRecord[] = providerSourceCoverage,
+  providers: ProviderUniverseRecord[] = providerUniverse,
+): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const providerIds = new Set(providers.map((row) => row.provider_id))
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+  const seen = new Set<string>()
+
+  for (const row of rows) {
+    const details = { institution_id: row.institution_id ?? row.provider_id }
+    const key = `${row.provider_id}:${row.domain}`
+    if (seen.has(key)) issues.push(issue('error', 'provider_source.duplicate_domain', `Duplicate provider source coverage row for ${key}.`, details))
+    seen.add(key)
+    if (!providerIds.has(row.provider_id)) issues.push(issue('error', 'provider_source.orphan_provider', 'Provider source coverage row references unknown provider.', details))
+    if (!sourceIds.has(row.source_id)) issues.push(issue('error', 'provider_source.source_unknown', `Provider source coverage row references unknown source '${row.source_id}'.`, details))
+    if (!row.source_url.startsWith('https://') || !row.source_reference.trim() || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
+      issues.push(issue('error', 'provider_source.provenance_incomplete', 'Provider source coverage rows require source URL, reference, retrieved date, and last verified date.', details))
+    }
+    if (row.source_status === 'pending' && row.included_in_aggregates) {
+      issues.push(issue('error', 'provider_source.pending_in_aggregates', 'Pending provider source coverage rows must be excluded from aggregates.', details))
+    }
+  }
+
+  const expectedRows = providers.length * 4
+  if (seen.size !== expectedRows) {
+    issues.push(issue('error', 'provider_source.coverage_count_mismatch', `Expected ${expectedRows} provider-domain rows, found ${seen.size}.`))
   }
 
   return issues
@@ -338,8 +459,54 @@ export function validateIntelligenceRecords(
   return issues
 }
 
+export function validateNationalStudentFinance(
+  rows: NationalStudentFinanceRecord[] = nationalStudentFinanceRecords,
+): DataQualityIssue[] {
+  const issues: DataQualityIssue[] = []
+  const sourceIds = new Set(DATA_SOURCES.map((source) => source.id))
+  const seen = new Set<string>()
+
+  for (const row of rows) {
+    if (seen.has(row.id)) issues.push(issue('error', 'national_finance.duplicate_id', `Duplicate national student finance record '${row.id}'.`))
+    seen.add(row.id)
+    if (!row.metric.trim()) issues.push(issue('error', 'national_finance.metric_missing', `National student finance record '${row.id}' requires a metric label.`))
+    if (!sourceIds.has(row.source_id)) issues.push(issue('error', 'national_finance.source_unknown', `National student finance record '${row.id}' references unknown source '${row.source_id}'.`))
+    if (!row.source_url.startsWith('https://') || !row.source_reference.trim() || !row.publisher.trim()) {
+      issues.push(issue('error', 'national_finance.provenance_incomplete', `National student finance record '${row.id}' requires publisher, HTTPS source URL and source reference.`))
+    }
+    if (!DATE.test(row.published_date) || !DATE.test(row.retrieved_date) || !DATE.test(row.last_verified)) {
+      issues.push(issue('error', 'national_finance.date_invalid', `National student finance record '${row.id}' has an invalid provenance date.`))
+    }
+    if (!['verified', 'provisional', 'forecast'].includes(row.source_status)) {
+      issues.push(issue('error', 'national_finance.status_invalid', `National student finance record '${row.id}' has invalid status '${row.source_status}'.`))
+    }
+    if (!['high', 'medium', 'provisional', 'awaiting'].includes(row.confidence)) {
+      issues.push(issue('error', 'national_finance.confidence_invalid', `National student finance record '${row.id}' has invalid confidence '${row.confidence}'.`))
+    }
+    if (row.value !== null && (!Number.isFinite(row.value) || row.value < 0)) {
+      issues.push(issue('error', 'national_finance.value_invalid', `National student finance record '${row.id}' must have a non-negative finite value or null.`))
+    }
+    if (row.source_status === 'forecast' && row.included_in_aggregates) {
+      issues.push(issue('error', 'national_finance.forecast_in_aggregates', `Forecast record '${row.id}' must be excluded from official aggregates.`))
+    }
+  }
+
+  return issues
+}
+
 export function validateData(): DataQualityIssue[] {
-  return [...validateInstitutions(), ...validateFinancials(), ...validateStudentEnrolments(), ...validateInstitutionCoordinates(), ...validateMapOutline(), ...validateIntelligenceRecords()]
+  return [
+    ...validateInstitutions(),
+    ...validateProviderUniverse(),
+    ...validateFinancials(),
+    ...validateProviderFinanceCoverage(),
+    ...validateStudentEnrolments(),
+    ...validateProviderSourceCoverage(),
+    ...validateNationalStudentFinance(),
+    ...validateInstitutionCoordinates(),
+    ...validateMapOutline(),
+    ...validateIntelligenceRecords(),
+  ]
 }
 
 export function blockingIssues(issues: DataQualityIssue[]): DataQualityIssue[] {

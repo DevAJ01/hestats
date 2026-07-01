@@ -3,11 +3,14 @@ import { ArrowUpRight, BookOpen } from 'lucide-react'
 import { Panel } from '../components/layout/Panel'
 import { IntelligenceCardList } from '../components/intelligence/IntelligenceCardList'
 import { INTELLIGENCE_RECORDS } from '../data/intelligence'
+import { providerSourceCoverage } from '../data/providerSourceCoverage'
 
 export function DegreesPage() {
   const records = INTELLIGENCE_RECORDS
     .filter((row) => ['graduate-outcomes', 'ai-exposure'].includes(row.category))
     .sort((a, b) => b.published_date.localeCompare(a.published_date))
+  const metrics = records.flatMap((record) => record.metrics.map((metric) => ({ ...metric, record })))
+  const outcomeCoverage = providerSourceCoverage.filter((row) => row.domain === 'outcomes')
 
   return (
     <div className="max-w-[1100px] mx-auto px-4 py-3 space-y-3">
@@ -19,6 +22,23 @@ export function DegreesPage() {
         <span style={{ color: 'var(--muted)', letterSpacing: '0.06em' }}>DEGREE INTELLIGENCE</span>
         <span style={{ color: 'var(--border-strong)' }}>|</span>
         <span style={{ color: 'var(--text-2)' }}>{records.length} source-backed records</span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+        {[
+          { label: 'Outcome source rows', value: `${outcomeCoverage.filter((row) => row.source_status === 'verified').length}/${outcomeCoverage.length}`, sub: 'provider coverage' },
+          ...metrics.slice(0, 3).map((metric) => ({
+            label: metric.label,
+            value: metric.value === null ? 'Pending' : metric.unit === 'GBP annualised earnings' || metric.unit === 'GBP' ? `£${metric.value.toLocaleString()}` : `${metric.value.toLocaleString()} ${metric.unit}`,
+            sub: metric.period,
+          })),
+        ].map((item) => (
+          <div key={item.label} className="p-3 border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
+            <p className="font-num" style={{ color: item.value === 'Pending' ? 'var(--warning)' : 'var(--text)', fontSize: 18, fontWeight: 700 }}>{item.value}</p>
+            <p style={{ color: 'var(--text)', fontSize: 11.5, fontWeight: 600, lineHeight: 1.3 }}>{item.label}</p>
+            <p style={{ color: 'var(--muted)', fontSize: 10, marginTop: 4 }}>{item.sub}</p>
+          </div>
+        ))}
       </div>
 
       <Panel title="Degree intelligence" subtitle="Subject tables remain hidden until row-level official source data is attached">

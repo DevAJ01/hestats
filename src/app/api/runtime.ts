@@ -14,6 +14,17 @@ import {
 } from '../data/financials'
 import { computeHealthScore, getAllHealthScores, getSectorAverageScore, scoreToGrade } from '../data/health'
 import { INTELLIGENCE_RECORDS, IntelligenceRecord } from '../data/intelligence'
+import { nationalStudentFinanceRecords } from '../data/nationalStudentFinance'
+import {
+  getProviderFinanceCoverageSummary,
+  providerFinanceCoverage,
+} from '../data/providerFinanceCoverage'
+import { providerSourceCoverage, getProviderSourceCoverageSummary } from '../data/providerSourceCoverage'
+import {
+  getProviderById,
+  getProviderCoverageSummary,
+  providerUniverse,
+} from '../data/providers'
 import { getProvenance } from '../data/sources'
 import {
   STUDENT_YEARS,
@@ -159,6 +170,110 @@ function buildIntelligence(row: IntelligenceRecord) {
   }
 }
 
+function buildProvider(row: (typeof providerUniverse)[number]) {
+  return {
+    provider_id: row.provider_id,
+    institution_id: row.institution_id,
+    canonical_name: row.canonical_name,
+    ukprn: row.ukprn,
+    hesa_instid: row.hesa_instid,
+    provider_type: row.provider_type,
+    nation: row.nation,
+    regulator: row.regulator,
+    reporting_flags: {
+      hesa_student_2024_25: row.reports_hesa_student_2024_25,
+      hesa_finance_2024_25: row.reports_hesa_finance_2024_25,
+    },
+    platform_status: row.platform_status,
+    source_status: row.source_status,
+    confidence: row.confidence,
+    website: row.website,
+    source_documents: [{
+      source_id: row.source_id,
+      source_url: row.source_url,
+      source_reference: row.source_reference,
+      retrieved_date: row.retrieved_date,
+      last_verified: row.last_verified,
+      confidence: row.confidence,
+      notes: row.notes,
+    }],
+  }
+}
+
+function buildProviderFinanceCoverage(row: (typeof providerFinanceCoverage)[number]) {
+  return {
+    provider_id: row.provider_id,
+    institution_id: row.institution_id,
+    ukprn: row.ukprn,
+    canonical_name: row.canonical_name,
+    fiscal_year: row.fiscal_year,
+    source_status: row.source_status,
+    verified_metric_count: row.verified_metric_count,
+    has_any_value: row.has_any_value,
+    included_in_aggregates: row.included_in_aggregates,
+    confidence: row.confidence,
+    source_documents: [{
+      source_id: row.source_id,
+      source_url: row.source_url,
+      source_reference: row.source_reference,
+      retrieved_date: row.retrieved_date,
+      last_verified: row.last_verified,
+      confidence: row.confidence,
+      notes: row.notes,
+    }],
+  }
+}
+
+function buildProviderSourceCoverage(row: (typeof providerSourceCoverage)[number]) {
+  return {
+    provider_id: row.provider_id,
+    institution_id: row.institution_id,
+    ukprn: row.ukprn,
+    canonical_name: row.canonical_name,
+    domain: row.domain,
+    period: row.period,
+    source_status: row.source_status,
+    confidence: row.confidence,
+    included_in_aggregates: row.included_in_aggregates,
+    source_documents: [{
+      source_id: row.source_id,
+      source_url: row.source_url,
+      source_reference: row.source_reference,
+      retrieved_date: row.retrieved_date,
+      last_verified: row.last_verified,
+      confidence: row.confidence,
+      notes: row.notes,
+    }],
+  }
+}
+
+function buildNationalStudentFinance(row: (typeof nationalStudentFinanceRecords)[number]) {
+  return {
+    id: row.id,
+    geography: row.geography,
+    academic_year: row.academic_year,
+    financial_year: row.financial_year,
+    category: row.category,
+    metric: row.metric,
+    value: row.value,
+    unit: row.unit,
+    source_status: row.source_status,
+    confidence: row.confidence,
+    included_in_aggregates: row.included_in_aggregates,
+    notes: row.notes,
+    source_documents: [{
+      source_id: row.source_id,
+      publisher: row.publisher,
+      source_url: row.source_url,
+      source_reference: row.source_reference,
+      published_date: row.published_date,
+      retrieved_date: row.retrieved_date,
+      last_verified: row.last_verified,
+      confidence: row.confidence,
+    }],
+  }
+}
+
 function buildInst(i: ReturnType<typeof getInstitutionById>, withHealth = false) {
   if (!i) return null
   const base = {
@@ -213,6 +328,116 @@ export async function dispatchRequest(method: string, path: string, search: stri
   }
 
   if (method !== 'GET') return err(405, 'Method not allowed. The HEStats API is read-only.')
+
+  // ── GET /providers ───────────────────────────────────────────────────────────
+  if (segments[0] === 'providers' && !segments[1]) {
+    let list = [...providerUniverse]
+    if (params.q) {
+      const q = params.q.toLowerCase()
+      list = list.filter((provider) =>
+        provider.canonical_name.toLowerCase().includes(q) ||
+        provider.provider_id.toLowerCase().includes(q) ||
+        (provider.ukprn ?? '').includes(q),
+      )
+    }
+    if (params.nation) list = list.filter((provider) => provider.nation.toLowerCase() === params.nation.toLowerCase())
+    if (params.provider_type) list = list.filter((provider) => provider.provider_type === params.provider_type)
+    if (params.regulator) list = list.filter((provider) => provider.regulator.toLowerCase() === params.regulator.toLowerCase())
+    if (params.source_status) list = list.filter((provider) => provider.source_status === params.source_status)
+    if (params.platform_status) list = list.filter((provider) => provider.platform_status === params.platform_status)
+    const fiscalYear = params.fiscal_year ?? AVAILABLE_YEARS[0]
+    if (params.finance_coverage) {
+      const providersByCoverage = new Set(providerFinanceCoverage
+        .filter((row) => row.fiscal_year === fiscalYear && row.source_status === params.finance_coverage)
+        .map((row) => row.provider_id))
+      list = list.filter((provider) => providersByCoverage.has(provider.provider_id))
+    }
+    const limit = Math.min(Number(params.limit ?? 50), 304)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(list, limit, offset)
+    return respond(ok(items.map(buildProvider), {
+      total,
+      limit,
+      offset,
+      coverage: {
+        ...getProviderCoverageSummary(),
+        finance_coverage: getProviderFinanceCoverageSummary(fiscalYear),
+      },
+    }))
+  }
+
+  // ── GET /providers/:id/finance-coverage ─────────────────────────────────────
+  if (segments[0] === 'providers' && segments[1] && segments[2] === 'finance-coverage') {
+    const provider = getProviderById(segments[1])
+    if (!provider) return err(404, `Provider '${segments[1]}' not found.`)
+    let rows = providerFinanceCoverage.filter((row) => row.provider_id === provider.provider_id)
+    if (params.fiscal_year) rows = rows.filter((row) => row.fiscal_year === params.fiscal_year)
+    return respond(ok(rows.map(buildProviderFinanceCoverage), {
+      provider_id: provider.provider_id,
+      coverage: {
+        verified: rows.filter((row) => row.source_status === 'verified').length,
+        pending: rows.filter((row) => row.source_status === 'pending').length,
+        included_in_aggregates: rows.filter((row) => row.included_in_aggregates).length,
+      },
+    }))
+  }
+
+  // ── GET /provider-finance-coverage ──────────────────────────────────────────
+  if (segments[0] === 'provider-finance-coverage') {
+    const fiscalYear = params.fiscal_year ?? AVAILABLE_YEARS[0]
+    let rows = providerFinanceCoverage.filter((row) => row.fiscal_year === fiscalYear)
+    if (params.source_status) rows = rows.filter((row) => row.source_status === params.source_status)
+    if (params.provider_id) rows = rows.filter((row) => row.provider_id === params.provider_id)
+    const limit = Math.min(Number(params.limit ?? 50), 304)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(rows, limit, offset)
+    return respond(ok(items.map(buildProviderFinanceCoverage), {
+      total,
+      limit,
+      offset,
+      coverage: getProviderFinanceCoverageSummary(fiscalYear),
+    }))
+  }
+
+  // ── GET /provider-source-coverage ───────────────────────────────────────────
+  if (segments[0] === 'provider-source-coverage') {
+    let rows = [...providerSourceCoverage]
+    if (params.domain) rows = rows.filter((row) => row.domain === params.domain)
+    if (params.source_status) rows = rows.filter((row) => row.source_status === params.source_status)
+    if (params.provider_id) rows = rows.filter((row) => row.provider_id === params.provider_id)
+    const limit = Math.min(Number(params.limit ?? 50), 500)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(rows, limit, offset)
+    return respond(ok(items.map(buildProviderSourceCoverage), {
+      total,
+      limit,
+      offset,
+      coverage: getProviderSourceCoverageSummary(),
+    }))
+  }
+
+  // ── GET /national-student-finance ───────────────────────────────────────────
+  if (segments[0] === 'national-student-finance') {
+    let list = [...nationalStudentFinanceRecords]
+    if (params.geography) list = list.filter((row) => row.geography.toLowerCase() === params.geography.toLowerCase())
+    if (params.category) list = list.filter((row) => row.category === params.category)
+    if (params.source_status) list = list.filter((row) => row.source_status === params.source_status)
+    if (params.academic_year) list = list.filter((row) => row.academic_year === params.academic_year)
+    if (params.financial_year) list = list.filter((row) => row.financial_year === params.financial_year)
+    const limit = Math.min(Number(params.limit ?? 50), 200)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(list, limit, offset)
+    return respond(ok(items.map(buildNationalStudentFinance), {
+      total,
+      limit,
+      offset,
+      coverage: {
+        total_records: nationalStudentFinanceRecords.length,
+        included_in_aggregates: nationalStudentFinanceRecords.filter((row) => row.included_in_aggregates).length,
+        forecast_records: nationalStudentFinanceRecords.filter((row) => row.source_status === 'forecast').length,
+      },
+    }))
+  }
 
   // ── GET /institutions ────────────────────────────────────────────────────────
   if (segments[0] === 'institutions' && !segments[1]) {

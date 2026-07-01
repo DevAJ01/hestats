@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { ALL_FINANCIAL_VALUE_KEYS, AVAILABLE_YEARS, financials } from './financials'
 import { institutions } from './institutions'
 import { INTELLIGENCE_RECORDS } from './intelligence'
+import { nationalStudentFinanceRecords } from './nationalStudentFinance'
+import { providerFinanceCoverage } from './providerFinanceCoverage'
+import { providerSourceCoverage } from './providerSourceCoverage'
+import { HESA_STUDENT_PROVIDER_COUNT_2024_25, providerUniverse } from './providers'
 import { STUDENT_YEARS, studentEnrolments } from './students'
-import { blockingIssues, validateData, validateFinancials, validateInstitutionCoordinates, validateInstitutions, validateIntelligenceRecords, validateMapOutline, validateStudentEnrolments } from './validation'
+import { blockingIssues, validateData, validateFinancials, validateInstitutionCoordinates, validateInstitutions, validateIntelligenceRecords, validateMapOutline, validateNationalStudentFinance, validateProviderFinanceCoverage, validateProviderSourceCoverage, validateProviderUniverse, validateStudentEnrolments } from './validation'
 
 describe('HEStats data validation', () => {
   it('has no blocking errors in the bundled verified dataset', () => {
@@ -48,6 +52,34 @@ describe('HEStats data validation', () => {
         expect(keys.has(`${institution.id}:${year}`)).toBe(true)
       }
     }
+  })
+
+  it('keeps a 304-row HESA provider universe without inventing pending identifiers', () => {
+    expect(providerUniverse).toHaveLength(HESA_STUDENT_PROVIDER_COUNT_2024_25)
+    expect(blockingIssues(validateProviderUniverse())).toEqual([])
+    expect(providerUniverse.filter((row) => row.platform_status === 'full_profile')).toHaveLength(institutions.length)
+
+    const pendingRows = providerUniverse.filter((row) => row.source_status === 'pending')
+    expect(pendingRows.length).toBeGreaterThan(0)
+    expect(pendingRows.every((row) => row.ukprn === null && row.hesa_instid === null)).toBe(true)
+  })
+
+  it('keeps provider finance coverage at 304 providers across the decade panel', () => {
+    const keys = new Set(providerFinanceCoverage.map((row) => `${row.provider_id}:${row.fiscal_year}`))
+    expect(providerFinanceCoverage).toHaveLength(providerUniverse.length * AVAILABLE_YEARS.length)
+    expect(keys.size).toBe(providerFinanceCoverage.length)
+    expect(blockingIssues(validateProviderFinanceCoverage())).toEqual([])
+  })
+
+  it('keeps Nottingham 2024-25 explicit pending until an official source row is attached', () => {
+    const row = financials.find((item) => item.institution_id === 'nottingham' && item.fiscal_year === '2024-25')
+    expect(row).toBeDefined()
+    expect(row?.data_source).toBe('pending')
+    expect(row?.revenue_gbp_m).toBeNull()
+
+    const coverage = providerFinanceCoverage.find((item) => item.institution_id === 'nottingham' && item.fiscal_year === '2024-25')
+    expect(coverage?.source_status).toBe('pending')
+    expect(coverage?.included_in_aggregates).toBe(false)
   })
 
   it('does not allow estimated rows in the primary financial dataset', () => {
@@ -103,6 +135,21 @@ describe('HEStats data validation', () => {
         expect(keys.has(`${institution.id}:${year}`)).toBe(true)
       }
     }
+  })
+
+  it('keeps explicit provider coverage rows for students, outcomes, staff and estates', () => {
+    expect(providerSourceCoverage).toHaveLength(providerUniverse.length * 4)
+    expect(blockingIssues(validateProviderSourceCoverage())).toEqual([])
+    expect(providerSourceCoverage.every((row) => row.source_url.startsWith('https://'))).toBe(true)
+    expect(providerSourceCoverage.every((row) => !row.included_in_aggregates)).toBe(true)
+  })
+
+  it('keeps national student finance records source-backed and excludes forecasts from aggregates', () => {
+    expect(nationalStudentFinanceRecords.length).toBeGreaterThan(10)
+    expect(blockingIssues(validateNationalStudentFinance())).toEqual([])
+    expect(nationalStudentFinanceRecords.some((row) => row.source_id === 'slc-statistics')).toBe(true)
+    expect(nationalStudentFinanceRecords.some((row) => row.source_id === 'dfe-student-loan-forecasts')).toBe(true)
+    expect(nationalStudentFinanceRecords.filter((row) => row.source_status === 'forecast').every((row) => !row.included_in_aggregates)).toBe(true)
   })
 
   it('keeps pending student rows numeric-null and excluded from aggregates', () => {

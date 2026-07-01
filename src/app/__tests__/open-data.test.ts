@@ -44,6 +44,38 @@ describe('open data exports', () => {
     expect(rows[0]).toHaveProperty('confidence')
   })
 
+  it('exports provider universe and finance coverage datasets', () => {
+    const providers = JSON.parse(getDataset('provider-universe', 'json'))
+    const providerHeader = getDataset('provider-universe', 'csv').split('\n')[0]
+    const coverage = JSON.parse(getDataset('provider-finance-coverage', 'json'))
+    const coverageHeader = getDataset('provider-finance-coverage', 'csv').split('\n')[0]
+
+    expect(providers).toHaveLength(304)
+    expect(providerHeader).toContain('provider_type')
+    expect(providerHeader).toContain('source_status')
+    expect(providerHeader).toContain('source_reference')
+    expect(coverage.length).toBe(3040)
+    expect(coverageHeader).toContain('fiscal_year')
+    expect(coverageHeader).toContain('verified_metric_count')
+    expect(coverageHeader).toContain('included_in_aggregates')
+  })
+
+  it('exports national student finance and provider source coverage datasets', () => {
+    const national = JSON.parse(getDataset('national-student-finance', 'json'))
+    const nationalHeader = getDataset('national-student-finance', 'csv').split('\n')[0]
+    const sourceCoverage = JSON.parse(getDataset('provider-source-coverage', 'json'))
+    const sourceHeader = getDataset('provider-source-coverage', 'csv').split('\n')[0]
+
+    expect(national.length).toBeGreaterThan(10)
+    expect(nationalHeader).toContain('source_url')
+    expect(nationalHeader).toContain('included_in_aggregates')
+    expect(national.filter((row: { source_status: string }) => row.source_status === 'forecast')
+      .every((row: { included_in_aggregates: boolean }) => !row.included_in_aggregates)).toBe(true)
+    expect(sourceCoverage).toHaveLength(1216)
+    expect(sourceHeader).toContain('domain')
+    expect(sourceHeader).toContain('source_reference')
+  })
+
   it('exports intelligence records with source metadata', () => {
     const csv = getDataset('intelligence', 'csv')
     const header = csv.split('\n')[0]
@@ -143,5 +175,42 @@ describe('open data exports', () => {
     expect(payload.data.every((row) => row.metrics.every((metric) => !metric.included_in_aggregates))).toBe(true)
     expect(payload.meta.coverage.external_analysis_records).toBeGreaterThan(0)
     expect(payload.meta.coverage.included_in_aggregates).toBe(0)
+  })
+
+  it('reports provider universe coverage through the API simulator', async () => {
+    const response = await dispatchRequest('GET', '/v1/providers', '?limit=400')
+    expect(response.status).toBe(200)
+    const payload = response.data as {
+      data: unknown[]
+      meta: { coverage: { provider_universe_rows: number; metadata_pending_rows: number } }
+    }
+
+    expect(payload.data).toHaveLength(304)
+    expect(payload.meta.coverage.provider_universe_rows).toBe(304)
+    expect(payload.meta.coverage.metadata_pending_rows).toBeGreaterThan(0)
+  })
+
+  it('reports provider finance coverage and national student finance through the API simulator', async () => {
+    const coverageResponse = await dispatchRequest('GET', '/v1/provider-finance-coverage', '?fiscal_year=2024-25&limit=400')
+    expect(coverageResponse.status).toBe(200)
+    const coveragePayload = coverageResponse.data as {
+      data: { source_status: string; included_in_aggregates: boolean }[]
+      meta: { coverage: { total_provider_rows: number; verified: number; pending: number } }
+    }
+    expect(coveragePayload.data).toHaveLength(304)
+    expect(coveragePayload.meta.coverage.total_provider_rows).toBe(304)
+    expect(coveragePayload.meta.coverage.verified + coveragePayload.meta.coverage.pending).toBe(304)
+    expect(coveragePayload.data.filter((row) => row.source_status === 'pending').every((row) => !row.included_in_aggregates)).toBe(true)
+
+    const financeResponse = await dispatchRequest('GET', '/v1/national-student-finance', '?source_status=forecast')
+    expect(financeResponse.status).toBe(200)
+    const financePayload = financeResponse.data as {
+      data: { source_status: string; included_in_aggregates: boolean }[]
+      meta: { coverage: { forecast_records: number } }
+    }
+    expect(financePayload.data.length).toBeGreaterThan(0)
+    expect(financePayload.data.every((row) => row.source_status === 'forecast')).toBe(true)
+    expect(financePayload.data.every((row) => !row.included_in_aggregates)).toBe(true)
+    expect(financePayload.meta.coverage.forecast_records).toBeGreaterThan(0)
   })
 })

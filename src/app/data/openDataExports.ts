@@ -2,6 +2,10 @@ import { computeHealthScore } from './health'
 import { INTELLIGENCE_RECORDS } from './intelligence'
 import { financials, getAllLatestFinancials } from './financials'
 import { institutions } from './institutions'
+import { nationalStudentFinanceRecords } from './nationalStudentFinance'
+import { providerFinanceCoverage } from './providerFinanceCoverage'
+import { providerSourceCoverage } from './providerSourceCoverage'
+import { providerUniverse } from './providers'
 import { getProvenance } from './sources'
 import { studentEnrolments } from './students'
 
@@ -35,6 +39,120 @@ export function generateInstitutionsJson() {
     mission_group: i.mission_group ?? null,
     official_website: i.official_website ?? null,
   })), null, 2)
+}
+
+export function generateProviderUniverseCsv() {
+  const header = 'provider_id,institution_id,canonical_name,ukprn,hesa_instid,provider_type,nation,regulator,reports_hesa_student_2024_25,reports_hesa_finance_2024_25,platform_status,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,website,notes'
+  const rows = providerUniverse.map((row) => [
+    row.provider_id,
+    row.institution_id ?? '',
+    csvText(row.canonical_name),
+    row.ukprn ?? '',
+    row.hesa_instid ?? '',
+    row.provider_type,
+    row.nation,
+    row.regulator,
+    row.reports_hesa_student_2024_25,
+    row.reports_hesa_finance_2024_25 === null ? '' : row.reports_hesa_finance_2024_25,
+    row.platform_status,
+    row.source_status,
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    csvText(row.website ?? ''),
+    csvText(row.notes),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateProviderUniverseJson() {
+  return JSON.stringify(providerUniverse, null, 2)
+}
+
+export function generateProviderFinanceCoverageCsv() {
+  const header = 'provider_id,institution_id,ukprn,canonical_name,fiscal_year,source_status,verified_metric_count,has_any_value,included_in_aggregates,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,notes'
+  const rows = providerFinanceCoverage.map((row) => [
+    row.provider_id,
+    row.institution_id ?? '',
+    row.ukprn ?? '',
+    csvText(row.canonical_name),
+    row.fiscal_year,
+    row.source_status,
+    row.verified_metric_count,
+    row.has_any_value,
+    row.included_in_aggregates,
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    csvText(row.notes),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateProviderFinanceCoverageJson() {
+  return JSON.stringify(providerFinanceCoverage, null, 2)
+}
+
+export function generateProviderSourceCoverageCsv() {
+  const header = 'provider_id,institution_id,ukprn,canonical_name,domain,period,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates,notes'
+  const rows = providerSourceCoverage.map((row) => [
+    row.provider_id,
+    row.institution_id ?? '',
+    row.ukprn ?? '',
+    csvText(row.canonical_name),
+    row.domain,
+    csvText(row.period),
+    row.source_status,
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    row.included_in_aggregates,
+    csvText(row.notes),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateProviderSourceCoverageJson() {
+  return JSON.stringify(providerSourceCoverage, null, 2)
+}
+
+export function generateNationalStudentFinanceCsv() {
+  const header = 'id,geography,academic_year,financial_year,category,metric,value,unit,source_status,source_id,publisher,source_url,source_reference,published_date,retrieved_date,last_verified,confidence,included_in_aggregates,notes'
+  const rows = nationalStudentFinanceRecords.map((row) => [
+    row.id,
+    row.geography,
+    row.academic_year ?? '',
+    row.financial_year ?? '',
+    row.category,
+    csvText(row.metric),
+    csvNullable(row.value),
+    csvText(row.unit),
+    row.source_status,
+    row.source_id,
+    csvText(row.publisher),
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.published_date,
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    row.included_in_aggregates,
+    csvText(row.notes),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateNationalStudentFinanceJson() {
+  return JSON.stringify(nationalStudentFinanceRecords, null, 2)
 }
 
 export function generateAllFinancialsCsv() {
@@ -174,6 +292,10 @@ export function generateIntelligenceJson() {
 }
 
 export function getDataset(id: string, fmt: Format): string {
+  if (id === 'provider-universe') return fmt === 'csv' ? generateProviderUniverseCsv() : generateProviderUniverseJson()
+  if (id === 'provider-finance-coverage') return fmt === 'csv' ? generateProviderFinanceCoverageCsv() : generateProviderFinanceCoverageJson()
+  if (id === 'provider-source-coverage') return fmt === 'csv' ? generateProviderSourceCoverageCsv() : generateProviderSourceCoverageJson()
+  if (id === 'national-student-finance') return fmt === 'csv' ? generateNationalStudentFinanceCsv() : generateNationalStudentFinanceJson()
   if (id === 'institutions') return fmt === 'csv' ? generateInstitutionsCsv() : generateInstitutionsJson()
   if (id === 'all-financials') return fmt === 'csv' ? generateAllFinancialsCsv() : generateAllFinancialsJson()
   if (id === 'latest-snapshot') return fmt === 'csv' ? generateLatestSnapshotCsv() : generateLatestSnapshotJson()

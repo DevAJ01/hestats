@@ -4,6 +4,10 @@ import { institutions } from '../data/institutions'
 import { financials, getAllLatestFinancials, AVAILABLE_YEARS } from '../data/financials'
 import { STUDENT_YEARS, studentEnrolments } from '../data/students'
 import { INTELLIGENCE_RECORDS } from '../data/intelligence'
+import { nationalStudentFinanceRecords } from '../data/nationalStudentFinance'
+import { providerFinanceCoverage } from '../data/providerFinanceCoverage'
+import { providerSourceCoverage } from '../data/providerSourceCoverage'
+import { providerUniverse } from '../data/providers'
 import { computeHealthScore } from '../data/health'
 import { Panel } from '../components/layout/Panel'
 import { getDataset, type Format } from '../data/openDataExports'
@@ -13,6 +17,28 @@ const VERSION = 'verified-2026.1'
 const CITATION_YEAR = '2026'
 
 const DATASETS = [
+  {
+    id: 'provider-universe',
+    name: 'HESA Provider Universe',
+    description: 'All 304 HESA 2024-25 student-reporting provider rows. Named providers use matched UKPRN metadata; unreconciled HESA slots remain pending with null identifiers.',
+    rows: providerUniverse.length,
+    columns: 20,
+    years: '2024-25',
+    formats: ['csv', 'json'],
+    size: '~85 KB',
+    tier: 'core',
+  },
+  {
+    id: 'provider-finance-coverage',
+    name: 'Provider Finance Coverage',
+    description: 'Provider-year finance coverage matrix for all 304 providers across 2015-16 to 2024-25. Pending rows keep null values and source notes.',
+    rows: providerFinanceCoverage.length,
+    columns: 16,
+    years: `${AVAILABLE_YEARS[AVAILABLE_YEARS.length - 1]}–${AVAILABLE_YEARS[0]}`,
+    formats: ['csv', 'json'],
+    size: '~1.1 MB',
+    tier: 'core',
+  },
   {
     id: 'all-financials',
     name: 'Full Financial Dataset',
@@ -36,6 +62,17 @@ const DATASETS = [
     tier: 'core',
   },
   {
+    id: 'national-student-finance',
+    name: 'National Student Finance',
+    description: 'Source-backed SLC England 2025 and DfE 2024-25 student-loan forecast metrics. Forecast rows are labelled and excluded from official aggregates.',
+    rows: nationalStudentFinanceRecords.length,
+    columns: 19,
+    years: '2024-25 / 2025-26 / 2029-30',
+    formats: ['csv', 'json'],
+    size: '~28 KB',
+    tier: 'core',
+  },
+  {
     id: 'student-enrolments',
     name: 'Student Enrolment Coverage',
     description: 'HESA Student Statistics provider-level enrolment coverage. Pending rows remain blank until Figure 7 source rows are ingested.',
@@ -45,6 +82,17 @@ const DATASETS = [
     formats: ['csv', 'json'],
     size: '~30 KB',
     tier: 'core',
+  },
+  {
+    id: 'provider-source-coverage',
+    name: 'Provider Source Coverage',
+    description: 'Provider-domain coverage matrix for students, outcomes, staff and estates. The dataset makes missing provider-level source rows explicit.',
+    rows: providerSourceCoverage.length,
+    columns: 15,
+    years: 'Latest available',
+    formats: ['csv', 'json'],
+    size: '~420 KB',
+    tier: 'reference',
   },
   {
     id: 'institutions',
@@ -175,7 +223,7 @@ export function OpenDataPage() {
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          <span className="font-num" style={{ color: 'var(--text)' }}>{(financials.length + studentEnrolments.length).toLocaleString()}</span> records
+          <span className="font-num" style={{ color: 'var(--text)' }}>{(financials.length + studentEnrolments.length + providerUniverse.length + providerFinanceCoverage.length + providerSourceCoverage.length + nationalStudentFinanceRecords.length).toLocaleString()}</span> records
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
@@ -207,9 +255,9 @@ export function OpenDataPage() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-shrink-0">
             {[
-              { label: 'Institutions', value: institutions.length },
+              { label: 'Providers', value: providerUniverse.length },
               { label: 'Financial years', value: AVAILABLE_YEARS.length },
-              { label: 'Total records', value: (financials.length + studentEnrolments.length).toLocaleString() },
+              { label: 'Total records', value: (financials.length + studentEnrolments.length + providerUniverse.length + providerFinanceCoverage.length + providerSourceCoverage.length + nationalStudentFinanceRecords.length).toLocaleString() },
               { label: 'Data version', value: VERSION },
             ].map(({ label, value }) => (
               <div key={label} className="text-center px-3 py-2" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 3, border: '1px solid var(--border)' }}>
@@ -473,7 +521,11 @@ export function OpenDataPage() {
             </p>
             <div className="space-y-2">
               {[
-                { method: 'GET', path: '/api/v1/institutions', desc: 'List all institutions' },
+                { method: 'GET', path: '/api/v1/providers?finance_coverage=pending&fiscal_year=2024-25', desc: 'Full HESA provider universe and coverage filters' },
+                { method: 'GET', path: '/api/v1/provider-finance-coverage?fiscal_year=2024-25', desc: 'Provider finance coverage matrix' },
+                { method: 'GET', path: '/api/v1/national-student-finance?category=maintenance-loans', desc: 'National student finance metrics' },
+                { method: 'GET', path: '/api/v1/provider-source-coverage?domain=staff', desc: 'Student/outcomes/staff/estates source coverage' },
+                { method: 'GET', path: '/api/v1/institutions', desc: 'List all profiled institutions' },
                 { method: 'GET', path: '/api/v1/institutions/{id}/financials', desc: 'Full financial history for one institution' },
                 { method: 'GET', path: '/api/v1/rankings?metric=revenue&fiscal_year=2024-25', desc: 'All institutions ranked for a given year' },
                 { method: 'GET', path: '/api/v1/health-scores', desc: 'Financial health scores (latest year)' },
