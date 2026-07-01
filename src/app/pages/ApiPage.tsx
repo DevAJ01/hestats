@@ -82,14 +82,14 @@ const ENDPOINTS: EndpointDef[] = [
   {
     group: 'Providers',
     method: 'GET', path: '/providers',
-    summary: 'HESA provider universe',
-    description: 'All 304 HESA 2024-25 student-reporting provider rows, including full HEStats profiles, coverage-only providers, and unreconciled pending provider slots.',
+    summary: 'Unified HESA provider directory',
+    description: 'All 304 HESA 2024-25 student-reporting providers represented as platform institution rows, with UKPRNs and nullable coverage metadata.',
     params: [
       { name: 'q', in: 'query', type: 'string', required: false, description: 'Search provider name, provider id or UKPRN', example: 'nottingham' },
       { name: 'fiscal_year', in: 'query', type: 'string', required: false, description: 'Year used when applying finance_coverage', example: '2024-25' },
       { name: 'provider_type', in: 'query', type: 'string', required: false, description: 'Filter by provider type', example: 'university' },
       { name: 'regulator', in: 'query', type: 'string', required: false, description: 'Filter by regulator: OfS, SFC, Medr, DfENI or Unknown', example: 'OfS' },
-      { name: 'source_status', in: 'query', type: 'string', required: false, description: 'Filter by verified, matched or pending', example: 'pending' },
+      { name: 'source_status', in: 'query', type: 'string', required: false, description: 'Filter by provider source status', example: 'verified' },
       { name: 'finance_coverage', in: 'query', type: 'string', required: false, description: 'Filter by verified or pending finance coverage for fiscal_year', example: 'pending' },
       { name: 'limit', in: 'query', type: 'integer', required: false, description: 'Results per page (1-304, default 50)', example: '25' },
     ],
@@ -660,7 +660,7 @@ const SCHEMAS: { name: string; description: string; fields: { name: string; type
       { name: 'short_name', type: 'string', description: 'Abbreviated name used in displays' },
       { name: 'nation', type: '"England"|"Scotland"|"Wales"|"Northern Ireland"', description: 'UK nation of registration' },
       { name: 'city', type: 'string', description: 'Primary city of operation' },
-      { name: 'founded', type: 'integer', description: 'Year of founding' },
+      { name: 'founded', type: 'integer|null', description: 'Year of founding when verified' },
       { name: 'mission_group', type: 'string', nullable: true, description: 'Mission group membership (e.g. Russell Group)' },
       { name: 'official_website', type: 'string', nullable: true, description: 'Primary domain without protocol' },
     ],
@@ -776,7 +776,7 @@ function SchemaBlock({ s }: { s: typeof SCHEMAS[0] }) {
 // ─── Changelog ────────────────────────────────────────────────────────────────
 
 const CHANGELOG = [
-  { version: 'verified-2026.3', date: 'Jul 2026', tag: 'New', color: 'var(--positive)', changes: ['Added /providers for the 304-row HESA provider universe', 'Added provider finance and source coverage endpoints', 'Added /national-student-finance with SLC and DfE source-backed records'] },
+  { version: 'verified-2026.3', date: 'Jul 2026', tag: 'New', color: 'var(--positive)', changes: ['Unified /providers and /institutions around the 304-row HESA provider directory', 'Added provider finance and source coverage endpoints', 'Added /national-student-finance with SLC and DfE source-backed records'] },
   { version: 'verified-2026.2', date: 'Jul 2026', tag: 'New', color: 'var(--positive)', changes: ['Added /intelligence endpoint with official and external-analysis records', 'Open-data exports now include source-backed intelligence metadata', 'External AI-risk analysis is labelled separately and excluded from official aggregates'] },
   { version: 'verified-2026.1', date: 'Jun 2026', tag: 'New', color: 'var(--positive)', changes: ['Bundled read-only API simulator aligned with the React runtime', 'Added /compare endpoint supporting up to 6 institutions', 'Health score components included in /institutions/{id}/health', 'Export examples no longer require authentication headers'] },
   { version: 'verified-2025.2', date: 'Mar 2026', tag: 'Update', color: 'var(--link)', changes: ['Added /years endpoint listing available fiscal years', 'Added /metrics catalogue endpoint', 'Pagination offset/limit added to /institutions and /health-scores', 'source_pdf field exposed where a source document is known'] },

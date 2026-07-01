@@ -1,5 +1,7 @@
-// Approximate geographic coordinates (lat, lng) for each institution
-// Used for the interactive UK map visualization
+import type { Institution } from './types'
+
+// Approximate institution or provider-region coordinates (lat, lng)
+// Used for the interactive UK map visualization.
 export const INSTITUTION_COORDS: Record<string, [number, number]> = {
   oxford: [51.755, -1.255],
   cambridge: [52.204, 0.121],
@@ -139,6 +141,35 @@ export const INSTITUTION_COORDS: Record<string, [number, number]> = {
   ulster: [55.146, -6.672],
   stmarysbel: [54.588, -5.940],
   stranmillis: [54.575, -5.924],
+}
+
+export const REGION_COORDS: Record<string, [number, number]> = {
+  London: [51.507, -0.128],
+  'South East': [51.278, -0.753],
+  'South West': [51.006, -3.188],
+  'East of England': [52.241, 0.412],
+  'East Midlands': [52.954, -1.158],
+  'West Midlands': [52.486, -1.890],
+  'Yorkshire and The Humber': [53.800, -1.549],
+  'North East': [54.978, -1.617],
+  'North West': [53.480, -2.242],
+  England: [52.355, -1.174],
+  Scotland: [56.490, -4.202],
+  Wales: [52.130, -3.783],
+  'Northern Ireland': [54.787, -6.492],
+}
+
+export type CoordinatePrecision = 'institution' | 'region' | 'nation' | 'missing'
+
+export function getCoordinatePrecision(institution: Institution): CoordinatePrecision {
+  if (INSTITUTION_COORDS[institution.id]) return 'institution'
+  if (REGION_COORDS[institution.city]) return 'region'
+  if (REGION_COORDS[institution.nation]) return 'nation'
+  return 'missing'
+}
+
+export function getInstitutionCoordinates(institution: Institution): [number, number] | null {
+  return INSTITUTION_COORDS[institution.id] ?? REGION_COORDS[institution.city] ?? REGION_COORDS[institution.nation] ?? null
 }
 
 // UK bounding box for SVG projection

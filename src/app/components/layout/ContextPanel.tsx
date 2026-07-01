@@ -59,7 +59,7 @@ export function ContextPanel() {
                     <RiskBadge risk={fin.risk_flag} size="sm" />
                   </div>
                   <p style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600, lineHeight: 1.2 }}>{inst.canonical_name}</p>
-                  <p style={{ color: 'var(--muted)', fontSize: 11 }}>{inst.city} · Est. {inst.founded} · UKPRN {inst.ukprn ?? 'pending'}</p>
+                  <p style={{ color: 'var(--muted)', fontSize: 11 }}>{inst.city} · {inst.founded > 0 ? `Est. ${inst.founded}` : 'Founded pending'} · UKPRN {inst.ukprn ?? 'pending'}</p>
                 </div>
                 <button onClick={closePanel} className="w-8 h-8 flex items-center justify-center flex-shrink-0" style={{ color: 'var(--text-2)' }} aria-label="Close panel">
                   <X className="w-4 h-4" />

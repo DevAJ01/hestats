@@ -4,7 +4,7 @@ import { Map as MapIcon, TrendingUp } from 'lucide-react'
 import { institutions } from '../data/institutions'
 import { compareNullableDesc, formatCurrencyM, formatDays, formatPct, getAllLatestFinancials, isKnownNumber } from '../data/financials'
 import { computeHealthScore, getGradeColor } from '../data/health'
-import { INSTITUTION_COORDS, projectToSvg } from '../data/coordinates'
+import { getCoordinatePrecision, getInstitutionCoordinates, projectToSvg } from '../data/coordinates'
 import { formatStudentCount, getLatestStudentEnrolment } from '../data/students'
 import { UK_OUTLINE_PATH, UK_OUTLINE_SOURCE } from '../data/ukOutline'
 import { providerUniverse } from '../data/providers'
@@ -48,22 +48,25 @@ export function MapPage() {
   const latestFins = getAllLatestFinancials()
   // Use a plain object to avoid any Map constructor collision with lucide Map icon
   const finLookup = Object.fromEntries(latestFins.map((f) => [f.institution_id, f]))
-  const plotEligibleProviders = institutions.filter((inst) => INSTITUTION_COORDS[inst.id] && finLookup[inst.id]).length
+  const plotEligibleProviders = institutions.filter((inst) => getInstitutionCoordinates(inst) && finLookup[inst.id]).length
+  const exactCoordinateCount = institutions.filter((inst) => getCoordinatePrecision(inst) === 'institution').length
+  const regionalCoordinateCount = institutions.filter((inst) => getCoordinatePrecision(inst) === 'region').length
 
   const bubbles = useMemo(() => {
     return institutions
       .map((inst) => {
-        const coords = INSTITUTION_COORDS[inst.id]
+        const coords = getInstitutionCoordinates(inst)
         const fin = finLookup[inst.id]
         if (!coords || !fin) return null
         const [x, y] = projectToSvg(coords[0], coords[1], SVG_W, SVG_H)
         const student = getLatestStudentEnrolment(inst.id)
+        const precision = getCoordinatePrecision(inst)
         const rawSize =
           bubbleSize === 'revenue' ? fin.revenue_gbp_m :
           bubbleSize === 'research' ? fin.research_income_gbp_m :
           bubbleSize === 'cash' ? fin.cash_gbp_m :
           fin.borrowing_gbp_m
-        return { inst, fin, student, x, y, rawSize, metricKnown: isKnownNumber(rawSize), color: getBubbleColor(bubbleColor, fin, inst) }
+        return { inst, fin, student, x, y, precision, rawSize, metricKnown: isKnownNumber(rawSize), color: getBubbleColor(bubbleColor, fin, inst) }
       })
       .filter((b): b is NonNullable<typeof b> => b !== null)
       .filter((b) => nationFilter === 'All' || b.inst.nation === nationFilter)
@@ -95,7 +98,11 @@ export function MapPage() {
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          <span className="font-num" style={{ color: 'var(--text)' }}>{(providerUniverse.length - plotEligibleProviders).toLocaleString()}</span> HESA provider records not geocoded
+          <span className="font-num" style={{ color: 'var(--text)' }}>{(providerUniverse.length - plotEligibleProviders).toLocaleString()}</span> providers not plotted
+        </span>
+        <span style={{ color: 'var(--border-strong)' }}>│</span>
+        <span style={{ color: 'var(--text-2)' }}>
+          {exactCoordinateCount} exact / {regionalCoordinateCount} region-level coordinates
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>Bubble size = {bubbleSize} · Colour = {bubbleColor}</span>
@@ -294,7 +301,9 @@ export function MapPage() {
                     <RiskBadge risk={displayInst.fin.risk_flag} size="sm" />
                   </div>
                   <p style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}>{displayInst.inst.canonical_name}</p>
-                  <p style={{ color: 'var(--muted)', fontSize: 11 }}>{displayInst.inst.city} · Est. {displayInst.inst.founded} · UKPRN {displayInst.inst.ukprn ?? 'pending'}</p>
+                  <p style={{ color: 'var(--muted)', fontSize: 11 }}>
+                    {displayInst.inst.city} · {displayInst.inst.founded > 0 ? `Est. ${displayInst.inst.founded}` : 'Founded pending'} · UKPRN {displayInst.inst.ukprn ?? 'pending'} · {displayInst.precision === 'institution' ? 'Exact map point' : 'Region map point'}
+                  </p>
                 </div>
                 <Link
                   to={`/universities/${displayInst.inst.id}`}

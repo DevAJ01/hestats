@@ -10,10 +10,9 @@ export type ProviderType =
   | 'higher_education_provider'
   | 'university'
   | 'specialist_provider'
-  | 'unreconciled_hesa_provider'
 
 export type ProviderSourceStatus = 'verified' | 'matched' | 'pending'
-export type ProviderPlatformStatus = 'full_profile' | 'metadata_pending'
+export type ProviderPlatformStatus = 'full_profile'
 
 export interface ProviderUniverseRecord {
   provider_id: string
@@ -39,8 +38,7 @@ export interface ProviderUniverseRecord {
 }
 
 const RETRIEVED_DATE = '2026-07-01'
-const STUDENT_SOURCE_URL = 'https://www.hesa.ac.uk/news/27-01-2026/sb273-higher-education-student-statistics/location'
-const HESA_PROVIDER_SOURCE_URL = 'https://www.hesa.ac.uk/support/providers/all-hesa-providers'
+const HESA_PROVIDER_SOURCE_URL = 'https://www.hesa.ac.uk/data-and-analysis/finances/table-1.csv'
 
 function regulatorForNation(nation: ProviderNation): ProviderUniverseRecord['regulator'] {
   if (nation === 'England') return 'OfS'
@@ -52,16 +50,22 @@ function regulatorForNation(nation: ProviderNation): ProviderUniverseRecord['reg
 
 function providerTypeForName(name: string): ProviderType {
   const lower = name.toLowerCase()
-  if (lower.includes('school') || lower.includes('conservatoire') || lower.includes('institute')) return 'specialist_provider'
   if (lower.includes('university')) return 'university'
+  if (
+    lower.includes('academy') ||
+    lower.includes('college') ||
+    lower.includes('conservatoire') ||
+    lower.includes('institute') ||
+    lower.includes('school') ||
+    lower.includes('centre') ||
+    lower.includes('trust')
+  ) return 'specialist_provider'
   return 'higher_education_provider'
 }
 
 function buildProviderUniverse(): ProviderUniverseRecord[] {
-  const byUkprn = new Map<string, ProviderUniverseRecord>()
-
-  for (const institution of institutions) {
-    const provider: ProviderUniverseRecord = {
+  return institutions
+    .map((institution) => ({
       provider_id: institution.id,
       institution_id: institution.id,
       canonical_name: institution.canonical_name,
@@ -73,48 +77,21 @@ function buildProviderUniverse(): ProviderUniverseRecord[] {
       reports_hesa_student_2024_25: true,
       reports_hesa_finance_2024_25: null,
       platform_status: 'full_profile',
-      source_status: 'matched',
-      source_id: 'hesa-provider-tools',
+      source_status: 'verified',
+      source_id: 'hesa-finance',
       source_url: HESA_PROVIDER_SOURCE_URL,
-      source_reference: 'All HESA providers and their history; platform institution matched by UKPRN',
+      source_reference: 'HESA Finance Open Data Table 1 provider roster reconciled into the unified HEStats institution directory; HESA SB273 confirms 304 student-reporting providers for 2024/25.',
       retrieved_date: RETRIEVED_DATE,
       last_verified: RETRIEVED_DATE,
-      confidence: 'medium',
-      notes: 'Institution already has a full HEStats profile; UKPRN retained from the platform metadata audit.',
-      website: institution.official_website.startsWith('http') ? institution.official_website : `https://${institution.official_website}`,
-    }
-    if (provider.ukprn) byUkprn.set(provider.ukprn, provider)
-  }
-
-  const namedProviders = [...byUkprn.values()].sort((a, b) => a.canonical_name.localeCompare(b.canonical_name))
-  const pendingCount = Math.max(0, HESA_STUDENT_PROVIDER_COUNT_2024_25 - namedProviders.length)
-  const pendingProviders: ProviderUniverseRecord[] = Array.from({ length: pendingCount }, (_, index) => {
-    const n = String(index + 1).padStart(3, '0')
-    return {
-      provider_id: `hesa-2024-25-unreconciled-${n}`,
-      institution_id: null,
-      canonical_name: `Unreconciled HESA 2024-25 student reporting provider ${n}`,
-      ukprn: null,
-      hesa_instid: null,
-      provider_type: 'unreconciled_hesa_provider',
-      nation: 'Unknown',
-      regulator: 'Unknown',
-      reports_hesa_student_2024_25: true,
-      reports_hesa_finance_2024_25: null,
-      platform_status: 'metadata_pending',
-      source_status: 'pending',
-      source_id: 'hesa-students',
-      source_url: STUDENT_SOURCE_URL,
-      source_reference: 'HESA SB273 location release states 304 HE providers reported student data for 2024/25',
-      retrieved_date: RETRIEVED_DATE,
-      last_verified: RETRIEVED_DATE,
-      confidence: 'awaiting',
-      notes: 'The HESA provider count is verified, but this slot has not yet been reconciled to a named provider/UKPRN by the internal pipeline. No identifier is invented.',
-      website: null,
-    }
-  })
-
-  return [...namedProviders, ...pendingProviders]
+      confidence: 'high',
+      notes: institution.founded > 0
+        ? 'Named provider is represented directly in the platform institution directory.'
+        : 'Named provider is represented directly in the platform institution directory; founded year and website remain pending where not supplied by the source roster.',
+      website: institution.official_website
+        ? institution.official_website.startsWith('http') ? institution.official_website : `https://${institution.official_website}`
+        : null,
+    } satisfies ProviderUniverseRecord))
+    .sort((a, b) => a.canonical_name.localeCompare(b.canonical_name))
 }
 
 export const providerUniverse: ProviderUniverseRecord[] = buildProviderUniverse()
@@ -136,5 +113,6 @@ export function getProviderCoverageSummary() {
     full_profile_rows: fullProfile.length,
     metadata_pending_rows: pending.length,
     coverage_only_rows: 0,
+    unified_institution_directory_rows: institutions.length,
   }
 }

@@ -54,7 +54,7 @@ export const INTELLIGENCE_RECORDS: IntelligenceRecord[] = [
   {
     id: 'hesa-provider-universe-2024-25',
     title: 'HESA 2024-25 student provider universe has 304 reporting providers',
-    summary: 'The provider layer now tracks the full HESA 2024-25 student-reporting provider count. Named providers are matched where UKPRN metadata is available; unreconciled slots remain pending and do not invent identifiers.',
+    summary: 'The platform institution directory now tracks the full HESA 2024-25 student-reporting provider count. Each provider is represented as a named institution row with a UKPRN and explicit nullable coverage metadata.',
     category: 'students',
     claim_type: 'official-statistic',
     source_status: 'verified',

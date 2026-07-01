@@ -187,7 +187,7 @@ describe('open data exports', () => {
 
     expect(payload.data).toHaveLength(304)
     expect(payload.meta.coverage.provider_universe_rows).toBe(304)
-    expect(payload.meta.coverage.metadata_pending_rows).toBeGreaterThan(0)
+    expect(payload.meta.coverage.metadata_pending_rows).toBe(0)
   })
 
   it('reports provider finance coverage and national student finance through the API simulator', async () => {

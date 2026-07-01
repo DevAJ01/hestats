@@ -11,7 +11,7 @@ import {
 import { institutions } from '../data/institutions'
 import { compareNullableDesc, formatCurrencyM, formatDays, formatPct, getAllLatestFinancials, isKnownNumber } from '../data/financials'
 import { computeHealthScore, getGradeColor } from '../data/health'
-import { INSTITUTION_COORDS, projectToSvg } from '../data/coordinates'
+import { getCoordinatePrecision, getInstitutionCoordinates, projectToSvg } from '../data/coordinates'
 import { UK_OUTLINE_PATH, UK_OUTLINE_SOURCE } from '../data/ukOutline'
 import { providerUniverse } from '../data/providers'
 import { Institution } from '../data/types'
@@ -51,10 +51,13 @@ export function ExplorerPage() {
   const [hovered, setHovered] = useState<string | null>(null)
 
   const finMap = useMemo(() => Object.fromEntries(getAllLatestFinancials().map((f) => [f.institution_id, f])), [])
-  const geocodedProfiledProviders = useMemo(() =>
-    institutions.filter((inst) => INSTITUTION_COORDS[inst.id] && finMap[inst.id]).length,
+  const plottedProviders = useMemo(() =>
+    institutions.filter((inst) => getInstitutionCoordinates(inst) && finMap[inst.id]).length,
   [finMap])
-  const unplottedProviderRows = Math.max(0, providerUniverse.length - geocodedProfiledProviders)
+  const regionCoordinateRows = useMemo(() =>
+    institutions.filter((inst) => getCoordinatePrecision(inst) === 'region').length,
+  [])
+  const unplottedProviderRows = Math.max(0, providerUniverse.length - plottedProviders)
 
   // Persist all filter state to the URL (replace, so back button isn't polluted).
   useEffect(() => {
@@ -99,11 +102,12 @@ export function ExplorerPage() {
   const bubbles = useMemo(() => {
     return filtered
       .map((inst) => {
-        const coords = INSTITUTION_COORDS[inst.id]
+        const coords = getInstitutionCoordinates(inst)
         const fin = finMap[inst.id]
         if (!coords || !fin) return null
         const [x, y] = projectToSvg(coords[0], coords[1], SVG_W, SVG_H)
-        return { inst, fin, x, y }
+        const precision = getCoordinatePrecision(inst)
+        return { inst, fin, x, y, precision }
       })
       .filter((b): b is NonNullable<typeof b> => b !== null)
   }, [filtered, finMap])
@@ -130,10 +134,10 @@ export function ExplorerPage() {
         <span style={{ color: 'var(--muted)', letterSpacing: '0.06em' }}>EXPLORER</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          <span className="font-num" style={{ color: 'var(--text)' }}>{filtered.length}</span> / {institutions.length} profiled universities
+          <span className="font-num" style={{ color: 'var(--text)' }}>{filtered.length}</span> / {institutions.length} institutions & providers
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
-        <span style={{ color: 'var(--text-2)' }}>{providerUniverse.length} HESA provider records · {unplottedProviderRows} not geocoded</span>
+        <span style={{ color: 'var(--text-2)' }}>{providerUniverse.length} HESA provider records · {unplottedProviderRows} not plotted · {regionCoordinateRows} region-level map points</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>One source-backed workspace · {VIEWS.length} synchronised views</span>
       </div>
@@ -274,7 +278,7 @@ export function ExplorerPage() {
                 Boundary: {UK_OUTLINE_SOURCE.publisher} · {UK_OUTLINE_SOURCE.source_reference}
               </span>
               <span style={{ color: 'var(--muted)', fontSize: 10 }}>
-                Plotted: {bubbles.length} geocoded profiles · {unplottedProviderRows} HESA provider records not geocoded
+                Plotted: {bubbles.length} providers · {regionCoordinateRows} region-level map points · {unplottedProviderRows} not plotted
               </span>
               <a href={UK_OUTLINE_SOURCE.source_url} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--link)', fontSize: 10 }}>
                 Source
@@ -287,7 +291,7 @@ export function ExplorerPage() {
             </p>
             {(() => {
               const b = bubbles.find((x) => x.inst.id === hovered)
-              if (!b) return <p style={{ color: 'var(--muted)', fontSize: 12 }}>Bubble size = total income · colour = financial health. Provider records without verified coordinates remain in coverage tables and exports, not on the map.</p>
+              if (!b) return <p style={{ color: 'var(--muted)', fontSize: 12 }}>Bubble size = total income · colour = financial health. Region-level points are used only where HESA supplies region rather than exact campus coordinates.</p>
               return (
                 <div>
                   <p style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}>{b.inst.canonical_name}</p>

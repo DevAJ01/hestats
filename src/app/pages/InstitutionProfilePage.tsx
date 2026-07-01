@@ -236,7 +236,7 @@ export function InstitutionProfilePage() {
               <span>·</span>
               <span>{institution.city}</span>
               <span>·</span>
-              <span>Est. {institution.founded}</span>
+              <span>{institution.founded > 0 ? `Est. ${institution.founded}` : 'Founded pending'}</span>
               {institution.mission_group && (
                 <>
                   <span>·</span>

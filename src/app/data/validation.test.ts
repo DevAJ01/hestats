@@ -55,13 +55,14 @@ describe('HEStats data validation', () => {
   })
 
   it('keeps a 304-row HESA provider universe without inventing pending identifiers', () => {
+    expect(institutions).toHaveLength(HESA_STUDENT_PROVIDER_COUNT_2024_25)
     expect(providerUniverse).toHaveLength(HESA_STUDENT_PROVIDER_COUNT_2024_25)
     expect(blockingIssues(validateProviderUniverse())).toEqual([])
     expect(providerUniverse.filter((row) => row.platform_status === 'full_profile')).toHaveLength(institutions.length)
 
     const pendingRows = providerUniverse.filter((row) => row.source_status === 'pending')
-    expect(pendingRows.length).toBeGreaterThan(0)
-    expect(pendingRows.every((row) => row.ukprn === null && row.hesa_instid === null)).toBe(true)
+    expect(pendingRows).toHaveLength(0)
+    expect(providerUniverse.every((row) => row.institution_id !== null && row.ukprn !== null)).toBe(true)
   })
 
   it('keeps provider finance coverage at 304 providers across the decade panel', () => {

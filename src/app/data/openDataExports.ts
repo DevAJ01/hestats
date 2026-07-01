@@ -22,7 +22,7 @@ function csvNullable(value: number | null) {
 export function generateInstitutionsCsv() {
   const header = 'id,ukprn,canonical_name,short_name,city,nation,founded,mission_group,official_website'
   const rows = institutions.map((i) =>
-    [i.id, i.ukprn ?? '', `"${i.canonical_name}"`, `"${i.short_name}"`, `"${i.city}"`, i.nation, i.founded, `"${i.mission_group ?? ''}"`, `"${i.official_website ?? ''}"`].join(','),
+    [i.id, i.ukprn ?? '', `"${i.canonical_name}"`, `"${i.short_name}"`, `"${i.city}"`, i.nation, i.founded > 0 ? i.founded : '', `"${i.mission_group ?? ''}"`, `"${i.official_website ?? ''}"`].join(','),
   )
   return [header, ...rows].join('\n')
 }
@@ -35,7 +35,7 @@ export function generateInstitutionsJson() {
     short_name: i.short_name,
     city: i.city,
     nation: i.nation,
-    founded: i.founded,
+    founded: i.founded > 0 ? i.founded : null,
     mission_group: i.mission_group ?? null,
     official_website: i.official_website ?? null,
   })), null, 2)

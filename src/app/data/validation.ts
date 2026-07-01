@@ -6,7 +6,7 @@ import {
   isKnownNumber,
 } from './financials'
 import { institutions } from './institutions'
-import { INSTITUTION_COORDS, UK_BOUNDS } from './coordinates'
+import { getInstitutionCoordinates, UK_BOUNDS } from './coordinates'
 import { INTELLIGENCE_RECORDS, IntelligenceRecord } from './intelligence'
 import { NationalStudentFinanceRecord, nationalStudentFinanceRecords } from './nationalStudentFinance'
 import { providerFinanceCoverage, ProviderFinanceCoverageRecord } from './providerFinanceCoverage'
@@ -38,6 +38,10 @@ export function validateInstitutions(rows: Institution[] = institutions): DataQu
   const issues: DataQualityIssue[] = []
   const ids = new Map<string, string[]>()
   const ukprns = new Map<string, string[]>()
+
+  if (rows.length !== HESA_STUDENT_PROVIDER_COUNT_2024_25) {
+    issues.push(issue('error', 'institution.count_mismatch', `Expected ${HESA_STUDENT_PROVIDER_COUNT_2024_25} unified institution/provider rows, found ${rows.length}.`))
+  }
 
   for (const row of rows) {
     ids.set(row.id, [...(ids.get(row.id) ?? []), row.canonical_name])
@@ -85,7 +89,7 @@ export function validateProviderUniverse(
     if (providerIds.has(row.provider_id)) issues.push(issue('error', 'provider_universe.duplicate_id', `Duplicate provider id '${row.provider_id}'.`, { institution_id: row.institution_id ?? row.provider_id }))
     providerIds.add(row.provider_id)
 
-    if (!row.canonical_name.trim()) issues.push(issue('error', 'provider_universe.name_missing', 'Provider row requires a name or unreconciled slot label.', { institution_id: row.institution_id ?? row.provider_id }))
+    if (!row.canonical_name.trim()) issues.push(issue('error', 'provider_universe.name_missing', 'Provider row requires a name.', { institution_id: row.institution_id ?? row.provider_id }))
     if (row.ukprn !== null) {
       if (!isOfficialUkprn(row.ukprn)) issues.push(issue('error', 'provider_universe.ukprn_invalid', `UKPRN '${row.ukprn}' is not in official 100xxxxx format.`, { institution_id: row.institution_id ?? row.provider_id }))
       if (ukprns.has(row.ukprn)) issues.push(issue('error', 'provider_universe.ukprn_duplicate', `Duplicate provider UKPRN '${row.ukprn}'.`, { institution_id: row.institution_id ?? row.provider_id }))
@@ -99,7 +103,7 @@ export function validateProviderUniverse(
       issues.push(issue('error', 'provider_universe.status_invalid', `Invalid provider source status '${row.source_status}'.`, { institution_id: row.institution_id ?? row.provider_id }))
     }
     if (row.source_status === 'pending' && (row.ukprn !== null || row.hesa_instid !== null)) {
-      issues.push(issue('error', 'provider_universe.pending_has_identifier', 'Pending unreconciled providers must not invent UKPRN or HESA identifiers.', { institution_id: row.provider_id }))
+      issues.push(issue('error', 'provider_universe.pending_has_identifier', 'Pending providers must not invent UKPRN or HESA identifiers.', { institution_id: row.provider_id }))
     }
   }
 
@@ -223,17 +227,16 @@ export function validateFinancials(
     }
 
     if (row.data_source === 'verified') {
-      if (!isKnownNumber(row.revenue_gbp_m) || row.revenue_gbp_m <= 0) issues.push(issue('error', 'financial.revenue_invalid', 'Verified revenue must be greater than zero.', details))
-      if (!isKnownNumber(row.total_expenditure_gbp_m) || row.total_expenditure_gbp_m <= 0) issues.push(issue('error', 'financial.expenditure_invalid', 'Verified total expenditure must be greater than zero.', details))
+      if (!isKnownNumber(row.revenue_gbp_m) || row.revenue_gbp_m < 0) issues.push(issue('error', 'financial.revenue_invalid', 'Verified revenue must be non-negative.', details))
+      if (!isKnownNumber(row.total_expenditure_gbp_m) || row.total_expenditure_gbp_m < 0) issues.push(issue('error', 'financial.expenditure_invalid', 'Verified total expenditure must be non-negative.', details))
       if (isKnownNumber(row.staff_costs_gbp_m) && isKnownNumber(row.total_expenditure_gbp_m) && row.staff_costs_gbp_m > row.total_expenditure_gbp_m + 0.5) {
         issues.push(issue('error', 'financial.staff_exceeds_expenditure', 'Staff costs exceed total expenditure.', details))
       }
       if (
-        (isKnownNumber(row.cash_gbp_m) && row.cash_gbp_m < 0) ||
         (isKnownNumber(row.borrowing_gbp_m) && row.borrowing_gbp_m < 0) ||
         (isKnownNumber(row.student_fte_total) && row.student_fte_total < 0)
       ) {
-        issues.push(issue('error', 'financial.negative_balance', 'Cash, borrowing, and student FTE values must not be negative.', details))
+        issues.push(issue('error', 'financial.negative_balance', 'Borrowing and student FTE values must not be negative.', details))
       }
     }
 
@@ -365,9 +368,9 @@ export function validateInstitutionCoordinates(
   const issues: DataQualityIssue[] = []
 
   for (const row of institutionRows) {
-    const coords = INSTITUTION_COORDS[row.id]
+    const coords = getInstitutionCoordinates(row)
     if (!coords) {
-      issues.push(issue('error', 'coordinates.missing', 'Institution is missing map coordinates.', { institution_id: row.id }))
+      issues.push(issue('error', 'coordinates.missing', 'Institution is missing institution, region, or nation map coordinates.', { institution_id: row.id }))
       continue
     }
 

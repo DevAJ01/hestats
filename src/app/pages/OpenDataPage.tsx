@@ -19,8 +19,8 @@ const CITATION_YEAR = '2026'
 const DATASETS = [
   {
     id: 'provider-universe',
-    name: 'HESA Provider Universe',
-    description: 'All 304 HESA 2024-25 student-reporting provider rows. Named providers use matched UKPRN metadata; unreconciled HESA slots remain pending with null identifiers.',
+    name: 'Unified HESA Provider Directory',
+    description: 'All 304 HESA 2024-25 student-reporting providers represented as platform institution rows, with UKPRNs and nullable coverage metadata.',
     rows: providerUniverse.length,
     columns: 20,
     years: '2024-25',
@@ -521,11 +521,11 @@ export function OpenDataPage() {
             </p>
             <div className="space-y-2">
               {[
-                { method: 'GET', path: '/api/v1/providers?finance_coverage=pending&fiscal_year=2024-25', desc: 'Full HESA provider universe and coverage filters' },
+                { method: 'GET', path: '/api/v1/providers?finance_coverage=pending&fiscal_year=2024-25', desc: 'Unified HESA provider directory and coverage filters' },
                 { method: 'GET', path: '/api/v1/provider-finance-coverage?fiscal_year=2024-25', desc: 'Provider finance coverage matrix' },
                 { method: 'GET', path: '/api/v1/national-student-finance?category=maintenance-loans', desc: 'National student finance metrics' },
                 { method: 'GET', path: '/api/v1/provider-source-coverage?domain=staff', desc: 'Student/outcomes/staff/estates source coverage' },
-                { method: 'GET', path: '/api/v1/institutions', desc: 'List all profiled institutions' },
+                { method: 'GET', path: '/api/v1/institutions', desc: 'List all institutions and providers' },
                 { method: 'GET', path: '/api/v1/institutions/{id}/financials', desc: 'Full financial history for one institution' },
                 { method: 'GET', path: '/api/v1/rankings?metric=revenue&fiscal_year=2024-25', desc: 'All institutions ranked for a given year' },
                 { method: 'GET', path: '/api/v1/health-scores', desc: 'Financial health scores (latest year)' },

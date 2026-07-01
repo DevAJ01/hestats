@@ -283,7 +283,7 @@ function buildInst(i: ReturnType<typeof getInstitutionById>, withHealth = false)
     short_name: i.short_name,
     nation: i.nation,
     city: i.city,
-    founded: i.founded,
+    founded: i.founded > 0 ? i.founded : null,
     mission_group: i.mission_group ?? null,
     official_website: i.official_website ?? null,
   }

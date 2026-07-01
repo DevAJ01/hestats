@@ -60,6 +60,13 @@ export function InstitutionsPage() {
     }
     if (providerTypeFilter !== 'All') list = list.filter((i) => providerByInstitution.get(i.id)?.provider_type === providerTypeFilter)
     if (regulatorFilter !== 'All') list = list.filter((i) => providerByInstitution.get(i.id)?.regulator === regulatorFilter)
+    if (providerSourceFilter !== 'All') list = list.filter((i) => providerByInstitution.get(i.id)?.source_status === providerSourceFilter)
+    if (financeCoverageFilter !== 'All') {
+      list = list.filter((i) => {
+        const provider = providerByInstitution.get(i.id)
+        return provider && providerFinanceForYear.get(provider.provider_id)?.source_status === financeCoverageFilter
+      })
+    }
     if (riskFilter !== 'All') list = list.filter((i) => finMap.get(i.id)?.risk_flag === riskFilter)
     if (sourceFilter !== 'All') list = list.filter((i) => finMap.get(i.id)?.data_source === sourceFilter)
 
@@ -74,27 +81,7 @@ export function InstitutionsPage() {
       return 0
     })
     return list
-  }, [query, nation, missionGroup, providerTypeFilter, regulatorFilter, riskFilter, sourceFilter, sortBy, finMap, providerByInstitution])
-
-  const filteredProviders = useMemo(() => {
-    let list = [...providerUniverse]
-    if (query) {
-      const q = query.toLowerCase()
-      list = list.filter((provider) =>
-        provider.canonical_name.toLowerCase().includes(q) ||
-        provider.provider_id.toLowerCase().includes(q) ||
-        (provider.ukprn ?? '').includes(q),
-      )
-    }
-    if (nation !== 'All') list = list.filter((provider) => provider.nation === nation)
-    if (providerTypeFilter !== 'All') list = list.filter((provider) => provider.provider_type === providerTypeFilter)
-    if (regulatorFilter !== 'All') list = list.filter((provider) => provider.regulator === regulatorFilter)
-    if (providerSourceFilter !== 'All') list = list.filter((provider) => provider.source_status === providerSourceFilter)
-    if (financeCoverageFilter !== 'All') {
-      list = list.filter((provider) => providerFinanceForYear.get(provider.provider_id)?.source_status === financeCoverageFilter)
-    }
-    return list.sort((a, b) => a.canonical_name.localeCompare(b.canonical_name))
-  }, [query, nation, providerTypeFilter, regulatorFilter, providerSourceFilter, financeCoverageFilter, providerFinanceForYear])
+  }, [query, nation, missionGroup, providerTypeFilter, regulatorFilter, providerSourceFilter, financeCoverageFilter, riskFilter, sourceFilter, sortBy, finMap, providerByInstitution, providerFinanceForYear])
 
   const nations: Institution['nation'][] = ['England', 'Scotland', 'Wales', 'Northern Ireland']
   const providerTypes = [...new Set(providerUniverse.map((provider) => provider.provider_type))].sort()
@@ -113,11 +100,11 @@ export function InstitutionsPage() {
         <span style={{ color: 'var(--muted)', letterSpacing: '0.06em' }}>INSTITUTIONS DIRECTORY</span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          <span className="font-num" style={{ color: 'var(--text)' }}>{filtered.length}</span> / {institutions.length} profiled
+          <span className="font-num" style={{ color: 'var(--text)' }}>{filtered.length}</span> / {institutions.length} institutions & providers
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
-          <span className="font-num" style={{ color: 'var(--text)' }}>{filteredProviders.length}</span> / {providerUniverse.length} HESA providers
+          Unified HESA provider directory: <span className="font-num" style={{ color: 'var(--text)' }}>{providerUniverse.length}</span> rows
         </span>
         <span style={{ color: 'var(--border-strong)' }}>│</span>
         <span style={{ color: 'var(--text-2)' }}>
@@ -182,8 +169,6 @@ export function InstitutionsPage() {
         <select value={providerSourceFilter} onChange={(e) => setProviderSourceFilter(e.target.value)} style={SELECT_STYLE}>
           <option value="All">All Source Status</option>
           <option value="verified">Provider verified</option>
-          <option value="matched">Provider matched</option>
-          <option value="pending">Provider pending</option>
         </select>
         <select value={financeCoverageFilter} onChange={(e) => setFinanceCoverageFilter(e.target.value)} style={SELECT_STYLE}>
           <option value="All">All Coverage</option>
@@ -296,69 +281,6 @@ export function InstitutionsPage() {
         </div>
       )}
 
-      <div
-        className="mt-3 border"
-        style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}
-      >
-        <div
-          className="flex flex-wrap items-center gap-3 px-3 py-2"
-          style={{ borderBottom: '1px solid var(--border)' }}
-        >
-          <span style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>HESA Provider Universe</span>
-          <span style={{ color: 'var(--text-2)', fontSize: 11 }}>
-            {filteredProviders.length} providers shown for FY {fiscalYear}
-          </span>
-          <span style={{ color: 'var(--text-2)', fontSize: 11 }}>
-            pending identifiers are deliberately null until source reconciliation
-          </span>
-        </div>
-        <div className="overflow-x-auto" style={{ maxHeight: 360 }}>
-          <table className="w-full">
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, backgroundColor: 'var(--panel)' }}>
-                {['Provider', 'UKPRN', 'Type', 'Nation', 'Regulator', 'Platform', 'Source', 'Finance coverage'].map((h) => (
-                  <th
-                    key={h}
-                    className="px-3 py-2"
-                    style={{
-                      color: 'var(--muted)',
-                      fontSize: 9.5,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      fontWeight: 500,
-                      textAlign: h === 'Provider' ? 'left' : 'right',
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProviders.map((provider) => {
-                const coverage = providerFinanceForYear.get(provider.provider_id)
-                return (
-                  <tr key={provider.provider_id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td className="px-3 py-2" style={{ color: 'var(--text)', fontSize: 12, textAlign: 'left', minWidth: 280 }}>
-                      {provider.canonical_name}
-                      <div style={{ color: 'var(--muted)', fontSize: 10 }}>{provider.provider_id}</div>
-                    </td>
-                    <td className="px-3 py-2 font-num" style={{ color: 'var(--text-2)', fontSize: 11, textAlign: 'right' }}>{provider.ukprn ?? 'Pending'}</td>
-                    <td className="px-3 py-2" style={{ color: 'var(--text-2)', fontSize: 11, textAlign: 'right' }}>{provider.provider_type.replaceAll('_', ' ')}</td>
-                    <td className="px-3 py-2" style={{ color: 'var(--text-2)', fontSize: 11, textAlign: 'right' }}>{provider.nation}</td>
-                    <td className="px-3 py-2" style={{ color: 'var(--text-2)', fontSize: 11, textAlign: 'right' }}>{provider.regulator}</td>
-                    <td className="px-3 py-2" style={{ color: 'var(--text-2)', fontSize: 11, textAlign: 'right' }}>{provider.platform_status.replaceAll('_', ' ')}</td>
-                    <td className="px-3 py-2" style={{ color: provider.source_status === 'pending' ? 'var(--warning)' : 'var(--positive)', fontSize: 11, textAlign: 'right' }}>{provider.source_status}</td>
-                    <td className="px-3 py-2" style={{ color: coverage?.source_status === 'verified' ? 'var(--positive)' : 'var(--warning)', fontSize: 11, textAlign: 'right' }}>
-                      {coverage?.source_status ?? 'pending'}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   )
 }

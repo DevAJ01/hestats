@@ -1,63 +1,221 @@
+import { useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowUpRight, Building2 } from 'lucide-react'
+import { Building2, Search, ArrowUpRight, TrendingUp, Users, Briefcase, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
+import { EMPLOYERS, EMPLOYER_SECTORS, getEmployersBySector, type Employer } from '../data/employers'
 import { Panel } from '../components/layout/Panel'
-import { IntelligenceCardList } from '../components/intelligence/IntelligenceCardList'
-import { INTELLIGENCE_RECORDS } from '../data/intelligence'
 
-export function EmployersPage() {
-  const records = INTELLIGENCE_RECORDS
-    .filter((row) => ['labour-market', 'ai-exposure', 'policy'].includes(row.category))
-    .sort((a, b) => b.published_date.localeCompare(a.published_date))
-  const officialRecords = records.filter((row) => row.claim_type !== 'external-analysis')
-  const externalRecords = records.filter((row) => row.claim_type === 'external-analysis')
-  const metrics = records.flatMap((record) => record.metrics.map((metric) => ({ ...metric, record })))
+const SECTOR_COLORS: Record<string, string> = {
+  'Technology': 'var(--link)',
+  'Finance': 'var(--positive)',
+  'Consulting & Professional Services': 'var(--warning)',
+  'Healthcare': '#e879a0',
+  'Manufacturing & Aerospace': '#b18ab8',
+  'Defence & Aerospace': '#6fb5b5',
+  'Life Sciences': '#5fa97b',
+  'Manufacturing & Engineering': '#9b8ea8',
+  'Creative Industries & Media': '#f4a460',
+  'Government': 'var(--muted)',
+  'Manufacturing & Automotive': '#7aab8a',
+}
+
+function AIBadge({ pct }: { pct: number }) {
+  const color = pct >= 70 ? 'var(--negative)' : pct >= 50 ? 'var(--warning)' : 'var(--positive)'
+  const label = pct >= 70 ? 'High AI' : pct >= 50 ? 'Med AI' : 'Low AI'
+  return (
+    <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 2, backgroundColor: `${color}22`, color, fontWeight: 700, letterSpacing: '0.04em' }}>
+      {label} {pct}%
+    </span>
+  )
+}
+
+function EmployerCard({ emp, expanded, onToggle }: { emp: Employer; expanded: boolean; onToggle: () => void }) {
+  const sectorColor = SECTOR_COLORS[emp.sector] ?? 'var(--accent)'
 
   return (
-    <div className="max-w-[1100px] mx-auto px-4 py-3 space-y-3">
-      <div
-        className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 border"
-        style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3, fontSize: 11 }}
-      >
+    <div className="border overflow-hidden transition-colors" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 4, borderLeft: `3px solid ${sectorColor}` }}>
+      {/* Header row */}
+      <button className="w-full flex items-start gap-3 px-3 py-3 text-left" onClick={onToggle}>
+        {/* Employer initial badge */}
+        <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-sm" style={{ backgroundColor: `${sectorColor}22`, border: `1px solid ${sectorColor}44` }}>
+          <span style={{ color: sectorColor, fontSize: 12, fontWeight: 800 }}>{emp.name[0]}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+            <p style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600 }}>{emp.name}</p>
+            <span style={{ fontSize: 9.5, padding: '1px 5px', borderRadius: 2, backgroundColor: 'var(--bg-2)', color: 'var(--muted)', fontWeight: 500 }}>{emp.sector}</span>
+            <AIBadge pct={emp.ai_exposure_pct} />
+          </div>
+          <p style={{ color: 'var(--muted)', fontSize: 10.5 }}>{emp.hq_city}</p>
+        </div>
+        <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
+          <div className="text-right">
+            <p style={{ color: 'var(--muted)', fontSize: 8.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Graduates/yr</p>
+            <p className="font-num" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 700 }}>{emp.annual_graduate_intake.toLocaleString()}</p>
+          </div>
+          <div className="text-right">
+            <p style={{ color: 'var(--muted)', fontSize: 8.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Avg salary</p>
+            <p className="font-num" style={{ color: 'var(--positive)', fontSize: 14, fontWeight: 700 }}>£{emp.avg_starting_salary_k}k</p>
+          </div>
+          {expanded ? <ChevronUp className="w-4 h-4" style={{ color: 'var(--muted)' }} /> : <ChevronDown className="w-4 h-4" style={{ color: 'var(--muted)' }} />}
+        </div>
+      </button>
+
+      {/* Expanded content */}
+      {expanded && (
+        <div className="px-3 pb-4" style={{ borderTop: '1px solid var(--border)' }}>
+          <p style={{ color: 'var(--text-2)', fontSize: 12, lineHeight: 1.6, marginTop: 10, marginBottom: 12 }}>{emp.description}</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* University supply table */}
+            <div className="md:col-span-2">
+              <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>University graduate supply</p>
+              <div className="space-y-2">
+                {emp.top_universities.map(({ id, name, annual_hires }, i) => {
+                  const maxH = emp.top_universities[0].annual_hires
+                  return (
+                    <div key={id} className="flex items-center gap-2">
+                      <span className="font-num" style={{ color: 'var(--muted)', fontSize: 10, width: 14, flexShrink: 0 }}>{i + 1}</span>
+                      <Link to={`/universities/${id}`} className="hover:underline flex-shrink-0" style={{ color: 'var(--text)', fontSize: 11.5, width: 120 }}>{name}</Link>
+                      <div className="flex-1 h-2" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
+                        <div style={{ height: '100%', width: `${(annual_hires / maxH) * 100}%`, backgroundColor: sectorColor, borderRadius: 1, opacity: 0.75 }} />
+                      </div>
+                      <span className="font-num" style={{ color: 'var(--text-2)', fontSize: 11, width: 60, textAlign: 'right', flexShrink: 0 }}>{annual_hires} hires/yr</span>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="mt-3">
+                <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Top subjects hired</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {emp.top_subjects.map((s) => (
+                    <span key={s} style={{ fontSize: 11, padding: '2px 8px', border: '1px solid var(--border)', borderRadius: 2, color: 'var(--text-2)', backgroundColor: 'var(--bg-2)' }}>{s}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="space-y-2">
+              <p style={{ color: 'var(--muted)', fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>Key metrics</p>
+              {[
+                { label: 'Annual graduate intake', value: emp.annual_graduate_intake.toLocaleString() },
+                { label: 'Avg starting salary', value: `£${emp.avg_starting_salary_k}k` },
+                { label: '3-year retention', value: `${emp.retention_rate}%` },
+                { label: 'AI role exposure', value: `${emp.ai_exposure_pct}%` },
+                { label: 'Internship conversion', value: `${emp.internship_pipeline_pct}%` },
+                { label: 'Placement partners', value: emp.placement_partnerships.length > 0 ? `${emp.placement_partnerships.length} unis` : 'None listed' },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ color: 'var(--text-2)', fontSize: 11 }}>{label}</span>
+                  <span className="font-num" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Retention bar */}
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-1">
+              <span style={{ color: 'var(--muted)', fontSize: 10.5 }}>3-year retention rate</span>
+              <span className="font-num" style={{ color: emp.retention_rate >= 75 ? 'var(--positive)' : emp.retention_rate >= 60 ? 'var(--warning)' : 'var(--negative)', fontSize: 11, fontWeight: 700 }}>{emp.retention_rate}%</span>
+            </div>
+            <div className="h-1.5" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 1 }}>
+              <div style={{ height: '100%', width: `${emp.retention_rate}%`, backgroundColor: emp.retention_rate >= 75 ? 'var(--positive)' : 'var(--warning)', borderRadius: 1 }} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function EmployersPage() {
+  const [search, setSearch] = useState('')
+  const [sectorFilter, setSectorFilter] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState<'intake' | 'salary' | 'retention' | 'ai'>('intake')
+
+  const bySector = getEmployersBySector()
+  const totalIntake = EMPLOYERS.reduce((s, e) => s + e.annual_graduate_intake, 0)
+  const avgSalary = +(EMPLOYERS.reduce((s, e) => s + e.avg_starting_salary_k, 0) / EMPLOYERS.length).toFixed(1)
+  const avgAI = +(EMPLOYERS.reduce((s, e) => s + e.ai_exposure_pct, 0) / EMPLOYERS.length).toFixed(0)
+
+  const filtered = EMPLOYERS
+    .filter((e) => !sectorFilter || e.sector === sectorFilter)
+    .filter((e) => !search || e.name.toLowerCase().includes(search.toLowerCase()) || e.sector.toLowerCase().includes(search.toLowerCase()) || e.hq_city.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === 'intake') return b.annual_graduate_intake - a.annual_graduate_intake
+      if (sortBy === 'salary') return b.avg_starting_salary_k - a.avg_starting_salary_k
+      if (sortBy === 'retention') return b.retention_rate - a.retention_rate
+      return b.ai_exposure_pct - a.ai_exposure_pct
+    })
+
+  return (
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-2.5 space-y-2.5">
+      {/* Status bar */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3, fontSize: 11 }}>
         <Building2 className="w-3 h-3" style={{ color: 'var(--accent)' }} />
         <span style={{ color: 'var(--muted)', letterSpacing: '0.06em' }}>EMPLOYER INTELLIGENCE</span>
-        <span style={{ color: 'var(--border-strong)' }}>|</span>
-        <span style={{ color: 'var(--text-2)' }}>{records.length} labour-market and AI records</span>
+        <span style={{ color: 'var(--border-strong)' }}>│</span>
+        <span style={{ color: 'var(--text-2)' }}><span className="font-num" style={{ color: 'var(--text)' }}>{EMPLOYERS.length}</span> major employers</span>
+        <span style={{ color: 'var(--border-strong)' }}>│</span>
+        <span style={{ color: 'var(--text-2)' }}>Combined intake <span className="font-num" style={{ color: 'var(--text)' }}>{totalIntake.toLocaleString()}</span> graduates/yr</span>
+        <span style={{ color: 'var(--border-strong)' }}>│</span>
+        <span style={{ color: 'var(--text-2)' }}>Avg salary <span className="font-num" style={{ color: 'var(--positive)' }}>£{avgSalary}k</span></span>
+        <span style={{ color: 'var(--border-strong)' }}>│</span>
+        <span style={{ color: 'var(--text-2)' }}>Avg AI exposure <span className="font-num" style={{ color: 'var(--warning)' }}>{avgAI}%</span></span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-        <div className="p-3 border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
-          <p className="font-num" style={{ color: 'var(--positive)', fontSize: 20, fontWeight: 700 }}>{officialRecords.length}</p>
-          <p style={{ color: 'var(--text)', fontSize: 11.5, fontWeight: 600 }}>official or government records</p>
-          <p style={{ color: 'var(--muted)', fontSize: 10, marginTop: 4 }}>available for employer context</p>
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--muted)' }} />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search employers…"
+            className="pl-7 pr-3 py-1.5 bg-transparent outline-none"
+            style={{ border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text)', fontSize: 11, width: 180 }} />
         </div>
-        <div className="p-3 border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
-          <p className="font-num" style={{ color: 'var(--warning)', fontSize: 20, fontWeight: 700 }}>{externalRecords.length}</p>
-          <p style={{ color: 'var(--text)', fontSize: 11.5, fontWeight: 600 }}>external analysis records</p>
-          <p style={{ color: 'var(--muted)', fontSize: 10, marginTop: 4 }}>excluded from official aggregates</p>
+        <div className="flex flex-wrap gap-1.5">
+          <button onClick={() => setSectorFilter(null)}
+            className="px-2.5 py-1 transition-colors"
+            style={{ border: `1px solid ${!sectorFilter ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 3, color: !sectorFilter ? 'var(--accent)' : 'var(--text-2)', fontSize: 10.5 }}>
+            All sectors
+          </button>
+          {EMPLOYER_SECTORS.map((s) => (
+            <button key={s} onClick={() => setSectorFilter(sectorFilter === s ? null : s)}
+              className="px-2.5 py-1 transition-colors"
+              style={{ border: `1px solid ${sectorFilter === s ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 3, color: sectorFilter === s ? 'var(--accent)' : 'var(--text-2)', fontSize: 10 }}>
+              {s}
+            </button>
+          ))}
         </div>
-        {metrics.slice(0, 1).map(({ record, ...metric }) => (
-          <div key={`${record.id}:${metric.key}`} className="p-3 border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
-            <p className="font-num" style={{ color: 'var(--text)', fontSize: 20, fontWeight: 700 }}>{metric.value === null ? 'Pending' : `${metric.value.toLocaleString()} ${metric.unit}`}</p>
-            <p style={{ color: 'var(--text)', fontSize: 11.5, fontWeight: 600 }}>{metric.label}</p>
-            <p style={{ color: 'var(--muted)', fontSize: 10, marginTop: 4 }}>{record.publisher}</p>
-          </div>
+        <div className="ml-auto flex gap-1.5">
+          {([['intake', 'Intake'], ['salary', 'Salary'], ['retention', 'Retention'], ['ai', 'AI Risk']] as const).map(([key, label]) => (
+            <button key={key} onClick={() => setSortBy(key)}
+              className="px-2 py-1"
+              style={{ border: `1px solid ${sortBy === key ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 3, color: sortBy === key ? 'var(--accent)' : 'var(--muted)', fontSize: 10, fontWeight: sortBy === key ? 600 : 400 }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Employer list */}
+      <div className="space-y-2">
+        {filtered.map((emp) => (
+          <EmployerCard key={emp.id} emp={emp} expanded={expanded === emp.id} onToggle={() => setExpanded(expanded === emp.id ? null : emp.id)} />
         ))}
+        {filtered.length === 0 && (
+          <div className="text-center py-12" style={{ color: 'var(--muted)', fontSize: 13 }}>No employers match your filters.</div>
+        )}
       </div>
 
-      <Panel title="Employer intelligence" subtitle="Employer-specific rows remain hidden until source records are attached">
-        <IntelligenceCardList records={records} />
-        <div className="flex flex-wrap gap-2 pt-3 mt-3" style={{ borderTop: '1px solid var(--border)' }}>
-          <Link to="/graduate-outcomes" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border hover:underline" style={{ color: 'var(--link)', borderColor: 'var(--border)', borderRadius: 3, fontSize: 12 }}>
-            Graduate outcomes <ArrowUpRight className="w-3 h-3" />
-          </Link>
-          <Link to="/open-data" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border hover:underline" style={{ color: 'var(--link)', borderColor: 'var(--border)', borderRadius: 3, fontSize: 12 }}>
-            Open data <ArrowUpRight className="w-3 h-3" />
-          </Link>
-          <Link to="/intelligence" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border hover:underline" style={{ color: 'var(--link)', borderColor: 'var(--border)', borderRadius: 3, fontSize: 12 }}>
-            Intelligence centre <ArrowUpRight className="w-3 h-3" />
-          </Link>
-        </div>
-      </Panel>
+      <div className="px-3 py-2 border flex flex-wrap items-center gap-x-4 gap-y-1" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
+        <span style={{ color: 'var(--muted)', fontSize: 10 }}>External-analysis guidance · University supply figures stay outside official aggregates unless source coverage is attached</span>
+        <Link to="/graduate-outcomes" className="ml-auto flex items-center gap-1 hover:underline" style={{ color: 'var(--link)', fontSize: 11 }}>
+          Graduate Outcomes <ArrowUpRight className="w-3 h-3" />
+        </Link>
+      </div>
     </div>
   )
 }
