@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
 import { institutions } from '../../data/institutions'
+import { BrandLogo } from '../brand/BrandLogo'
 
 // ── Reduced, workflow-oriented primary navigation ───────────────────────────
 const PRIMARY_NAV = [
@@ -109,6 +110,7 @@ const COMMANDS: Command[] = [
   { icon: <Newspaper className="w-3.5 h-3.5" />, label: 'Government funding updates', hint: 'Policy feed', type: 'Intelligence', href: '/intelligence?filter=policy' },
   { icon: <Database className="w-3.5 h-3.5" />, label: 'Download open data', hint: 'CSV · JSON · API', type: 'Open Data', href: '/open-data' },
   { icon: <Terminal className="w-3.5 h-3.5" />, label: 'API reference', hint: 'Endpoints & keys', type: 'API', href: '/api' },
+  { icon: <Hash className="w-3.5 h-3.5" />, label: 'Brand system', hint: 'Logos, colours & social kit', type: 'Identity', href: '/brand' },
   { icon: <Heart className="w-3.5 h-3.5" />, label: 'Support HEStats', hint: 'Keep the data open', type: 'Support', href: '/support' },
 ]
 
@@ -341,11 +343,9 @@ export function Navbar() {
         <div className="max-w-[1600px] mx-auto px-3 sm:px-4 h-12 flex items-center gap-0">
           {/* Brand */}
           <Link to="/" className="flex items-center gap-2 flex-shrink-0 pr-4 lg:pr-6">
-            <div className="w-5 h-5 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--accent)', borderRadius: 2 }}>
-              <span style={{ color: '#fff', fontWeight: 700, fontSize: 9.5, letterSpacing: '-0.02em' }}>HE</span>
-            </div>
+            <BrandLogo variant="mark" tone={theme === 'dark' ? 'onDark' : 'onLight'} size={21} />
             <div className="flex items-baseline gap-1.5">
-              <span style={{ color: 'var(--text)', fontWeight: 600, fontSize: 13, letterSpacing: '-0.01em' }}>HEStats</span>
+              <BrandLogo variant="wordmark" tone={theme === 'dark' ? 'onDark' : 'onLight'} size={13.5} showTag={false} />
               <span className="hidden sm:inline" style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Terminal</span>
             </div>
           </Link>

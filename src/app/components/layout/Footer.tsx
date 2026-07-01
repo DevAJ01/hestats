@@ -1,6 +1,11 @@
 import { Link } from 'react-router'
+import { BrandLogo } from '../brand/BrandLogo'
+import { useTheme } from '../../context/ThemeContext'
 
 export function Footer() {
+  const { theme } = useTheme()
+  const tone = theme === 'dark' ? 'onDark' : 'onLight'
+
   return (
     <footer
       className="border-t"
@@ -10,13 +15,8 @@ export function Footer() {
         {/* Top row */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-2">
           <div className="flex items-center gap-2">
-            <div
-              className="w-4 h-4 flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: 'var(--accent)', borderRadius: 2 }}
-            >
-              <span style={{ color: '#fff', fontWeight: 700, fontSize: 8 }}>HE</span>
-            </div>
-            <span style={{ color: 'var(--text)', fontSize: 11, fontWeight: 600 }}>HEStats</span>
+            <BrandLogo variant="mark" tone={tone} size={16} />
+            <BrandLogo variant="wordmark" tone={tone} size={11.5} showTag={false} />
             <span style={{ color: 'var(--muted)', fontSize: 10 }}>hestats.co.uk</span>
           </div>
 
@@ -29,6 +29,7 @@ export function Footer() {
               { href: '/intelligence', label: 'Intelligence' },
               { href: '/open-data', label: 'Open Data' },
               { href: '/api', label: 'API' },
+              { href: '/brand', label: 'Brand' },
               { href: '/about', label: 'Methodology' },
               { href: '/support', label: 'Support' },
             ].map((l, i) => (

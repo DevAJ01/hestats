@@ -19,6 +19,7 @@ import { CareerExplorerPage } from './pages/CareerExplorerPage'
 import { StudentJourneyPage } from './pages/StudentJourneyPage'
 import { ExplorerPage } from './pages/ExplorerPage'
 import { IntelligencePage } from './pages/IntelligencePage'
+import { BrandPage } from './pages/BrandPage'
 
 function NotFoundPage() {
   const error = useRouteError()
@@ -78,6 +79,7 @@ export const appRoutes: RouteObject[] = [
       { path: 'open-data', Component: OpenDataPage },
       { path: 'api', Component: ApiPage },
       { path: 'about', Component: AboutPage },
+      { path: 'brand', Component: BrandPage },
       { path: 'support', Component: SupportPage },
 
       { path: '*', loader: () => { throw new Response('Not Found', { status: 404 }) } },

@@ -33,6 +33,24 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath()
 }
 
+function drawBrandMark(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string) {
+  const s = size / 64
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(s, s)
+  ctx.fillStyle = color
+  ctx.fillRect(14, 13, 9.5, 38)
+  ctx.fillRect(40.5, 13, 9.5, 38)
+  ctx.beginPath()
+  ctx.moveTo(23.5, 36)
+  ctx.lineTo(40.5, 26)
+  ctx.lineTo(40.5, 34.5)
+  ctx.lineTo(23.5, 44.5)
+  ctx.closePath()
+  ctx.fill()
+  ctx.restore()
+}
+
 function gradeLabel(grade: string): string {
   const map: Record<string, string> = {
     AAA: 'Exceptional', AA: 'Very Strong', A: 'Strong',
@@ -65,12 +83,11 @@ function drawCard(canvas: HTMLCanvasElement, items: ShareItem[], format: Format)
   const ctx = canvas.getContext('2d')!
   ctx.scale(scale, scale)
 
-  const BG      = '#0d1117'
-  const PANEL   = '#161b22'
-  const BORDER  = '#21262d'
-  const TEXT    = '#f0f6fc'
-  const MUTED   = '#8b949e'
-  const ACCENT  = '#4a90c4'
+  const BG      = '#0a0a0a'
+  const PANEL   = '#141414'
+  const BORDER  = '#2a2a28'
+  const TEXT    = '#f5f5f4'
+  const MUTED   = '#a8a8a2'
 
   // ── Background ──────────────────────────────────────────────────────────────
   ctx.fillStyle = BG
@@ -83,52 +100,40 @@ function drawCard(canvas: HTMLCanvasElement, items: ShareItem[], format: Format)
   for (let x = 0; x < w; x += gridStep) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke() }
   for (let y = 0; y < h; y += gridStep) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke() }
 
-  // Top accent bar
-  const accentGrad = ctx.createLinearGradient(0, 0, w, 0)
-  items.forEach(({ color }, i) => { accentGrad.addColorStop(i / items.length, color); accentGrad.addColorStop((i + 1) / items.length, color) })
-  ctx.fillStyle = accentGrad
-  ctx.fillRect(0, 0, w, 4)
-
   // ── HEADER ──────────────────────────────────────────────────────────────────
   const hdrH = format === 'story' ? 120 : 80
   ctx.fillStyle = PANEL
-  ctx.fillRect(0, 4, w, hdrH)
+  ctx.fillRect(0, 0, w, hdrH)
   ctx.strokeStyle = BORDER
   ctx.lineWidth = 1
-  ctx.beginPath(); ctx.moveTo(0, 4 + hdrH); ctx.lineTo(w, 4 + hdrH); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(0, hdrH); ctx.lineTo(w, hdrH); ctx.stroke()
 
-  // HE logo pill
+  // HEStats aperture mark and wordmark
   const padH = format === 'story' ? 32 : 20
-  const logoX = padH, logoY = 4 + padH
-  ctx.fillStyle = ACCENT
-  roundRect(ctx, logoX, logoY, 38, 22, 4)
-  ctx.fill()
-  ctx.fillStyle = '#fff'
-  ctx.font = `700 11px "JetBrains Mono", monospace`
-  ctx.fillText('HE', logoX + 7, logoY + 15)
-
-  // HEStats wordmark
+  const logoX = padH, logoY = padH
+  const markSize = format === 'story' ? 36 : 26
+  drawBrandMark(ctx, logoX, logoY - 2, markSize, TEXT)
   ctx.fillStyle = TEXT
-  ctx.font = `600 ${format === 'story' ? 20 : 15}px system-ui, -apple-system, sans-serif`
-  ctx.fillText('HEStats', logoX + 48, logoY + 15)
+  ctx.font = `800 ${format === 'story' ? 21 : 15}px "Archivo", "Inter", system-ui, sans-serif`
+  ctx.fillText('HEstats', logoX + markSize + 12, logoY + 16)
   ctx.fillStyle = MUTED
-  ctx.font = `400 ${format === 'story' ? 13 : 10}px "JetBrains Mono", monospace`
-  ctx.fillText('hestats.co.uk', logoX + 48, logoY + (format === 'story' ? 33 : 28))
+  ctx.font = `400 ${format === 'story' ? 13 : 10}px "IBM Plex Mono", "JetBrains Mono", monospace`
+  ctx.fillText('hestats.co.uk', logoX + markSize + 12, logoY + (format === 'story' ? 34 : 29))
 
   // Title
   const titleX = w - padH
   ctx.textAlign = 'right'
   ctx.fillStyle = TEXT
-  ctx.font = `600 ${format === 'story' ? 20 : 14}px system-ui, sans-serif`
+  ctx.font = `800 ${format === 'story' ? 20 : 14}px "Archivo", system-ui, sans-serif`
   ctx.fillText('Financial Comparison', titleX, logoY + 15)
   ctx.fillStyle = MUTED
-  ctx.font = `400 ${format === 'story' ? 13 : 10}px "JetBrains Mono", monospace`
+  ctx.font = `400 ${format === 'story' ? 13 : 10}px "IBM Plex Mono", "JetBrains Mono", monospace`
   const now = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   ctx.fillText(`FY 2024-25  ·  ${now}`, titleX, logoY + (format === 'story' ? 33 : 28))
   ctx.textAlign = 'left'
 
   // ── INSTITUTION CARDS ───────────────────────────────────────────────────────
-  const contentY = 4 + hdrH + (format === 'story' ? 28 : 20)
+  const contentY = hdrH + (format === 'story' ? 28 : 20)
   const padCard = format === 'story' ? 28 : 18
   const contentW = w - padCard * 2
 
