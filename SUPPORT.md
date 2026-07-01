@@ -10,6 +10,8 @@ HEStats is intended to be open public infrastructure for UK higher education fin
 - Fix bugs or add tests.
 - Review pull requests.
 - Sponsor the project on GitHub.
+- Support the project on Ko-fi.
+- Buy me a coffee.
 
 ## Funding
 
@@ -17,6 +19,18 @@ GitHub Sponsors:
 
 ```text
 https://github.com/sponsors/DevAJ01
+```
+
+Ko-fi:
+
+```text
+https://ko-fi.com/ashanjeevanathan
+```
+
+Buy Me a Coffee:
+
+```text
+https://buymeacoffee.com/ashanj1q
 ```
 
 Funding helps cover hosting, data ingestion, validation work, and source-document review.

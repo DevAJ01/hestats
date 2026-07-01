@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { TrendingUp, TrendingDown, ArrowUpRight, FileText, ChevronRight, Activity, AlertCircle, Heart } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowUpRight, FileText, ChevronRight, Activity, AlertCircle, Heart, Coffee } from 'lucide-react'
 import { institutions } from '../data/institutions'
 import { financials, getAllLatestFinancials, getFinancialsByInstitution, AVAILABLE_YEARS } from '../data/financials'
 import { getSectorAverageScore, getAllHealthScores, scoreToGrade, computeHealthScore, getGradeColor } from '../data/health'
@@ -335,7 +335,7 @@ export function HomePage() {
 
       {/* ── Support banner ──────────────────────────────────────────────────── */}
       <div
-        className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 mb-2.5 border"
+        className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-x-4 sm:gap-y-2 px-4 py-3 mb-2.5 border min-w-0"
         style={{
           backgroundColor: 'var(--panel)',
           borderColor: 'var(--border)',
@@ -343,9 +343,9 @@ export function HomePage() {
           borderLeft: '3px solid var(--negative)',
         }}
       >
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-start sm:items-center gap-2 min-w-0 flex-1">
           <Heart className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--negative)' }} />
-          <div>
+          <div className="min-w-0">
             <p style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>
               HEStats is free, open-source, and student-built
             </p>
@@ -354,35 +354,46 @@ export function HomePage() {
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 ml-auto">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto sm:ml-auto min-w-0">
           <a
             href={SUPPORT_LINKS.github_sponsors}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 transition-colors"
+            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 transition-colors min-w-0"
             style={{ backgroundColor: '#ea4aaa', color: '#fff', borderRadius: 3, fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
             onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
           >
-            <Heart className="w-3.5 h-3.5" /> GitHub Sponsors
+            <Heart className="w-3.5 h-3.5 flex-shrink-0" /> <span className="truncate">GitHub Sponsors</span>
+          </a>
+          <a
+            href={SUPPORT_LINKS.kofi}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 transition-colors min-w-0"
+            style={{ backgroundColor: '#29abe0', color: '#fff', borderRadius: 3, fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+          >
+            <Coffee className="w-3.5 h-3.5 flex-shrink-0" /> <span className="truncate">Ko-fi</span>
           </a>
           <a
             href={SUPPORT_LINKS.github_repo}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 transition-colors"
+            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 transition-colors min-w-0"
             style={{ backgroundColor: 'var(--bg-2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 3, fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
             onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
           >
-            <FileText className="w-3.5 h-3.5" /> Contribute
+            <FileText className="w-3.5 h-3.5 flex-shrink-0" /> <span className="truncate">Contribute</span>
           </a>
           <Link
             to="/support"
-            className="flex items-center gap-1 px-3 py-1.5"
+            className="flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 min-w-0"
             style={{ border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text-2)', fontSize: 12, textDecoration: 'none' }}
           >
-            All options <ArrowUpRight className="w-3 h-3" />
+            <span className="truncate">All options</span> <ArrowUpRight className="w-3 h-3 flex-shrink-0" />
           </Link>
         </div>
       </div>
@@ -1122,13 +1133,13 @@ export function HomePage() {
         <div className="ml-auto flex items-center gap-3">
           <span style={{ color: 'var(--muted)', fontSize: 10 }}>Free & open-source —</span>
           <a
-            href={SUPPORT_LINKS.github_sponsors}
+            href={SUPPORT_LINKS.kofi}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 hover:underline"
             style={{ color: 'var(--negative)', fontSize: 11, fontWeight: 500 }}
           >
-            <Heart className="w-3 h-3" /> Support HEStats
+            <Coffee className="w-3 h-3" /> Support HEStats
           </a>
         </div>
       </div>

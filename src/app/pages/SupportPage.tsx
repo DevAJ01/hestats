@@ -1,4 +1,4 @@
-import { Heart, Github, ArrowUpRight, Mail, Code, Database, Server, Users, Star, GitBranch, TrendingUp, Shield, Globe } from 'lucide-react'
+import { Heart, Github, ArrowUpRight, Mail, Code, Database, Server, Users, Star, GitBranch, TrendingUp, Shield, Globe, Coffee } from 'lucide-react'
 import { Panel } from '../components/layout/Panel'
 import { SUPPORT_LINKS } from '../data/links'
 
@@ -58,6 +58,24 @@ const DONATION_OPTIONS = [
     brand: '#ea4aaa',
     icon: <Github className="w-4 h-4" />,
     preferred: true,
+  },
+  {
+    name: 'Ko-fi',
+    tagline: 'One-off or recurring support through Ko-fi. Best for quick contributions toward hosting, data collection, and source review.',
+    cta: 'Support on Ko-fi',
+    href: SUPPORT_LINKS.kofi,
+    brand: '#29abe0',
+    icon: <Coffee className="w-4 h-4" />,
+    preferred: false,
+  },
+  {
+    name: 'Buy Me a Coffee',
+    tagline: 'Send a small thank-you contribution if HEStats saved you time or helped with research, reporting, or planning.',
+    cta: 'Buy me a coffee',
+    href: SUPPORT_LINKS.buy_me_a_coffee,
+    brand: '#ffdd00',
+    icon: <Coffee className="w-4 h-4" />,
+    preferred: false,
   },
   {
     name: 'GitHub Issues',
@@ -199,7 +217,7 @@ export function SupportPage() {
           <h2 style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600 }}>Support the platform</h2>
           <span style={{ color: 'var(--muted)', fontSize: 11 }}>Choose any platform — all contributions reach the project</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2.5">
           {DONATION_OPTIONS.map((opt) => (
             <a
               key={opt.name}

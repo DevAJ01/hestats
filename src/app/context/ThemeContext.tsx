@@ -7,14 +7,14 @@ interface ThemeContextValue {
   toggleTheme: () => void
 }
 
-const ThemeContext = createContext<ThemeContextValue>({ theme: 'dark', toggleTheme: () => {} })
+const ThemeContext = createContext<ThemeContextValue>({ theme: 'light', toggleTheme: () => {} })
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
-      return (localStorage.getItem('hestats-theme') as Theme) || 'dark'
+      return (localStorage.getItem('hestats-theme') as Theme) || 'light'
     } catch {
-      return 'dark'
+      return 'light'
     }
   })
 
