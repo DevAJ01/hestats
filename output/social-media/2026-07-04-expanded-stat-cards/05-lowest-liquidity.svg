@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+ <defs><pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="#262624" stroke-width="1"/></pattern></defs>
+ <rect width="1080" height="1080" fill="#0a0a0a"/><rect width="1080" height="1080" fill="url(#grid)" opacity="0.55"/>
+ <rect x="54" y="54" width="972" height="972" rx="10" fill="#141414" stroke="#2a2a28" stroke-width="2"/>
+ <rect x="54" y="54" width="972" height="12" fill="#c2945a"/>
+ <text x="92" y="120" fill="#a8a8a2" font-size="22" font-weight="700" letter-spacing="7" font-family="Arial, Helvetica, sans-serif">LOWEST LIQUIDITY</text>
+ <text x="988" y="120" fill="#6b6b66" text-anchor="end" font-size="22" font-family="Arial, Helvetica, sans-serif">05 / 12</text>
+ <text x="92" y="200" fill="#f5f5f4" font-size="58" font-weight="800" font-family="Arial, Helvetica, sans-serif" >Large-provider cash</text>
+<text x="92" y="262" fill="#f5f5f4" font-size="58" font-weight="800" font-family="Arial, Helvetica, sans-serif" >runway is thin in places</text>
+ <text x="92" y="558" fill="#c2945a" font-size="116" font-weight="900" font-family="Arial, Helvetica, sans-serif">7 days</text>
+ <line x1="92" y1="604" x2="988" y2="604" stroke="#2a2a28" stroke-width="2"/>
+ <text x="92" y="662" fill="#e4e4e1" font-size="30" font-weight="700" font-family="Arial, Helvetica, sans-serif" >Lowest large-provider liquidity days:</text>
+<text x="92" y="703" fill="#e4e4e1" font-size="30" font-weight="700" font-family="Arial, Helvetica, sans-serif" >• London South Bank: 7d | Cranfield: 20d</text>
+<text x="92" y="744" fill="#e4e4e1" font-size="30" font-weight="700" font-family="Arial, Helvetica, sans-serif" >• Global Banking School: 23d | St Andrews:</text>
+<text x="92" y="784" fill="#e4e4e1" font-size="30" font-weight="700" font-family="Arial, Helvetica, sans-serif" >27d</text>
+<text x="92" y="825" fill="#e4e4e1" font-size="30" font-weight="700" font-family="Arial, Helvetica, sans-serif" >• Study Group: 28d</text>
+ <rect x="92" y="910" width="896" height="1" fill="#2a2a28"/>
+ <text x="92" y="952" fill="#f5f5f4" font-size="24" font-weight="800" letter-spacing="1" font-family="Arial, Helvetica, sans-serif">HEStats</text>
+ <text x="92" y="984" fill="#6b6b66" font-size="17" font-weight="400" font-family="Arial, Helvetica, sans-serif" >Top 5 lowest liquidity days among £100m+ income</text>
+<text x="92" y="1006" fill="#6b6b66" font-size="17" font-weight="400" font-family="Arial, Helvetica, sans-serif" >providers</text>
+</svg>

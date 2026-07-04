@@ -1,0 +1,142 @@
+[
+  {
+    "id": "cover-ai-degrees-graduate-jobs",
+    "index": 1,
+    "title": "AI, degrees and graduate jobs",
+    "label": "AI, degrees and graduate jobs",
+    "src": "01-cover-ai-degrees-graduate-jobs.png",
+    "href": "01-cover-ai-degrees-graduate-jobs.png",
+    "output": "01-cover-ai-degrees-graduate-jobs.png",
+    "source": "HEStats Intelligence pack built from local verified source metadata, retrieved 1 July 2026."
+  },
+  {
+    "id": "ai-adoption-is-here",
+    "index": 2,
+    "title": "AI adoption has crossed into normal operations",
+    "label": "AI adoption has crossed into normal operations",
+    "src": "02-ai-adoption-is-here.png",
+    "href": "02-ai-adoption-is-here.png",
+    "output": "02-ai-adoption-is-here.png",
+    "source": "Source: ONS BICS Wave 153, 16 to 29 March 2026. Official statistics in development."
+  },
+  {
+    "id": "ai-job-loss-signal",
+    "index": 3,
+    "title": "The job-loss signal is smaller than the hype",
+    "label": "The job-loss signal is smaller than the hype",
+    "src": "03-ai-job-loss-signal.png",
+    "href": "03-ai-job-loss-signal.png",
+    "output": "03-ai-job-loss-signal.png",
+    "source": "Source: ONS BICS Wave 153, 16 to 29 March 2026. HEStats interpretation for social framing."
+  },
+  {
+    "id": "global-genai-exposure",
+    "index": 4,
+    "title": "GenAI exposure reaches one in four workers",
+    "label": "GenAI exposure reaches one in four workers",
+    "src": "04-global-genai-exposure.png",
+    "href": "04-global-genai-exposure.png",
+    "output": "04-global-genai-exposure.png",
+    "source": "Source: ILO Working Paper 140, Generative AI and Jobs, 2025. External analysis."
+  },
+  {
+    "id": "high-exposure-graduate-markets",
+    "index": 5,
+    "title": "High-exposure graduate markets are not niche",
+    "label": "High-exposure graduate markets are not niche",
+    "src": "05-high-exposure-graduate-markets.png",
+    "href": "05-high-exposure-graduate-markets.png",
+    "output": "05-high-exposure-graduate-markets.png",
+    "source": "Source: DfE LEO industry data 2023/24 + HEStats AI exposure model. Exposure is not job-loss probability."
+  },
+  {
+    "id": "top-high-exposure-industries",
+    "index": 6,
+    "title": "Three graduate destinations sit in the 62% exposure band",
+    "label": "Three graduate destinations sit in the 62% exposure band",
+    "src": "06-top-high-exposure-industries.png",
+    "href": "06-top-high-exposure-industries.png",
+    "output": "06-top-high-exposure-industries.png",
+    "source": "Source: DfE LEO industry data 2023/24 + HEStats AI exposure model."
+  },
+  {
+    "id": "admin-support-churn-warning",
+    "index": 7,
+    "title": "Admin and support has the churn warning",
+    "label": "Admin and support has the churn warning",
+    "src": "07-admin-support-churn-warning.png",
+    "href": "07-admin-support-churn-warning.png",
+    "output": "07-admin-support-churn-warning.png",
+    "source": "Source: DfE LEO 2023/24. Retention means same industry section, not employer tenure."
+  },
+  {
+    "id": "health-human-heavy-demand",
+    "index": 8,
+    "title": "Human-heavy sectors still dominate graduate demand",
+    "label": "Human-heavy sectors still dominate graduate demand",
+    "src": "08-health-human-heavy-demand.png",
+    "href": "08-health-human-heavy-demand.png",
+    "output": "08-health-human-heavy-demand.png",
+    "source": "Source: DfE LEO industry data 2023/24 + HEStats AI exposure model."
+  },
+  {
+    "id": "graduate-outcomes-big-picture",
+    "index": 9,
+    "title": "Graduate outcomes: the big picture",
+    "label": "Graduate outcomes: the big picture",
+    "src": "09-graduate-outcomes-big-picture.png",
+    "href": "09-graduate-outcomes-big-picture.png",
+    "output": "09-graduate-outcomes-big-picture.png",
+    "source": "Source: HESA Graduate Outcomes 2023/24 latest results, published 4 June 2026."
+  },
+  {
+    "id": "degree-usefulness-gap",
+    "index": 10,
+    "title": "A degree does not automatically feel useful",
+    "label": "A degree does not automatically feel useful",
+    "src": "10-degree-usefulness-gap.png",
+    "href": "10-degree-usefulness-gap.png",
+    "output": "10-degree-usefulness-gap.png",
+    "source": "Source: HESA Graduate Outcomes 2023/24 latest results, published 4 June 2026."
+  },
+  {
+    "id": "business-degree-risk",
+    "index": 11,
+    "title": "Big-volume degree risk: business and management",
+    "label": "Big-volume degree risk: business and management",
+    "src": "11-business-degree-risk.png",
+    "href": "11-business-degree-risk.png",
+    "output": "11-business-degree-risk.png",
+    "source": "Source: DfE LEO degree data + HEStats AI automation risk model."
+  },
+  {
+    "id": "ai-risk-degree-ladder",
+    "index": 12,
+    "title": "AI risk clusters around text, rules and coordination work",
+    "label": "AI risk clusters around text, rules and coordination work",
+    "src": "12-ai-risk-degree-ladder.png",
+    "href": "12-ai-risk-degree-ladder.png",
+    "output": "12-ai-risk-degree-ladder.png",
+    "source": "Source: DfE LEO degree data + HEStats AI automation risk model."
+  },
+  {
+    "id": "regulated-human-resilience",
+    "index": 13,
+    "title": "Resilience looks human, practical and regulated",
+    "label": "Resilience looks human, practical and regulated",
+    "src": "13-regulated-human-resilience.png",
+    "href": "13-regulated-human-resilience.png",
+    "output": "13-regulated-human-resilience.png",
+    "source": "Source: DfE LEO degree data + HEStats AI automation risk model."
+  },
+  {
+    "id": "graduate-debt-backdrop",
+    "index": 14,
+    "title": "The AI career question has a debt backdrop",
+    "label": "The AI career question has a debt backdrop",
+    "src": "14-graduate-debt-backdrop.png",
+    "href": "14-graduate-debt-backdrop.png",
+    "output": "14-graduate-debt-backdrop.png",
+    "source": "Source: DfE Student loan forecasts for England 2024/25. Forecast, not observed provider finance."
+  }
+]

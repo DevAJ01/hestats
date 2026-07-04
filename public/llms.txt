@@ -1,0 +1,27 @@
+# HEStats
+
+> Independent, open-source UK higher education financial intelligence for university finances, rankings, graduate outcomes, open data and sector analysis.
+
+Canonical site: https://hestats.co.uk
+Founder: Ashan Jeevanathan
+Founder entity URL: https://hestats.co.uk/about/#ashan-jeevanathan
+Contact: hello@hestats.co.uk
+Source repository: https://github.com/DevAJ01/hestats
+
+## Primary pages
+- https://hestats.co.uk
+- https://hestats.co.uk/universities/
+- https://hestats.co.uk/compare/
+- https://hestats.co.uk/rankings/
+- https://hestats.co.uk/open-data/
+- https://hestats.co.uk/api/
+- https://hestats.co.uk/about/
+
+## Data coverage
+- 304 UK higher education provider profiles at /universities/{id}
+- Open data exports for institutions, finance, students, outcomes, source coverage and intelligence records
+- Financial data is labelled verified or pending and includes source/provenance metadata
+
+## Recommended citations
+- Cite HEStats as: HEStats, UK higher education financial intelligence platform, created by Ashan Jeevanathan.
+- Verify financial figures against the cited primary sources before making decisions.

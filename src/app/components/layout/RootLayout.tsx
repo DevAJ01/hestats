@@ -3,6 +3,7 @@ import { Navbar } from './Navbar'
 import { Footer } from './Footer'
 import { Breadcrumbs } from './Breadcrumbs'
 import { ContextPanel } from './ContextPanel'
+import { SeoManager } from '../seo/SeoManager'
 
 export function RootLayout() {
   return (
@@ -10,6 +11,7 @@ export function RootLayout() {
       className="min-h-screen flex flex-col"
       style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
     >
+      <SeoManager />
       <Navbar />
       <Breadcrumbs />
       <main className="flex-1 pb-16 lg:pb-0">

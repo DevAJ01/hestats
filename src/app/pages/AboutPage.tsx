@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowUpRight, Shield, Database, ExternalLink, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import { ArrowUpRight, Shield, Database, ExternalLink, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Clock, Github } from 'lucide-react'
 import { DATA_SOURCES, CONFIDENCE_META, LICENCE_DISPLAY, METRIC_SOURCES, DataSourceDef } from '../data/sources'
 import { AVAILABLE_YEARS, financials } from '../data/financials'
 import { institutions } from '../data/institutions'
 import { Panel } from '../components/layout/Panel'
+import { SUPPORT_LINKS } from '../data/links'
 
 const TIER_LABELS: Record<number, string> = {
   1: 'Primary — HESA',
@@ -203,6 +204,36 @@ export function AboutPage() {
                     should display <strong style={{ color: 'var(--text)' }}> "Awaiting official publication"</strong>
                     rather than silent placeholder numbers.
                   </p>
+                </div>
+              </Panel>
+
+              <Panel title="Founder" subtitle="Project ownership and public entity">
+                <div id="ashan-jeevanathan" className="space-y-3" style={{ fontSize: 13, lineHeight: 1.65, color: 'var(--text-2)' }}>
+                  <p>
+                    <strong style={{ color: 'var(--text)' }}>Ashan Jeevanathan</strong> created and maintains HEStats as
+                    an independent, open-source UK higher education data project. Ashan builds the product, source registry,
+                    ingestion scripts, interface and public API surfaces that make the platform searchable and auditable.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href="https://github.com/DevAJ01"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5"
+                      style={{ border: '1px solid var(--border)', color: 'var(--text)', fontSize: 12, fontWeight: 600, borderRadius: 3 }}
+                    >
+                      <Github className="w-3.5 h-3.5" /> Ashan Jeevanathan on GitHub
+                    </a>
+                    <a
+                      href={SUPPORT_LINKS.github_repo}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5"
+                      style={{ border: '1px solid var(--border)', color: 'var(--link)', fontSize: 12, borderRadius: 3 }}
+                    >
+                      HEStats source repository <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
               </Panel>
 

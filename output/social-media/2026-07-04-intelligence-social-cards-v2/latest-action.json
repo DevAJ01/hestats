@@ -1,0 +1,14 @@
+{
+  "id": "review-renderer-materialized",
+  "action": "write_moodboard_widget_payload",
+  "label": "Materialized Creative Production image review",
+  "createdAt": "2026-07-04T19:04:23.858056Z",
+  "timestamp": "2026-07-04T19:04:23.858056Z",
+  "title": "HEStats Intelligence Social Cards V2",
+  "summary": "Review, select, and hand off generated Creative Production images.",
+  "itemCount": 14,
+  "runDirectory": "/Users/ashanj/Documents/Github/hestats/output/social-media/2026-07-04-intelligence-social-cards-v2",
+  "streamPath": "/Users/ashanj/Documents/Github/hestats/output/social-media/2026-07-04-intelligence-social-cards-v2/data/stream.json",
+  "runStatePath": "/Users/ashanj/Documents/Github/hestats/output/social-media/2026-07-04-intelligence-social-cards-v2/run-state.json",
+  "latestActionPath": "/Users/ashanj/Documents/Github/hestats/output/social-media/2026-07-04-intelligence-social-cards-v2/latest-action.json"
+}

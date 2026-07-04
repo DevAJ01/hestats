@@ -49,6 +49,10 @@ export function Footer() {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontSize: 10, color: 'var(--muted)' }}>
           <span>© 2026 HEStats</span>
           <span>·</span>
+          <Link to="/about/#ashan-jeevanathan" className="hover:underline" style={{ color: 'var(--text-2)' }}>
+            Created by Ashan Jeevanathan
+          </Link>
+          <span>·</span>
           <span>Data registry: OfS · HESA · annual reports · Companies House</span>
           <span>·</span>
           <span>CC BY 4.0</span>

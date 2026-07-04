@@ -1,0 +1,10 @@
+/* TEAM */
+Creator: Ashan Jeevanathan
+Site: HEStats
+Contact: hello@hestats.co.uk
+GitHub: https://github.com/DevAJ01
+
+/* SITE */
+Canonical: https://hestats.co.uk
+Purpose: UK higher education financial intelligence, open data, rankings and sector analysis.
+Source: https://github.com/DevAJ01/hestats

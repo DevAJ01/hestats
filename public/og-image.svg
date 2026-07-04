@@ -1,0 +1,17 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HEStats UK Higher Education Financial Intelligence">
+  <rect width="1200" height="630" fill="#0a0a0a"/>
+  <rect x="72" y="72" width="1056" height="486" fill="#141413" stroke="#3d3d38" stroke-width="2"/>
+  <rect x="132" y="122" width="48" height="186" fill="#f5f5f4"/>
+  <rect x="266" y="122" width="48" height="186" fill="#f5f5f4"/>
+  <path d="M180 236 L266 185 L266 228 L180 279 Z" fill="#f5f5f4"/>
+  <text x="132" y="390" fill="#f5f5f4" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="800" letter-spacing="3">HEStats</text>
+  <text x="132" y="446" fill="#a8a8a2" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="600" letter-spacing="5">UK HIGHER EDUCATION FINANCIAL INTELLIGENCE</text>
+  <text x="132" y="502" fill="#d7d1c5" font-family="Arial, Helvetica, sans-serif" font-size="27">Open-source university finance, rankings, outcomes and sector data.</text>
+  <text x="132" y="538" fill="#a8a8a2" font-family="Arial, Helvetica, sans-serif" font-size="22">Created by Ashan Jeevanathan</text>
+  <rect x="820" y="124" width="240" height="18" fill="#7396c2"/>
+  <rect x="764" y="172" width="296" height="18" fill="#5fa97b"/>
+  <rect x="858" y="220" width="202" height="18" fill="#c2945a"/>
+  <rect x="706" y="268" width="354" height="18" fill="#d06f6f"/>
+  <rect x="790" y="316" width="270" height="18" fill="#a8a8a2"/>
+  <rect x="682" y="364" width="378" height="18" fill="#f5f5f4"/>
+</svg>

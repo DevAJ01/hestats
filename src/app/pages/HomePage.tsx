@@ -360,7 +360,7 @@ export function HomePage() {
               HEStats is free, open-source, and student-built
             </p>
             <p style={{ color: 'var(--text-2)', fontSize: 11, lineHeight: 1.4 }}>
-              No paywalls. No ads. No VC funding. If this platform saves you time, please consider supporting it.
+              Built by Ashan Jeevanathan. No paywalls. No ads. No VC funding. If this platform saves you time, please consider supporting it.
             </p>
           </div>
         </div>
@@ -912,7 +912,7 @@ export function HomePage() {
           Full methodology <ArrowUpRight className="w-3 h-3" />
         </Link>
         <div className="ml-auto flex items-center gap-3">
-          <span style={{ color: 'var(--muted)', fontSize: 10 }}>Free & open-source —</span>
+          <span style={{ color: 'var(--muted)', fontSize: 10 }}>Free and open-source by Ashan Jeevanathan</span>
           <a
             href={SUPPORT_LINKS.kofi}
             target="_blank"

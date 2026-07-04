@@ -1,0 +1,174 @@
+{
+  "run_id": "2026-07-04-intelligence-social-cards-v2",
+  "generated_at": "2026-07-04T19:02:06.285Z",
+  "output_type": "social-carousel",
+  "dimensions": {
+    "width": 1080,
+    "height": 1080
+  },
+  "cards": [
+    {
+      "index": 1,
+      "id": "cover-ai-degrees-graduate-jobs",
+      "title": "AI, degrees and graduate jobs",
+      "metric": "14 signals",
+      "metric_label": "for a carousel people will save",
+      "source": "HEStats Intelligence pack built from local verified source metadata, retrieved 1 July 2026.",
+      "svg": "01-cover-ai-degrees-graduate-jobs.svg",
+      "png": "01-cover-ai-degrees-graduate-jobs.png"
+    },
+    {
+      "index": 2,
+      "id": "ai-adoption-is-here",
+      "title": "AI adoption has crossed into normal operations",
+      "metric": "26%",
+      "metric_label": "of businesses used at least one AI technology",
+      "source": "Source: ONS BICS Wave 153, 16 to 29 March 2026. Official statistics in development.",
+      "svg": "02-ai-adoption-is-here.svg",
+      "png": "02-ai-adoption-is-here.png"
+    },
+    {
+      "index": 3,
+      "id": "ai-job-loss-signal",
+      "title": "The job-loss signal is smaller than the hype",
+      "metric": "5%",
+      "metric_label": "of AI-using businesses reported headcount reduction",
+      "source": "Source: ONS BICS Wave 153, 16 to 29 March 2026. HEStats interpretation for social framing.",
+      "svg": "03-ai-job-loss-signal.svg",
+      "png": "03-ai-job-loss-signal.png"
+    },
+    {
+      "index": 4,
+      "id": "global-genai-exposure",
+      "title": "GenAI exposure reaches one in four workers",
+      "metric": "25%",
+      "metric_label": "estimated in occupations with some exposure",
+      "source": "Source: ILO Working Paper 140, Generative AI and Jobs, 2025. External analysis.",
+      "svg": "04-global-genai-exposure.svg",
+      "png": "04-global-genai-exposure.png"
+    },
+    {
+      "index": 5,
+      "id": "high-exposure-graduate-markets",
+      "title": "High-exposure graduate markets are not niche",
+      "metric": "132k",
+      "metric_label": "graduates enter 58-62% AI-exposure industries",
+      "source": "Source: DfE LEO industry data 2023/24 + HEStats AI exposure model. Exposure is not job-loss probability.",
+      "svg": "05-high-exposure-graduate-markets.svg",
+      "png": "05-high-exposure-graduate-markets.png"
+    },
+    {
+      "index": 6,
+      "id": "top-high-exposure-industries",
+      "title": "Three graduate destinations sit in the 62% exposure band",
+      "metric": "62%",
+      "metric_label": "AI exposure model band",
+      "source": "Source: DfE LEO industry data 2023/24 + HEStats AI exposure model.",
+      "svg": "06-top-high-exposure-industries.svg",
+      "png": "06-top-high-exposure-industries.png"
+    },
+    {
+      "index": 7,
+      "id": "admin-support-churn-warning",
+      "title": "Admin and support has the churn warning",
+      "metric": "43%",
+      "metric_label": "same-section retention from year 1 to year 3",
+      "source": "Source: DfE LEO 2023/24. Retention means same industry section, not employer tenure.",
+      "svg": "07-admin-support-churn-warning.svg",
+      "png": "07-admin-support-churn-warning.png"
+    },
+    {
+      "index": 8,
+      "id": "health-human-heavy-demand",
+      "title": "Human-heavy sectors still dominate graduate demand",
+      "metric": "73,375",
+      "metric_label": "graduates into health and social work",
+      "source": "Source: DfE LEO industry data 2023/24 + HEStats AI exposure model.",
+      "svg": "08-health-human-heavy-demand.svg",
+      "png": "08-health-human-heavy-demand.png"
+    },
+    {
+      "index": 9,
+      "id": "graduate-outcomes-big-picture",
+      "title": "Graduate outcomes: the big picture",
+      "metric": "87%",
+      "metric_label": "in work or further study",
+      "source": "Source: HESA Graduate Outcomes 2023/24 latest results, published 4 June 2026.",
+      "svg": "09-graduate-outcomes-big-picture.svg",
+      "png": "09-graduate-outcomes-big-picture.png"
+    },
+    {
+      "index": 10,
+      "id": "degree-usefulness-gap",
+      "title": "A degree does not automatically feel useful",
+      "metric": "68%",
+      "metric_label": "reported using what they learned",
+      "source": "Source: HESA Graduate Outcomes 2023/24 latest results, published 4 June 2026.",
+      "svg": "10-degree-usefulness-gap.svg",
+      "png": "10-degree-usefulness-gap.png"
+    },
+    {
+      "index": 11,
+      "id": "business-degree-risk",
+      "title": "Big-volume degree risk: business and management",
+      "metric": "37,885",
+      "metric_label": "annual graduations",
+      "source": "Source: DfE LEO degree data + HEStats AI automation risk model.",
+      "svg": "11-business-degree-risk.svg",
+      "png": "11-business-degree-risk.png"
+    },
+    {
+      "index": 12,
+      "id": "ai-risk-degree-ladder",
+      "title": "AI risk clusters around text, rules and coordination work",
+      "metric": "46%",
+      "metric_label": "HEStats automation-risk band",
+      "source": "Source: DfE LEO degree data + HEStats AI automation risk model.",
+      "svg": "12-ai-risk-degree-ladder.svg",
+      "png": "12-ai-risk-degree-ladder.png"
+    },
+    {
+      "index": 13,
+      "id": "regulated-human-resilience",
+      "title": "Resilience looks human, practical and regulated",
+      "metric": "18%",
+      "metric_label": "HEStats automation risk for key health subjects",
+      "source": "Source: DfE LEO degree data + HEStats AI automation risk model.",
+      "svg": "13-regulated-human-resilience.svg",
+      "png": "13-regulated-human-resilience.png"
+    },
+    {
+      "index": 14,
+      "id": "graduate-debt-backdrop",
+      "title": "The AI career question has a debt backdrop",
+      "metric": "£44,690",
+      "metric_label": "expected average borrowing for 2024/25 entrants",
+      "source": "Source: DfE Student loan forecasts for England 2024/25. Forecast, not observed provider finance.",
+      "svg": "14-graduate-debt-backdrop.svg",
+      "png": "14-graduate-debt-backdrop.png"
+    }
+  ],
+  "source_links": [
+    {
+      "label": "ONS BICS Wave 153",
+      "url": "https://www.ons.gov.uk/businessindustryandtrade/business/businessservices/bulletins/businessinsightsandimpactontheukeconomy/2april2026"
+    },
+    {
+      "label": "ILO Generative AI and Jobs Working Paper 140",
+      "url": "https://www.ilo.org/publications/generative-ai-and-jobs-refined-global-index-occupational-exposure"
+    },
+    {
+      "label": "DfE Graduate labour market outcomes (LEO) 2023/24",
+      "url": "https://explore-education-statistics.service.gov.uk/find-statistics/graduate-labour-market-outcomes-leo/2023-24"
+    },
+    {
+      "label": "HESA Graduate Outcomes results",
+      "url": "https://www.graduateoutcomes.ac.uk/results/"
+    },
+    {
+      "label": "DfE Student loan forecasts for England 2024/25",
+      "url": "https://explore-education-statistics.service.gov.uk/find-statistics/student-loan-forecasts-for-england/2024-25"
+    }
+  ],
+  "caption": "AI is not just a tech story. It is a graduate jobs story.\n\n26% of UK businesses were already using at least one AI technology in March 2026, but only 5% of AI-using businesses reported headcount reductions. The bigger risk for graduates is task change: which degrees lead into high-exposure industries, which sectors still need human judgement, and whether universities are preparing students for the work they will actually do.\n\nSources: ONS, ILO, DfE LEO, HESA Graduate Outcomes, HEStats Intelligence.\n\n#HigherEducation #AIJobs #GraduateJobs #Universities #Employability #DataStorytelling #UKHE"
+}

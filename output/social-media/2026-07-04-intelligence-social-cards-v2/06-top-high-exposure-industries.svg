@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <defs>
+    <linearGradient id="bg6" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0c0d0d"/>
+      <stop offset="0.64" stop-color="#12110f"/>
+      <stop offset="1" stop-color="#060707"/>
+    </linearGradient>
+    <radialGradient id="glow6" cx="78%" cy="14%" r="74%">
+      <stop offset="0" stop-color="#FCA5A5" stop-opacity="0.20"/>
+      <stop offset="0.42" stop-color="#FCA5A5" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#FCA5A5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#bg6)"/>
+  <rect width="1080" height="1080" fill="url(#glow6)"/>
+  <line x1="88" y1="158" x2="88" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="222" y1="158" x2="222" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="356" y1="158" x2="356" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="490" y1="158" x2="490" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="624" y1="158" x2="624" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="758" y1="158" x2="758" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="892" y1="158" x2="892" y2="920" stroke="rgba(255,255,255,.035)"/><line x1="88" y1="220" x2="992" y2="220" stroke="rgba(255,255,255,.032)"/>
+<line x1="88" y1="338" x2="992" y2="338" stroke="rgba(255,255,255,.032)"/>
+<line x1="88" y1="456" x2="992" y2="456" stroke="rgba(255,255,255,.032)"/>
+<line x1="88" y1="574" x2="992" y2="574" stroke="rgba(255,255,255,.032)"/>
+<line x1="88" y1="692" x2="992" y2="692" stroke="rgba(255,255,255,.032)"/>
+<line x1="88" y1="810" x2="992" y2="810" stroke="rgba(255,255,255,.032)"/>
+  <path d="M768 112 L1006 265" stroke="#FCA5A5" stroke-width="8" opacity=".22"/>
+  <path d="M88 898 C380 828 672 793 992 704" stroke="#FCA5A5" stroke-width="2" opacity=".40" fill="none"/>
+  <rect x="48" y="46" width="984" height="988" rx="34" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="2"/>
+  
+    <text x="88" y="74" fill="#f4f1ea" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="900">HEStats Intelligence</text>
+    <text x="992" y="74" fill="#9b958b" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="800" text-anchor="end">06/14</text>
+    <rect x="88" y="102" width="264.6" height="38" rx="19" fill="#FCA5A518" stroke="#FCA5A580"/>
+    <text x="109" y="127" fill="#FCA5A5" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="900">INDUSTRY DESTINATIONS</text>
+  
+  <text x="88" y="188" fill="#f8f4ec" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="900" text-anchor="start">Three graduate destinations sit</text>
+<text x="88" y="246.3" fill="#f8f4ec" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="900" text-anchor="start">in the 62% exposure band</text>
+  
+      <rect x="88" y="314" width="470" height="188" rx="26" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.14)"/>
+      <rect x="88" y="314" width="8" height="188" rx="4" fill="#FCA5A5"/>
+      <text x="122" y="402" fill="#FCA5A5" font-family="Arial, Helvetica, sans-serif" font-size="126" font-weight="900">62%</text>
+      <text x="124" y="444" fill="#f3efe7" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="800" text-anchor="start">AI exposure model band</text>
+    
+  <text x="88" y="642" fill="#e6dfd4" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700" text-anchor="start">Professional services, information and finance</text>
+<text x="88" y="678" fill="#e6dfd4" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700" text-anchor="start">combine high demand with AI task change.</text>
+  
+      <text x="108" y="748" fill="#f8f4ec" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="900">Professional, scientific &amp; technical</text>
+      <text x="806" y="748" fill="#FCA5A5" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="900" text-anchor="end">45,835</text>
+      <rect x="108" y="764" width="270" height="12" rx="6" fill="rgba(255,255,255,.16)"/>
+      <rect x="108" y="764" width="270" height="12" rx="6" fill="#FCA5A5"/>
+      <text x="408" y="776" fill="#c5bdb1" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">£27.3k start</text>
+    
+
+      <text x="108" y="814" fill="#f8f4ec" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="900">Information &amp; communication</text>
+      <text x="806" y="814" fill="#FCA5A5" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="900" text-anchor="end">23,120</text>
+      <rect x="108" y="830" width="270" height="12" rx="6" fill="rgba(255,255,255,.16)"/>
+      <rect x="108" y="830" width="136" height="12" rx="6" fill="#FCA5A5"/>
+      <text x="408" y="842" fill="#c5bdb1" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">£29k start</text>
+    
+
+      <text x="108" y="880" fill="#f8f4ec" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="900">Financial &amp; insurance</text>
+      <text x="806" y="880" fill="#FCA5A5" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="900" text-anchor="end">16,385</text>
+      <rect x="108" y="896" width="270" height="12" rx="6" fill="rgba(255,255,255,.16)"/>
+      <rect x="108" y="896" width="97" height="12" rx="6" fill="#FCA5A5"/>
+      <text x="408" y="908" fill="#c5bdb1" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">£31.6k start</text>
+    
+  
+    <rect x="88" y="944" width="904" height="1" fill="rgba(255,255,255,.18)"/>
+    <text x="88" y="974" fill="#b9b2a6" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="start">Source: DfE LEO industry data 2023/24 + HEStats AI exposure model.</text>
+    <text x="992" y="1010" fill="#FCA5A5" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="900" text-anchor="end">hestats.co.uk</text>
+  
+</svg>

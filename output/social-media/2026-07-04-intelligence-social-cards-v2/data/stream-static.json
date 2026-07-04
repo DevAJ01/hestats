@@ -1,0 +1,150 @@
+{
+  "meta": {
+    "title": "HEStats Intelligence Social Cards V2",
+    "summary": "Review, select, and hand off generated Creative Production images.",
+    "source": "review_renderer",
+    "itemCount": 14
+  },
+  "items": [
+    {
+      "id": "cover-ai-degrees-graduate-jobs",
+      "title": "AI, degrees and graduate jobs",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/cover-ai-degrees-graduate-jobs.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/cover-ai-degrees-graduate-jobs.jpg",
+      "sourceImageUrl": "generated/cover-ai-degrees-graduate-jobs.png"
+    },
+    {
+      "id": "ai-adoption-is-here",
+      "title": "AI adoption has crossed into normal operations",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/ai-adoption-is-here.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/ai-adoption-is-here.jpg",
+      "sourceImageUrl": "generated/ai-adoption-is-here.png"
+    },
+    {
+      "id": "ai-job-loss-signal",
+      "title": "The job-loss signal is smaller than the hype",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/ai-job-loss-signal.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/ai-job-loss-signal.jpg",
+      "sourceImageUrl": "generated/ai-job-loss-signal.png"
+    },
+    {
+      "id": "global-genai-exposure",
+      "title": "GenAI exposure reaches one in four workers",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/global-genai-exposure.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/global-genai-exposure.jpg",
+      "sourceImageUrl": "generated/global-genai-exposure.png"
+    },
+    {
+      "id": "high-exposure-graduate-markets",
+      "title": "High-exposure graduate markets are not niche",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/high-exposure-graduate-markets.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/high-exposure-graduate-markets.jpg",
+      "sourceImageUrl": "generated/high-exposure-graduate-markets.png"
+    },
+    {
+      "id": "top-high-exposure-industries",
+      "title": "Three graduate destinations sit in the 62% exposure band",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/top-high-exposure-industries.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/top-high-exposure-industries.jpg",
+      "sourceImageUrl": "generated/top-high-exposure-industries.png"
+    },
+    {
+      "id": "admin-support-churn-warning",
+      "title": "Admin and support has the churn warning",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/admin-support-churn-warning.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/admin-support-churn-warning.jpg",
+      "sourceImageUrl": "generated/admin-support-churn-warning.png"
+    },
+    {
+      "id": "health-human-heavy-demand",
+      "title": "Human-heavy sectors still dominate graduate demand",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/health-human-heavy-demand.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/health-human-heavy-demand.jpg",
+      "sourceImageUrl": "generated/health-human-heavy-demand.png"
+    },
+    {
+      "id": "graduate-outcomes-big-picture",
+      "title": "Graduate outcomes: the big picture",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/graduate-outcomes-big-picture.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/graduate-outcomes-big-picture.jpg",
+      "sourceImageUrl": "generated/graduate-outcomes-big-picture.png"
+    },
+    {
+      "id": "degree-usefulness-gap",
+      "title": "A degree does not automatically feel useful",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/degree-usefulness-gap.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/degree-usefulness-gap.jpg",
+      "sourceImageUrl": "generated/degree-usefulness-gap.png"
+    },
+    {
+      "id": "business-degree-risk",
+      "title": "Big-volume degree risk: business and management",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/business-degree-risk.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/business-degree-risk.jpg",
+      "sourceImageUrl": "generated/business-degree-risk.png"
+    },
+    {
+      "id": "ai-risk-degree-ladder",
+      "title": "AI risk clusters around text, rules and coordination work",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/ai-risk-degree-ladder.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/ai-risk-degree-ladder.jpg",
+      "sourceImageUrl": "generated/ai-risk-degree-ladder.png"
+    },
+    {
+      "id": "regulated-human-resilience",
+      "title": "Resilience looks human, practical and regulated",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/regulated-human-resilience.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/regulated-human-resilience.jpg",
+      "sourceImageUrl": "generated/regulated-human-resilience.png"
+    },
+    {
+      "id": "graduate-debt-backdrop",
+      "title": "The AI career question has a debt backdrop",
+      "caption": "",
+      "tone": "",
+      "prompt": "",
+      "imageUrl": "generated/mcp-thumbs/graduate-debt-backdrop.jpg",
+      "previewImageUrl": "generated/mcp-thumbs/graduate-debt-backdrop.jpg",
+      "sourceImageUrl": "generated/graduate-debt-backdrop.png"
+    }
+  ]
+}

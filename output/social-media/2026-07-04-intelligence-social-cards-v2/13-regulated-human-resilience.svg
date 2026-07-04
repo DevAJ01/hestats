@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <defs>
+    <linearGradient id="bg13" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0c0d0d"/>
+      <stop offset="0.64" stop-color="#12110f"/>
+      <stop offset="1" stop-color="#060707"/>
+    </linearGradient>
+    <radialGradient id="glow13" cx="78%" cy="14%" r="74%">
+      <stop offset="0" stop-color="#86EFAC" stop-opacity="0.20"/>
+      <stop offset="0.42" stop-color="#86EFAC" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#86EFAC" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#bg13)"/>
+  <rect width="1080" height="1080" fill="url(#glow13)"/>
+  <line x1="88" y1="158" x2="88" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="222" y1="158" x2="222" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="356" y1="158" x2="356" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="490" y1="158" x2="490" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="624" y1="158" x2="624" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="758" y1="158" x2="758" y2="920" stroke="rgba(255,255,255,.035)"/>
+<line x1="892" y1="158" x2="892" y2="920" stroke="rgba(255,255,255,.035)"/><line x1="88" y1="220" x2="992" y2="220" stroke="rgba(255,255,255,.032)"/>
+<line x1="88" y1="338" x2="992" y2="338" stroke="rgba(255,255,255,.032)"/>
+<line x1="88" y1="456" x2="992" y2="456" stroke="rgba(255,255,255,.032)"/>
+<line x1="88" y1="574" x2="992" y2="574" stroke="rgba(255,255,255,.032)"/>
+<line x1="88" y1="692" x2="992" y2="692" stroke="rgba(255,255,255,.032)"/>
+<line x1="88" y1="810" x2="992" y2="810" stroke="rgba(255,255,255,.032)"/>
+  <path d="M768 112 L1006 265" stroke="#86EFAC" stroke-width="8" opacity=".22"/>
+  <path d="M88 898 C380 828 672 793 992 704" stroke="#86EFAC" stroke-width="2" opacity=".40" fill="none"/>
+  <rect x="48" y="46" width="984" height="988" rx="34" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="2"/>
+  
+    <text x="88" y="74" fill="#f4f1ea" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="900">HEStats Intelligence</text>
+    <text x="992" y="74" fill="#9b958b" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="800" text-anchor="end">13/14</text>
+    <rect x="88" y="102" width="222.2" height="38" rx="19" fill="#86EFAC18" stroke="#86EFAC80"/>
+    <text x="109" y="127" fill="#86EFAC" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="900">RESILIENCE SIGNAL</text>
+  
+  <text x="88" y="188" fill="#f8f4ec" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="900" text-anchor="start">Resilience looks human,</text>
+<text x="88" y="246.3" fill="#f8f4ec" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="900" text-anchor="start">practical and regulated</text>
+  
+      <rect x="88" y="314" width="470" height="188" rx="26" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.14)"/>
+      <rect x="88" y="314" width="8" height="188" rx="4" fill="#86EFAC"/>
+      <text x="122" y="402" fill="#86EFAC" font-family="Arial, Helvetica, sans-serif" font-size="126" font-weight="900">18%</text>
+      <text x="124" y="444" fill="#f3efe7" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="800" text-anchor="start">HEStats automation risk for</text>
+<text x="124" y="469.9" fill="#f3efe7" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="800" text-anchor="start">key health subjects</text>
+    
+  <text x="88" y="628" fill="#e6dfd4" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700" text-anchor="start">Health subjects sit at 18% modelled AI risk,</text>
+<text x="88" y="664" fill="#e6dfd4" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700" text-anchor="start">with strong employment and salary signals.</text>
+  
+      <text x="108" y="716" fill="#f8f4ec" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="900">Medicine &amp; dentistry</text>
+      <text x="806" y="716" fill="#86EFAC" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="900" text-anchor="end">£42.8k</text>
+      <rect x="108" y="732" width="270" height="12" rx="6" fill="rgba(255,255,255,.16)"/>
+      <rect x="108" y="732" width="270" height="12" rx="6" fill="#86EFAC"/>
+      <text x="408" y="744" fill="#c5bdb1" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">96.9% employed</text>
+    
+
+      <text x="108" y="770" fill="#f8f4ec" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="900">Nursing &amp; midwifery</text>
+      <text x="806" y="770" fill="#86EFAC" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="900" text-anchor="end">£34k</text>
+      <rect x="108" y="786" width="270" height="12" rx="6" fill="rgba(255,255,255,.16)"/>
+      <rect x="108" y="786" width="214" height="12" rx="6" fill="#86EFAC"/>
+      <text x="408" y="798" fill="#c5bdb1" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">95.6% employed</text>
+    
+
+      <text x="108" y="824" fill="#f8f4ec" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="900">Veterinary sciences</text>
+      <text x="806" y="824" fill="#86EFAC" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="900" text-anchor="end">£33.3k</text>
+      <rect x="108" y="840" width="270" height="12" rx="6" fill="rgba(255,255,255,.16)"/>
+      <rect x="108" y="840" width="210" height="12" rx="6" fill="#86EFAC"/>
+      <text x="408" y="852" fill="#c5bdb1" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">94.9% employed</text>
+    
+
+      <text x="108" y="878" fill="#f8f4ec" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="900">Allied health</text>
+      <text x="806" y="878" fill="#86EFAC" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="900" text-anchor="end">£29.3k</text>
+      <rect x="108" y="894" width="270" height="12" rx="6" fill="rgba(255,255,255,.16)"/>
+      <rect x="108" y="894" width="185" height="12" rx="6" fill="#86EFAC"/>
+      <text x="408" y="906" fill="#c5bdb1" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">92.6% employed</text>
+    
+  
+    <rect x="88" y="944" width="904" height="1" fill="rgba(255,255,255,.18)"/>
+    <text x="88" y="974" fill="#b9b2a6" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="start">Source: DfE LEO degree data + HEStats AI automation risk model.</text>
+    <text x="992" y="1010" fill="#86EFAC" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="900" text-anchor="end">hestats.co.uk</text>
+  
+</svg>

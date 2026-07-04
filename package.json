@@ -6,7 +6,10 @@
   "packageManager": "pnpm@11.7.0",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "prebuild": "pnpm seo:assets",
     "build": "vite build",
+    "postbuild": "node scripts/prerender-seo-html.mjs",
+    "seo:assets": "node scripts/generate-seo-assets.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:smoke": "vitest run src/app/__tests__/routes.smoke.test.tsx src/app/__tests__/open-data.test.ts",
