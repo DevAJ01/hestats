@@ -139,7 +139,7 @@ function baseGraph(seo) {
       url: siteUrl,
       logo: `${siteUrl}/favicon.svg`,
       description: 'HEStats is an independent, open-source UK higher education financial intelligence platform for university finances, rankings, graduate outcomes, open data and sector analysis.',
-      email: 'mailto:hello@hestats.co.uk',
+      email: 'mailto:ashanj1@outlook.com',
       foundingDate: '2026',
       founder: { '@id': founderId },
       creator: { '@id': founderId },

@@ -5,7 +5,7 @@
 Canonical site: https://hestats.co.uk
 Founder: Ashan Jeevanathan
 Founder entity URL: https://hestats.co.uk/about/#ashan-jeevanathan
-Contact: hello@hestats.co.uk
+Contact: ashanj1@outlook.com
 Source repository: https://github.com/DevAJ01/hestats
 
 ## Primary pages

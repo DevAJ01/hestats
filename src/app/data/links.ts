@@ -5,5 +5,5 @@ export const SUPPORT_LINKS = {
   kofi: 'https://ko-fi.com/ashanjeevanathan',
   buy_me_a_coffee: 'https://buymeacoffee.com/ashanj1q',
   github_repo: 'https://github.com/DevAJ01/hestats',
-  contact_email: 'hello@hestats.co.uk',
+  contact_email: 'ashanj1@outlook.com',
 }
