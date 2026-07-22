@@ -19,6 +19,8 @@
     "ingest:hesa-students": "node scripts/ingest-hesa-students.mjs",
     "ingest:dfe-leo": "node scripts/ingest-dfe-leo.mjs",
     "ingest:hesa-staff": "node scripts/ingest-hesa-staff.mjs",
+    "ingest:ofs-profiles": "node scripts/ingest-ofs-profiles.mjs",
+    "ingest:wikidata-profiles": "node scripts/ingest-wikidata-profiles.mjs",
     "ingest:hesa-estates": "node scripts/ingest-hesa-estates.mjs",
     "ingest:ofs-tef": "node scripts/ingest-ofs-tef.mjs"
   },

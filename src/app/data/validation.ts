@@ -71,6 +71,7 @@ export function validateInstitutions(rows: Institution[] = institutions): DataQu
     if (!row.canonical_name.trim()) issues.push(issue('error', 'institution.name_missing', 'Institution name is required.', { institution_id: row.id }))
     if (!row.short_name.trim()) issues.push(issue('error', 'institution.short_name_missing', 'Institution short name is required.', { institution_id: row.id }))
     if (!row.city.trim()) issues.push(issue('error', 'institution.city_missing', 'Institution city is required.', { institution_id: row.id }))
+    if (!row.official_website.trim()) issues.push(issue('error', 'institution.website_missing', 'Institution website is required.', { institution_id: row.id }))
 
     if (row.ukprn === null) {
       issues.push(issue('warning', 'institution.ukprn_pending', 'UKPRN is pending official verification.', { institution_id: row.id }))

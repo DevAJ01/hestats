@@ -60,11 +60,13 @@ describe('HEStats data validation', () => {
     }
   })
 
-  it('keeps a 304-row HESA provider universe without inventing pending identifiers', () => {
+  it('keeps a 304-row unified provider directory without inventing pending identifiers', () => {
     expect(institutions).toHaveLength(HESA_STUDENT_PROVIDER_COUNT_2024_25)
     expect(providerUniverse).toHaveLength(HESA_STUDENT_PROVIDER_COUNT_2024_25)
     expect(blockingIssues(validateProviderUniverse())).toEqual([])
     expect(providerUniverse.filter((row) => row.platform_status === 'full_profile')).toHaveLength(institutions.length)
+    expect(providerUniverse.filter((row) => row.reports_hesa_student_2024_25)).toHaveLength(289)
+    expect(providerUniverse.filter((row) => row.reports_hesa_finance_2024_25)).toHaveLength(298)
 
     const pendingRows = providerUniverse.filter((row) => row.source_status === 'pending')
     expect(pendingRows).toHaveLength(0)
@@ -144,6 +146,20 @@ describe('HEStats data validation', () => {
     }
   })
 
+  it('reconciles matched 2024-25 HESA Figure 7 providers without double-counting dimensional slices', () => {
+    const verifiedRows = studentEnrolments.filter((row) => row.source_status === 'verified')
+    const pendingRows = studentEnrolments.filter((row) => row.source_status === 'pending')
+    expect(verifiedRows).toHaveLength(289)
+    expect(pendingRows).toHaveLength(15)
+    expect(verifiedRows.reduce((sum, row) => sum + (row.total_enrolments ?? 0), 0)).toBe(2_846_195)
+    expect(verifiedRows.every((row) => (
+      Math.abs(
+        (row.total_enrolments ?? 0) -
+        ((row.uk_enrolments ?? 0) + (row.non_uk_enrolments ?? 0) + (row.unknown_domicile_enrolments ?? 0))
+      ) <= 5
+    ))).toBe(true)
+  })
+
   it('keeps explicit provider coverage rows for students, outcomes, staff, estates and TEF', () => {
     expect(providerSourceCoverage).toHaveLength(providerUniverse.length * 5)
     expect(blockingIssues(validateProviderSourceCoverage())).toEqual([])
@@ -162,6 +178,16 @@ describe('HEStats data validation', () => {
     expect(pendingRows.length).toBeGreaterThan(0)
     expect(pendingRows.every((row) => !row.included_in_aggregates)).toBe(true)
     expect(pendingRows.every((row) => STAFF_VALUE_KEYS.every((key) => row[key] === null))).toBe(true)
+  })
+
+  it('loads the published HESA staff provider panel while preserving non-reporting and suppressed gaps', () => {
+    const verifiedRows = staffRecords.filter((row) => row.source_status === 'verified')
+    expect(verifiedRows).toHaveLength(1_865)
+    expect(new Set(verifiedRows.map((row) => row.institution_id)).size).toBe(222)
+    expect(verifiedRows.every((row) => (
+      (row.female_staff_pct === null || (row.female_staff_pct >= 0 && row.female_staff_pct <= 100)) &&
+      (row.non_uk_staff_pct === null || (row.non_uk_staff_pct >= 0 && row.non_uk_staff_pct <= 100))
+    ))).toBe(true)
   })
 
   it('keeps complete estates coverage for published HESA estates years', () => {

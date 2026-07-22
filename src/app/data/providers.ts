@@ -1,4 +1,6 @@
 import { institutions } from './institutions'
+import { verifiedFinancialRecords } from './generated/financialRecords'
+import { verifiedStudentEnrolmentRecords } from './generated/studentRecords'
 import type { Institution } from './types'
 
 export const HESA_STUDENT_PROVIDER_COUNT_2024_25 = 304
@@ -37,8 +39,18 @@ export interface ProviderUniverseRecord {
   website: string | null
 }
 
-const RETRIEVED_DATE = '2026-07-01'
+const RETRIEVED_DATE = '2026-07-21'
 const HESA_PROVIDER_SOURCE_URL = 'https://www.hesa.ac.uk/data-and-analysis/finances/table-1.csv'
+const studentReportingInstitutionIds = new Set(
+  verifiedStudentEnrolmentRecords
+    .filter((row) => row.academic_year === '2024-25')
+    .map((row) => row.institution_id),
+)
+const financeReportingInstitutionIds = new Set(
+  verifiedFinancialRecords
+    .filter((row) => row.fiscal_year === '2024-25')
+    .map((row) => row.institution_id),
+)
 
 function regulatorForNation(nation: ProviderNation): ProviderUniverseRecord['regulator'] {
   if (nation === 'England') return 'OfS'
@@ -74,8 +86,8 @@ function buildProviderUniverse(): ProviderUniverseRecord[] {
       provider_type: providerTypeForName(institution.canonical_name),
       nation: institution.nation,
       regulator: regulatorForNation(institution.nation),
-      reports_hesa_student_2024_25: true,
-      reports_hesa_finance_2024_25: null,
+      reports_hesa_student_2024_25: studentReportingInstitutionIds.has(institution.id),
+      reports_hesa_finance_2024_25: financeReportingInstitutionIds.has(institution.id),
       platform_status: 'full_profile',
       source_status: 'verified',
       source_id: 'hesa-finance',
@@ -86,7 +98,7 @@ function buildProviderUniverse(): ProviderUniverseRecord[] {
       confidence: 'high',
       notes: institution.founded > 0
         ? 'Named provider is represented directly in the platform institution directory.'
-        : 'Named provider is represented directly in the platform institution directory; founded year and website remain pending where not supplied by the source roster.',
+        : 'Named provider is represented directly in the platform institution directory; founded year remains unknown where no authoritative value has been reconciled.',
       website: institution.official_website
         ? institution.official_website.startsWith('http') ? institution.official_website : `https://${institution.official_website}`
         : null,

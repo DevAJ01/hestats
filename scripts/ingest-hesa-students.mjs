@@ -1,13 +1,14 @@
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import ts from 'typescript'
 
 const ROOT = process.cwd()
-const DEFAULT_SOURCE_FILE = path.join('/Users/ashanj/Downloads', 'figure-7.csv')
+const DEFAULT_SOURCE_FILE = path.join(os.homedir(), 'Downloads', 'figure-7.csv')
 const SOURCE_FILE = process.env.HESTATS_HESA_STUDENTS_FIGURE7 || DEFAULT_SOURCE_FILE
 const GENERATED_FILE = path.join(ROOT, 'src/app/data/generated/studentRecords.ts')
 const INSTITUTIONS_FILE = path.join(ROOT, 'src/app/data/institutions.ts')
-const RETRIEVED_DATE = process.env.HESTATS_RETRIEVED_DATE || '2026-07-01'
+const RETRIEVED_DATE = process.env.HESTATS_RETRIEVED_DATE || '2026-07-21'
 const LAST_VERIFIED = process.env.HESTATS_LAST_VERIFIED || RETRIEVED_DATE
 
 const ACADEMIC_YEAR = '2024-25'
@@ -122,23 +123,29 @@ function parseInstitutions() {
   return rows
 }
 
-function domicileBucket(value) {
-  const text = String(value ?? '').toLowerCase()
-  if (!text.trim()) return 'unknown'
-  if (/(non[- ]?uk|overseas|european union|non[- ]?european|other eu|eu domicile|non eu)/i.test(text)) return 'non_uk'
-  if (/(england|scotland|wales|northern ireland|channel islands|isle of man|united kingdom|\buk\b|uk domicile|uk region)/i.test(text)) return 'uk'
-  return 'unknown'
-}
-
 function aggregateRows(rows) {
   const headers = Object.keys(rows[0] ?? {})
   const ukprnHeader = findHeader(headers, (h) => h === 'ukprn', 'UKPRN')
   const providerHeader = findHeader(headers, (h) => h.includes('provider'), 'provider')
+  const levelHeader = findHeader(headers, (h) => h.includes('level of study'), 'level of study')
+  const modeHeader = findHeader(headers, (h) => h.includes('mode of study'), 'mode of study')
+  const countryHeader = findHeader(headers, (h) => h === 'country of he provider', 'country of HE provider')
+  const regionHeader = findHeader(headers, (h) => h === 'region of he provider', 'region of HE provider')
   const addressHeader = findHeader(headers, (h) => h.includes('permanent') || h.includes('domicile'), 'permanent address')
   const countHeader = findHeader(headers, (h) => h.includes('number') || h.includes('enrol'), 'enrolment count')
 
   const byUkprn = new Map()
   for (const row of rows) {
+    // Figure 7 contains the same provider totals repeated across several
+    // dimensional slices. Use only the canonical all-provider-dimensions view
+    // and its published subtotal rows to avoid double-counting enrolments.
+    if (
+      normCell(row[levelHeader]) !== 'all' ||
+      normCell(row[modeHeader]) !== 'all' ||
+      normCell(row[countryHeader]) !== 'all' ||
+      normCell(row[regionHeader]) !== 'all'
+    ) continue
+
     const ukprn = String(row[ukprnHeader] ?? '').trim()
     if (!ukprn) continue
     const value = parseNumber(row[countHeader])
@@ -147,21 +154,25 @@ function aggregateRows(rows) {
     const existing = byUkprn.get(ukprn) ?? {
       ukprn,
       provider: String(row[providerHeader] ?? '').trim(),
-      total: 0,
-      uk: 0,
-      nonUk: 0,
-      unknown: 0,
+      total: null,
+      uk: null,
+      nonUk: null,
+      unknown: null,
     }
 
-    existing.total += value
-    const bucket = domicileBucket(row[addressHeader])
-    if (bucket === 'uk') existing.uk += value
-    else if (bucket === 'non_uk') existing.nonUk += value
-    else existing.unknown += value
+    const address = normCell(row[addressHeader])
+    if (address === 'total') existing.total = value
+    else if (address === 'total uk') existing.uk = value
+    else if (address === 'total non uk') existing.nonUk = value
+    else if (address === 'not known') existing.unknown = value
     byUkprn.set(ukprn, existing)
   }
 
   return byUkprn
+}
+
+function normCell(value) {
+  return String(value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 }
 
 function js(value) {
@@ -203,7 +214,7 @@ for (const institution of institutions) {
     continue
   }
   const sourceRow = studentRowsByUkprn.get(institution.ukprn)
-  if (!sourceRow) {
+  if (!sourceRow || [sourceRow.total, sourceRow.uk, sourceRow.nonUk, sourceRow.unknown].some((value) => value === null)) {
     missing.push(`${institution.id} (${institution.ukprn})`)
     continue
   }

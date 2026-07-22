@@ -1,13 +1,14 @@
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import ts from 'typescript'
 
 const ROOT = process.cwd()
-const DEFAULT_SOURCE_DIR = '/Users/ashanj/Downloads'
+const DEFAULT_SOURCE_DIR = path.join(os.homedir(), 'Downloads')
 const SOURCE_DIR = process.env.HESTATS_HESA_FINANCE_DIR || DEFAULT_SOURCE_DIR
 const GENERATED_FILE = path.join(ROOT, 'src/app/data/generated/financialRecords.ts')
 const INSTITUTIONS_FILE = path.join(ROOT, 'src/app/data/institutions.ts')
-const RETRIEVED_DATE = process.env.HESTATS_RETRIEVED_DATE || '2026-07-01'
+const RETRIEVED_DATE = process.env.HESTATS_RETRIEVED_DATE || '2026-07-21'
 const LAST_VERIFIED = process.env.HESTATS_LAST_VERIFIED || RETRIEVED_DATE
 
 const HESA_FINANCE_TABLES = {
