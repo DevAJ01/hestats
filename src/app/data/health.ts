@@ -19,8 +19,8 @@ function clamp(v: number, min = 0, max = 100) {
 }
 
 function normalise(v: number, low: number, high: number): number {
-  if (high === low) return 50
-  return clamp(((v - low) / (high - low)) * 100)
+  if (high === low) return 0.5
+  return clamp((v - low) / (high - low), 0, 1)
 }
 
 // Score each component 0–100 using domain-calibrated benchmarks

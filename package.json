@@ -22,6 +22,7 @@
     "ingest:ofs-profiles": "node scripts/ingest-ofs-profiles.mjs",
     "ingest:wikidata-profiles": "node scripts/ingest-wikidata-profiles.mjs",
     "ingest:hesa-estates": "node scripts/ingest-hesa-estates.mjs",
+    "extract:hesa-estates-workbook": "python3 scripts/extract-hesa-estates-workbook.py",
     "ingest:ofs-tef": "node scripts/ingest-ofs-tef.mjs"
   },
   "dependencies": {

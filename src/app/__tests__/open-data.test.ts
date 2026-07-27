@@ -77,7 +77,7 @@ describe('open data exports', () => {
     expect(staff.filter((row: { source_status: string }) => row.source_status === 'pending')
       .every((row: { included_in_aggregates: boolean; total_staff_fte: number | null }) => !row.included_in_aggregates && row.total_staff_fte === null)).toBe(true)
 
-    expect(estates).toHaveLength(2736)
+    expect(estates).toHaveLength(3040)
     expect(estatesHeader).toContain('total_estate_area_sqm')
     expect(estatesHeader).toContain('source_reference')
     expect(estates.filter((row: { source_status: string }) => row.source_status === 'pending')
@@ -325,5 +325,37 @@ describe('open data exports', () => {
     expect(financePayload.data.every((row) => row.source_status === 'forecast')).toBe(true)
     expect(financePayload.data.every((row) => !row.included_in_aggregates)).toBe(true)
     expect(financePayload.meta.coverage.forecast_records).toBeGreaterThan(0)
+  })
+
+  it('exposes overall rankings, system risk and normalised estates through the API simulator', async () => {
+    const rankingResponse = await dispatchRequest('GET', '/v1/rankings', '?metric=overall&fiscal_year=2024-25&limit=10')
+    expect(rankingResponse.status).toBe(200)
+    const rankingPayload = rankingResponse.data as {
+      data: { overall_score: number; coverage_pct: number; confidence: string }[]
+      meta: { methodology: { minimum_dimensions: number } }
+    }
+    expect(rankingPayload.data).toHaveLength(10)
+    expect(rankingPayload.data.every((row) => row.overall_score >= 0 && row.overall_score <= 100)).toBe(true)
+    expect(rankingPayload.data.every((row) => row.coverage_pct > 0)).toBe(true)
+    expect(rankingPayload.meta.methodology.minimum_dimensions).toBe(2)
+
+    const riskResponse = await dispatchRequest('GET', '/v1/system-risk')
+    expect(riskResponse.status).toBe(200)
+    const riskPayload = riskResponse.data as { data: { score: number; indicators: { source_url: string }[] } }
+    expect(riskPayload.data.score).toBeGreaterThanOrEqual(0)
+    expect(riskPayload.data.score).toBeLessThanOrEqual(100)
+    expect(riskPayload.data.indicators).toHaveLength(4)
+    expect(riskPayload.data.indicators.every((row) => row.source_url.startsWith('https://'))).toBe(true)
+
+    const estateResponse = await dispatchRequest('GET', '/v1/estate-metrics', '?academic_year=2024-25&institution_id=nottingham')
+    expect(estateResponse.status).toBe(200)
+    const estatePayload = estateResponse.data as {
+      data: { metric_id: string; value: number }[]
+      meta: { full_archive_rows: number; full_archive_url: string }
+    }
+    expect(estatePayload.data.length).toBeGreaterThan(10)
+    expect(estatePayload.data.every((row) => row.metric_id && Number.isFinite(row.value))).toBe(true)
+    expect(estatePayload.meta.full_archive_rows).toBe(346050)
+    expect(estatePayload.meta.full_archive_url).toContain('hesa-estates')
   })
 })

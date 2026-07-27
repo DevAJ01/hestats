@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { TrendingUp, TrendingDown, ArrowUpRight, FileText, ChevronRight, Activity, AlertCircle, Heart, Coffee } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowUpRight, FileText, ChevronRight, Activity, AlertCircle, Heart, Coffee, GraduationCap, Map as MapIcon, Trophy } from 'lucide-react'
 import { institutions } from '../data/institutions'
 import { compareNullableDesc, financials, formatCurrencyM, formatNumber, formatPct, getAllLatestFinancials, getFinancialsByInstitution, AVAILABLE_YEARS, isAggregateEligible, isKnownNumber } from '../data/financials'
 import { getStudentCoverage } from '../data/students'
@@ -17,6 +17,7 @@ import { IncomeBreakdownChart } from '../components/charts/IncomeBreakdownChart'
 import { Panel } from '../components/layout/Panel'
 import { WorkspaceSection } from '../components/layout/WorkspaceSection'
 import { IntelligenceCardList } from '../components/intelligence/IntelligenceCardList'
+import { SYSTEM_RISK_SNAPSHOT } from '../data/systemRisk'
 
 function aggregateByYear() {
   const byYear = new Map<string, { revenue: number; surplus: number; research: number; staff: number; cash: number; borrowing: number; capex: number; intl: number; intlCount: number; students: number; studentsCount: number; tuition: number; other: number; net_assets: number; count: number }>()
@@ -343,68 +344,34 @@ export function HomePage() {
       {/* ── My Workspace (watchlist · recent · saved comparisons) ─────────────── */}
       <WorkspaceSection />
 
-      {/* ── Support banner ──────────────────────────────────────────────────── */}
-      <div
-        className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-x-4 sm:gap-y-2 px-4 py-3 mb-2.5 border min-w-0"
-        style={{
-          backgroundColor: 'var(--panel)',
-          borderColor: 'var(--border)',
-          borderRadius: 3,
-          borderLeft: '3px solid var(--negative)',
-        }}
-      >
-        <div className="flex items-start sm:items-center gap-2 min-w-0 flex-1">
-          <Heart className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--negative)' }} />
-          <div className="min-w-0">
-            <p style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>
-              HEStats is free, open-source, and student-built
-            </p>
-            <p style={{ color: 'var(--text-2)', fontSize: 11, lineHeight: 1.4 }}>
-              Built by Ashan Jeevanathan. No paywalls. No ads. No VC funding. If this platform saves you time, please consider supporting it.
-            </p>
+      {/* ── Primary product workflows ───────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-2.5 mb-2.5">
+        <Link
+          to="/system-watch"
+          className="group flex items-center gap-4 px-4 py-3.5 border"
+          style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border-strong)', borderRadius: 3, borderLeft: '3px solid var(--warning)' }}
+        >
+          <div className="font-num tabular-nums" style={{ color: 'var(--warning)', fontSize: 34, fontWeight: 600, lineHeight: 1 }}>{SYSTEM_RISK_SNAPSHOT.score}</div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600 }}>UK HE System Watch</p>
+              <span style={{ color: 'var(--warning)', fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{SYSTEM_RISK_SNAPSHOT.level}</span>
+            </div>
+            <p className="mt-1" style={{ color: 'var(--text-2)', fontSize: 11, lineHeight: 1.45 }}>Finance, graduate employment, labour demand and recruitment exposure · as of {SYSTEM_RISK_SNAPSHOT.as_of}</p>
           </div>
-        </div>
-        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto sm:ml-auto min-w-0">
-          <a
-            href={SUPPORT_LINKS.github_sponsors}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 transition-colors min-w-0"
-            style={{ backgroundColor: '#ea4aaa', color: '#fff', borderRadius: 3, fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-          >
-            <Heart className="w-3.5 h-3.5 flex-shrink-0" /> <span className="truncate">GitHub Sponsors</span>
-          </a>
-          <a
-            href={SUPPORT_LINKS.kofi}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 transition-colors min-w-0"
-            style={{ backgroundColor: '#29abe0', color: '#fff', borderRadius: 3, fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-          >
-            <Coffee className="w-3.5 h-3.5 flex-shrink-0" /> <span className="truncate">Ko-fi</span>
-          </a>
-          <a
-            href={SUPPORT_LINKS.github_repo}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 transition-colors min-w-0"
-            style={{ backgroundColor: 'var(--bg-2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 3, fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-          >
-            <FileText className="w-3.5 h-3.5 flex-shrink-0" /> <span className="truncate">Contribute</span>
-          </a>
-          <Link
-            to="/support"
-            className="flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 min-w-0"
-            style={{ border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text-2)', fontSize: 12, textDecoration: 'none' }}
-          >
-            <span className="truncate">All options</span> <ArrowUpRight className="w-3 h-3 flex-shrink-0" />
-          </Link>
+          <ArrowUpRight className="w-4 h-4 flex-shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" style={{ color: 'var(--link)' }} />
+        </Link>
+        <div className="grid grid-cols-3 border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
+          {[
+            { label: 'Overall rankings', href: '/rankings?category=overall', icon: Trophy },
+            { label: 'Students & careers', href: '/student-journey', icon: GraduationCap },
+            { label: 'Interactive map', href: '/explorer?view=map&color=overall', icon: MapIcon },
+          ].map(({ label, href, icon: Icon }, index) => (
+            <Link key={href} to={href} className="flex flex-col items-center justify-center gap-2 px-2 py-3 text-center transition-colors hover:bg-[var(--panel-hover)]" style={{ borderLeft: index ? '1px solid var(--border)' : 'none' }}>
+              <Icon className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+              <span style={{ color: 'var(--text-2)', fontSize: 10.5, lineHeight: 1.3 }}>{label}</span>
+            </Link>
+          ))}
         </div>
       </div>
 

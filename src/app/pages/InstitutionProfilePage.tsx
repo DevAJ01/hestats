@@ -19,6 +19,7 @@ import { HealthBadge } from '../components/institutions/HealthBadge'
 import { MetricTrendChart } from '../components/charts/MetricTrendChart'
 import { IncomeBreakdownChart } from '../components/charts/IncomeBreakdownChart'
 import { Sparkline } from '../components/charts/Sparkline'
+import { buildInstitutionTimeline } from '../data/timeline'
 
 const TABS = ['Overview', 'Financials', 'Students', 'Trends', 'DNA', 'Research', 'Borrowing', 'Outcomes', 'Staff', 'Timeline', 'Estates', 'Sources'] as const
 type Tab = (typeof TABS)[number]
@@ -862,30 +863,23 @@ export function InstitutionProfilePage() {
 
       {activeTab === 'Timeline' && (() => {
         const historyAscAll = [...financials].sort((a, b) => a.fiscal_year.localeCompare(b.fiscal_year))
-        const EVENTS: { year: string; type: 'milestone' | 'risk' | 'positive' | 'regulatory'; title: string; body: string }[] = [
-          { year: '2015-16', type: 'milestone', title: 'Baseline year', body: `${institution.short_name} enters HEStats 10-year tracking period. Income: ${formatCurrencyM(historyAscAll[0]?.revenue_gbp_m)}.` },
-          { year: '2016-17', type: 'positive', title: 'Pending source row', body: 'No verified institution-level narrative event is attached for this year yet.' },
-          { year: '2017-18', type: 'regulatory', title: 'TEF framework introduced', body: 'Sector event: the Teaching Excellence Framework was introduced. Institution-level TEF ratings are shown only when an OfS source row is attached.' },
-          { year: '2018-19', type: 'positive', title: 'Research income', body: `Research income: ${formatCurrencyM(historyAscAll[3]?.research_income_gbp_m)}.` },
-          { year: '2019-20', type: 'milestone', title: 'Income row', body: `Income: ${formatCurrencyM(historyAscAll[4]?.revenue_gbp_m)}.` },
-          { year: '2020-21', type: 'risk', title: 'Pending source row', body: 'No verified institution-level narrative event is attached for this year yet.' },
-          { year: '2021-22', type: 'positive', title: 'Surplus row', body: `Surplus: ${formatCurrencyM(historyAscAll[6]?.surplus_gbp_m)}.` },
-          { year: '2022-23', type: 'regulatory', title: 'Regulatory source row', body: 'Institution-specific regulatory events are pending unless an official OfS or devolved regulator source row is attached.' },
-          { year: '2023-24', type: 'milestone', title: 'Capital expenditure row', body: `Capital expenditure: ${formatCurrencyM(historyAscAll[8]?.capital_expenditure_gbp_m)}.` },
-          { year: '2024-25', type: 'positive', title: 'Latest financial row', body: `FY${latest.fiscal_year}: ${formatCurrencyM(latest.revenue_gbp_m)} income, ${formatPct(latest.surplus_margin_pct)} margin, ${latest.risk_flag} risk.` },
-        ]
+        const EVENTS = buildInstitutionTimeline(institution.id)
 
         const typeColor: Record<string, string> = {
           milestone: 'var(--accent)',
           risk: 'var(--negative)',
           positive: 'var(--positive)',
           regulatory: 'var(--warning)',
+          estate: 'var(--chart-5)',
+          pending: 'var(--muted)',
         }
         const typeLabel: Record<string, string> = {
           milestone: 'Milestone',
           risk: 'Risk Event',
           positive: 'Positive',
           regulatory: 'Regulatory',
+          estate: 'Estates',
+          pending: 'Pending',
         }
 
         return (
@@ -895,8 +889,8 @@ export function InstitutionProfilePage() {
                 <div className="relative">
                   <div className="absolute left-3 top-0 bottom-0 w-px" style={{ backgroundColor: 'var(--border)' }} />
                   <div className="space-y-4 pl-8">
-                    {EVENTS.slice().reverse().map((ev) => (
-                      <div key={ev.year} className="relative">
+                    {EVENTS.map((ev) => (
+                      <div key={ev.id} className="relative">
                         <div
                           className="absolute -left-5 top-1.5 w-2.5 h-2.5 rounded-full border-2"
                           style={{
@@ -924,6 +918,18 @@ export function InstitutionProfilePage() {
                             </div>
                             <p style={{ color: 'var(--text)', fontSize: 12, fontWeight: 500, marginBottom: 2 }}>{ev.title}</p>
                             <p style={{ color: 'var(--text-2)', fontSize: 11.5, lineHeight: 1.5 }}>{ev.body}</p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span style={{ color: ev.source_status === 'verified' ? 'var(--positive)' : 'var(--muted)', fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                                {ev.source_status}
+                              </span>
+                              {ev.source_url ? (
+                                <a href={ev.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:underline" style={{ color: 'var(--link)', fontSize: 10.5 }}>
+                                  {ev.source_label}<ArrowUpRight className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span style={{ color: 'var(--muted)', fontSize: 10.5 }}>{ev.source_label}</span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -988,14 +994,20 @@ export function InstitutionProfilePage() {
                 <table className="w-full">
                   <tbody>
                     {[
-                      { label: 'Total estate area', value: formatEstateValue(latestEstate?.total_estate_area_sqm, ' sqm') },
+                      { label: 'Sites', value: formatEstateValue(latestEstate?.total_sites) },
+                      { label: 'Buildings', value: formatEstateValue(latestEstate?.total_buildings) },
+                      { label: 'Total site area', value: formatEstateValue(latestEstate?.total_site_area_hectares, ' ha') },
+                      { label: 'Gross internal area', value: formatEstateValue(latestEstate?.total_estate_area_sqm, ' m²') },
                       { label: 'Academic estate area', value: formatEstateValue(latestEstate?.academic_estate_area_sqm, ' sqm') },
                       { label: 'Residential estate area', value: formatEstateValue(latestEstate?.residential_estate_area_sqm, ' sqm') },
                       { label: 'Scope 1 and 2 emissions', value: formatEstateValue(latestEstate?.scope1_2_emissions_tonnes_co2e, ' tCO2e') },
                       { label: 'Energy consumption', value: formatEstateValue(latestEstate?.energy_consumption_kwh, ' kWh') },
-                      { label: 'Water consumption', value: formatEstateValue(latestEstate?.water_consumption_m3, ' m3') },
+                      { label: 'Renewable energy generated', value: formatEstateValue(latestEstate?.renewable_energy_generated_kwh, ' kWh') },
+                      { label: 'Electricity exported', value: formatEstateValue(latestEstate?.electricity_exported_kwh, ' kWh') },
+                      { label: 'Water consumption', value: formatEstateValue(latestEstate?.water_consumption_m3, ' m³') },
+                      { label: 'Car / cycle spaces', value: latestEstate?.car_parking_spaces !== null && latestEstate?.car_parking_spaces !== undefined ? `${formatEstateValue(latestEstate.car_parking_spaces)} / ${formatEstateValue(latestEstate.cycle_spaces)}` : 'Pending' },
                       { label: 'Waste', value: formatEstateValue(latestEstate?.waste_tonnes, ' tonnes') },
-                      { label: 'Condition A/B estate', value: formatEstateValue(latestEstate?.condition_a_b_pct, '%') },
+                      { label: 'DEC/EPC rated A/B', value: formatEstateValue(latestEstate?.epc_dec_a_b_pct, '%') },
                     ].map(({ label, value }) => (
                       <tr key={label} style={{ borderBottom: '1px solid var(--border)' }}>
                         <td className="px-3 py-2" style={{ color: 'var(--text-2)', fontSize: 12 }}>{label}</td>

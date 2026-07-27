@@ -2,7 +2,7 @@ import { computeHealthScore } from './health'
 import { DEGREES } from './degrees'
 import { EMPLOYERS } from './employers'
 import { INTELLIGENCE_RECORDS } from './intelligence'
-import { estateRecords } from './estates'
+import { estateMetricRecords, estateRecords } from './estates'
 import { financials, getAllLatestFinancials } from './financials'
 import { institutions } from './institutions'
 import { nationalStudentFinanceRecords } from './nationalStudentFinance'
@@ -14,6 +14,8 @@ import { getProvenance } from './sources'
 import { staffRecords } from './staff'
 import { studentEnrolments } from './students'
 import { tefRecords } from './tef'
+import { getOverallRankingsForYear } from './rankings'
+import { SYSTEM_RISK_SNAPSHOT } from './systemRisk'
 
 export type Format = 'csv' | 'json'
 
@@ -332,19 +334,29 @@ export function generateStaffRecordsJson() {
 }
 
 export function generateEstateRecordsCsv() {
-  const header = 'institution_id,ukprn,academic_year,total_estate_area_sqm,academic_estate_area_sqm,residential_estate_area_sqm,scope1_2_emissions_tonnes_co2e,energy_consumption_kwh,water_consumption_m3,waste_tonnes,condition_a_b_pct,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates,notes'
+  const header = 'institution_id,ukprn,academic_year,total_sites,total_buildings,total_site_area_hectares,grounds_area_hectares,playing_fields_area_hectares,total_estate_area_sqm,academic_estate_area_sqm,residential_estate_area_sqm,scope1_2_emissions_tonnes_co2e,energy_consumption_kwh,vehicle_fuel_litres,electricity_exported_kwh,water_consumption_m3,renewable_energy_generated_kwh,waste_tonnes,epc_dec_a_b_pct,car_parking_spaces,cycle_spaces,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates,notes'
   const rows = estateRecords.map((row) => [
     row.institution_id,
     row.ukprn ?? '',
     row.academic_year,
+    csvNullable(row.total_sites),
+    csvNullable(row.total_buildings),
+    csvNullable(row.total_site_area_hectares),
+    csvNullable(row.grounds_area_hectares),
+    csvNullable(row.playing_fields_area_hectares),
     csvNullable(row.total_estate_area_sqm),
     csvNullable(row.academic_estate_area_sqm),
     csvNullable(row.residential_estate_area_sqm),
     csvNullable(row.scope1_2_emissions_tonnes_co2e),
     csvNullable(row.energy_consumption_kwh),
+    csvNullable(row.vehicle_fuel_litres),
+    csvNullable(row.electricity_exported_kwh),
     csvNullable(row.water_consumption_m3),
+    csvNullable(row.renewable_energy_generated_kwh),
     csvNullable(row.waste_tonnes),
-    csvNullable(row.condition_a_b_pct),
+    csvNullable(row.epc_dec_a_b_pct),
+    csvNullable(row.car_parking_spaces),
+    csvNullable(row.cycle_spaces),
     row.source_status,
     row.source_id,
     csvText(row.source_url),
@@ -360,6 +372,78 @@ export function generateEstateRecordsCsv() {
 
 export function generateEstateRecordsJson() {
   return JSON.stringify(estateRecords, null, 2)
+}
+
+export function generateEstateMetricsCsv() {
+  const header = 'institution_id,ukprn,academic_year,metric_id,metric_label,value,unit,category,source_table,source_status,source_id,source_url,source_reference,retrieved_date,last_verified,confidence,included_in_aggregates'
+  const rows = estateMetricRecords.map((row) => [
+    row.institution_id,
+    row.ukprn ?? '',
+    row.academic_year,
+    row.metric_id,
+    csvText(row.metric_label),
+    row.value,
+    csvText(row.unit),
+    row.category,
+    csvText(row.source_table),
+    row.source_status,
+    row.source_id,
+    csvText(row.source_url),
+    csvText(row.source_reference),
+    row.retrieved_date,
+    row.last_verified,
+    row.confidence,
+    row.included_in_aggregates,
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateEstateMetricsJson() {
+  return JSON.stringify(estateMetricRecords, null, 2)
+}
+
+export function generateOverallRankingsCsv() {
+  const rows = getOverallRankingsForYear('2024-25').filter((row) => row.rank !== null)
+  const header = 'rank,institution_id,fiscal_year,overall_score,finance_score,outcomes_score,research_score,sustainability_score,coverage_pct,dimensions_available,confidence'
+  return [header, ...rows.map((row) => [
+    row.rank,
+    row.institution_id,
+    row.fiscal_year,
+    row.overall_score,
+    row.finance_score ?? '',
+    row.outcomes_score ?? '',
+    row.research_score ?? '',
+    row.sustainability_score ?? '',
+    row.coverage_pct,
+    row.dimensions_available,
+    row.confidence,
+  ].join(','))].join('\n')
+}
+
+export function generateOverallRankingsJson() {
+  return JSON.stringify(getOverallRankingsForYear('2024-25'), null, 2)
+}
+
+export function generateSystemRiskCsv() {
+  const header = 'as_of,overall_score,overall_level,indicator_id,indicator_label,indicator_score,indicator_level,period,source_name,source_url,methodology'
+  const rows = SYSTEM_RISK_SNAPSHOT.indicators.map((row) => [
+    SYSTEM_RISK_SNAPSHOT.as_of,
+    SYSTEM_RISK_SNAPSHOT.score,
+    SYSTEM_RISK_SNAPSHOT.level,
+    row.id,
+    csvText(row.label),
+    row.score,
+    row.level,
+    csvText(row.period),
+    csvText(row.source_name),
+    csvText(row.source_url),
+    csvText(row.methodology),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+export function generateSystemRiskJson() {
+  return JSON.stringify(SYSTEM_RISK_SNAPSHOT, null, 2)
 }
 
 export function generateTefRatingsCsv() {
@@ -496,6 +580,9 @@ export function getDataset(id: string, fmt: Format): string {
   if (id === 'graduate-outcomes') return fmt === 'csv' ? generateGraduateOutcomesCsv() : generateGraduateOutcomesJson()
   if (id === 'staff-records') return fmt === 'csv' ? generateStaffRecordsCsv() : generateStaffRecordsJson()
   if (id === 'estate-records') return fmt === 'csv' ? generateEstateRecordsCsv() : generateEstateRecordsJson()
+  if (id === 'estate-metrics') return fmt === 'csv' ? generateEstateMetricsCsv() : generateEstateMetricsJson()
+  if (id === 'overall-rankings') return fmt === 'csv' ? generateOverallRankingsCsv() : generateOverallRankingsJson()
+  if (id === 'system-risk') return fmt === 'csv' ? generateSystemRiskCsv() : generateSystemRiskJson()
   if (id === 'tef-ratings') return fmt === 'csv' ? generateTefRatingsCsv() : generateTefRatingsJson()
   if (id === 'degree-intelligence') return fmt === 'csv' ? generateDegreeIntelligenceCsv() : generateDegreeIntelligenceJson()
   if (id === 'employer-markets') return fmt === 'csv' ? generateEmployerMarketsCsv() : generateEmployerMarketsJson()

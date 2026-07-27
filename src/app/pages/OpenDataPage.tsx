@@ -5,7 +5,7 @@ import { financials, getAllLatestFinancials, AVAILABLE_YEARS } from '../data/fin
 import { STUDENT_YEARS, studentEnrolments } from '../data/students'
 import { DEGREES } from '../data/degrees'
 import { EMPLOYERS } from '../data/employers'
-import { ESTATE_YEARS, estateRecords } from '../data/estates'
+import { ESTATE_YEARS, estateMetricRecords, estateRecords } from '../data/estates'
 import { INTELLIGENCE_RECORDS } from '../data/intelligence'
 import { nationalStudentFinanceRecords } from '../data/nationalStudentFinance'
 import { OUTCOMES } from '../data/outcomes'
@@ -114,12 +114,23 @@ const DATASETS = [
   {
     id: 'estate-records',
     name: 'Estate Coverage Records',
-    description: 'HESA Estates Management provider-year coverage for all 304 institutions across the latest public 2015-16 to 2023-24 estate release window.',
+    description: 'HESA Estates Management provider-year coverage for all 304 institutions across 2015-16 to 2024-25, including the latest reported buildings, energy and water fields.',
     rows: estateRecords.length,
-    columns: 20,
+    columns: 30,
     years: `${ESTATE_YEARS[ESTATE_YEARS.length - 1]}-${ESTATE_YEARS[0]}`,
     formats: ['csv', 'json'],
     size: '~590 KB',
+    tier: 'core',
+  },
+  {
+    id: 'estate-metrics',
+    name: 'Normalised Estate Metrics',
+    description: 'Analysis-ready provider-year-metric rows from HESA DT042 tables. Optional, blank and suppressed cells remain absent rather than being inferred as zero.',
+    rows: estateMetricRecords.length,
+    columns: 17,
+    years: ESTATE_YEARS[0],
+    formats: ['csv', 'json'],
+    size: '~480 KB',
     tier: 'core',
   },
   {
@@ -199,6 +210,28 @@ const DATASETS = [
     size: '~18 KB',
     tier: 'derived',
   },
+  {
+    id: 'overall-rankings',
+    name: 'Overall Evidence Rankings',
+    description: 'Transparent multi-dimensional rankings combining financial health, graduate outcomes, research intensity and estate efficiency, with coverage and confidence labels.',
+    rows: institutions.length,
+    columns: 11,
+    years: AVAILABLE_YEARS[0],
+    formats: ['csv', 'json'],
+    size: '~35 KB',
+    tier: 'derived',
+  },
+  {
+    id: 'system-risk',
+    name: 'UK HE System Risk',
+    description: 'Inspectible sector early-warning snapshot for finances, graduate employment, labour demand and recruitment exposure.',
+    rows: 4,
+    columns: 11,
+    years: 'As of 2026-07-26',
+    formats: ['csv', 'json'],
+    size: '~8 KB',
+    tier: 'derived',
+  },
 ]
 
 function downloadFile(content: string, filename: string, mime: string) {
@@ -266,7 +299,7 @@ export function OpenDataPage() {
     confidence: exampleFinancial.confidence,
     included_in_aggregates: exampleFinancial.included_in_aggregates,
   }, null, 2)
-  const totalRecords = financials.length + studentEnrolments.length + providerUniverse.length + providerFinanceCoverage.length + providerSourceCoverage.length + nationalStudentFinanceRecords.length + OUTCOMES.length + DEGREES.length + EMPLOYERS.length + INTELLIGENCE_RECORDS.length + staffRecords.length + estateRecords.length + tefRecords.length
+  const totalRecords = financials.length + studentEnrolments.length + providerUniverse.length + providerFinanceCoverage.length + providerSourceCoverage.length + nationalStudentFinanceRecords.length + OUTCOMES.length + DEGREES.length + EMPLOYERS.length + INTELLIGENCE_RECORDS.length + staffRecords.length + estateRecords.length + estateMetricRecords.length + tefRecords.length
 
   function handleDownload(id: string, fmt: Format) {
     const content = getDataset(id, fmt)
@@ -340,6 +373,22 @@ export function OpenDataPage() {
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
+        <Database className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--accent)' }} />
+        <div className="min-w-0 flex-1">
+          <p style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>Complete HESA DT042 archive · 346,050 rows</p>
+          <p className="mt-0.5" style={{ color: 'var(--muted)', fontSize: 10.5 }}>Tables 1–5 · every published provider value · academic years 2015/16–2024/25 · compact CSV gzip</p>
+        </div>
+        <a
+          href="/data/hesa-estates-dt042-2015-16-to-2024-25.csv.gz"
+          download
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5"
+          style={{ backgroundColor: 'var(--accent)', color: '#fff', borderRadius: 3, fontSize: 11.5, fontWeight: 600 }}
+        >
+          <Download className="w-3.5 h-3.5" /> Download full archive
+        </a>
       </div>
 
       {/* Dataset grid */}
@@ -601,6 +650,9 @@ export function OpenDataPage() {
                 { method: 'GET', path: '/api/v1/institutions', desc: 'List all institutions and providers' },
                 { method: 'GET', path: '/api/v1/institutions/{id}/financials', desc: 'Full financial history for one institution' },
                 { method: 'GET', path: '/api/v1/rankings?metric=revenue&fiscal_year=2024-25', desc: 'All institutions ranked for a given year' },
+                { method: 'GET', path: '/api/v1/rankings?metric=overall&fiscal_year=2024-25', desc: 'Coverage-aware overall evidence rankings' },
+                { method: 'GET', path: '/api/v1/system-risk', desc: 'UK HE finance and employment risk snapshot' },
+                { method: 'GET', path: '/api/v1/estate-metrics?academic_year=2024-25', desc: 'Normalised HESA estates provider metrics' },
                 { method: 'GET', path: '/api/v1/health-scores', desc: 'Financial health scores (latest year)' },
               ].map(({ method, path, desc }) => (
                 <div key={path} className="flex items-start gap-2">

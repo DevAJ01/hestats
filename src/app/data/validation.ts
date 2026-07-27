@@ -511,7 +511,7 @@ export function validateEstateRecords(
     for (const metric of ESTATE_VALUE_KEYS) {
       const value = row[metric]
       if (value !== null && (!Number.isFinite(value) || value < 0)) issues.push(issue('error', 'estates.metric_invalid', `Metric '${metric}' must be a non-negative finite number or null.`, details))
-      if (metric === 'condition_a_b_pct' && value !== null && value > 100) issues.push(issue('error', 'estates.percent_invalid', `Metric '${metric}' must not exceed 100.`, details))
+      if (metric === 'epc_dec_a_b_pct' && value !== null && value > 100) issues.push(issue('error', 'estates.percent_invalid', `Metric '${metric}' must not exceed 100.`, details))
     }
   }
 

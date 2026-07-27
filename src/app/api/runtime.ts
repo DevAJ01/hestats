@@ -19,11 +19,14 @@ import { INTELLIGENCE_RECORDS, IntelligenceRecord } from '../data/intelligence'
 import { nationalStudentFinanceRecords } from '../data/nationalStudentFinance'
 import {
   ESTATE_YEARS,
+  estateMetricRecords,
   estateRecords,
   getEstateCoverage,
   getEstateRecordsByInstitution,
   isVerifiedEstateRecord,
 } from '../data/estates'
+import { getOverallRankingsForYear, OVERALL_RANKING_METHOD } from '../data/rankings'
+import { SYSTEM_RISK_SNAPSHOT } from '../data/systemRisk'
 import {
   getProviderFinanceCoverageSummary,
   providerFinanceCoverage,
@@ -195,14 +198,24 @@ function buildEstate(row: (typeof estateRecords)[number]) {
     institution_id: row.institution_id,
     ukprn: row.ukprn,
     academic_year: row.academic_year,
+    total_sites: row.total_sites,
+    total_buildings: row.total_buildings,
+    total_site_area_hectares: row.total_site_area_hectares,
+    grounds_area_hectares: row.grounds_area_hectares,
+    playing_fields_area_hectares: row.playing_fields_area_hectares,
     total_estate_area_sqm: row.total_estate_area_sqm,
     academic_estate_area_sqm: row.academic_estate_area_sqm,
     residential_estate_area_sqm: row.residential_estate_area_sqm,
     scope1_2_emissions_tonnes_co2e: row.scope1_2_emissions_tonnes_co2e,
     energy_consumption_kwh: row.energy_consumption_kwh,
+    vehicle_fuel_litres: row.vehicle_fuel_litres,
+    electricity_exported_kwh: row.electricity_exported_kwh,
     water_consumption_m3: row.water_consumption_m3,
+    renewable_energy_generated_kwh: row.renewable_energy_generated_kwh,
     waste_tonnes: row.waste_tonnes,
-    condition_a_b_pct: row.condition_a_b_pct,
+    epc_dec_a_b_pct: row.epc_dec_a_b_pct,
+    car_parking_spaces: row.car_parking_spaces,
+    cycle_spaces: row.cycle_spaces,
     source_status: row.source_status,
     confidence: row.confidence,
     included_in_aggregates: row.included_in_aggregates,
@@ -506,6 +519,14 @@ export async function dispatchRequest(method: string, path: string, search: stri
 
   if (method !== 'GET') return err(405, 'Method not allowed. The HEStats API is read-only.')
 
+  // ── GET /system-risk ─────────────────────────────────────────────────────────
+  if (segments[0] === 'system-risk') {
+    return respond(ok(SYSTEM_RISK_SNAPSHOT, {
+      methodology_version: '1.0',
+      cache_as_of: SYSTEM_RISK_SNAPSHOT.as_of,
+    }))
+  }
+
   // ── GET /providers ───────────────────────────────────────────────────────────
   if (segments[0] === 'providers' && !segments[1]) {
     let list = [...providerUniverse]
@@ -790,6 +811,33 @@ export async function dispatchRequest(method: string, path: string, search: stri
 
   // ── GET /rankings ─────────────────────────────────────────────────────────────
   if (segments[0] === 'rankings') {
+    if ((params.metric ?? '') === 'overall') {
+      const year = params.fiscal_year ?? AVAILABLE_YEARS[0]
+      const limit = Math.min(Number(params.limit ?? 50), 304)
+      const offset = Number(params.offset ?? 0)
+      let rows = getOverallRankingsForYear(year).filter((row) => row.rank !== null)
+      if (params.nation) {
+        const ids = new Set(institutions.filter((row) => row.nation.toLowerCase() === params.nation.toLowerCase()).map((row) => row.id))
+        rows = rows.filter((row) => ids.has(row.institution_id))
+      }
+      const items = rows.slice(offset, offset + limit).map((row) => {
+        const institution = getInstitutionById(row.institution_id)
+        return {
+          ...row,
+          institution_name: institution?.canonical_name ?? row.institution_id,
+          ukprn: institution?.ukprn ?? null,
+          nation: institution?.nation ?? null,
+        }
+      })
+      return respond(ok(items, {
+        metric: 'overall',
+        fiscal_year: year,
+        total: rows.length,
+        limit,
+        offset,
+        methodology: OVERALL_RANKING_METHOD,
+      }))
+    }
     const VALID_METRICS: Record<string, (f: FinancialYear) => number | null> = {
       revenue: (f) => f.revenue_gbp_m,
       surplus: (f) => f.surplus_gbp_m,
@@ -900,6 +948,27 @@ export async function dispatchRequest(method: string, path: string, search: stri
       limit,
       offset,
       coverage: getEstateCoverage(year),
+    }))
+  }
+
+  // ── GET /estate-metrics ─────────────────────────────────────────────────────
+  if (segments[0] === 'estate-metrics') {
+    let rows = [...estateMetricRecords]
+    if (params.academic_year) rows = rows.filter((row) => row.academic_year === params.academic_year)
+    if (params.institution_id) rows = rows.filter((row) => row.institution_id === params.institution_id || row.ukprn === params.institution_id)
+    if (params.metric_id) rows = rows.filter((row) => row.metric_id === params.metric_id)
+    if (params.category) rows = rows.filter((row) => row.category === params.category)
+    const limit = Math.min(Number(params.limit ?? 100), 2000)
+    const offset = Number(params.offset ?? 0)
+    const { items, total } = paginateArray(rows, limit, offset)
+    return respond(ok(items, {
+      total,
+      limit,
+      offset,
+      shape: 'normalised provider-year-metric records',
+      source: 'HESA DT042 Estates Management tables',
+      full_archive_url: '/data/hesa-estates-dt042-2015-16-to-2024-25.csv.gz',
+      full_archive_rows: 346050,
     }))
   }
 

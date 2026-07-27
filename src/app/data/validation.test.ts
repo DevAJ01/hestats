@@ -66,7 +66,7 @@ describe('HEStats data validation', () => {
     expect(blockingIssues(validateProviderUniverse())).toEqual([])
     expect(providerUniverse.filter((row) => row.platform_status === 'full_profile')).toHaveLength(institutions.length)
     expect(providerUniverse.filter((row) => row.reports_hesa_student_2024_25)).toHaveLength(289)
-    expect(providerUniverse.filter((row) => row.reports_hesa_finance_2024_25)).toHaveLength(298)
+    expect(providerUniverse.filter((row) => row.reports_hesa_finance_2024_25)).toHaveLength(299)
 
     const pendingRows = providerUniverse.filter((row) => row.source_status === 'pending')
     expect(pendingRows).toHaveLength(0)
@@ -80,15 +80,18 @@ describe('HEStats data validation', () => {
     expect(blockingIssues(validateProviderFinanceCoverage())).toEqual([])
   })
 
-  it('keeps Nottingham 2024-25 explicit pending until an official source row is attached', () => {
+  it('loads Nottingham 2024-25 from the signed annual accounts', () => {
     const row = financials.find((item) => item.institution_id === 'nottingham' && item.fiscal_year === '2024-25')
     expect(row).toBeDefined()
-    expect(row?.data_source).toBe('pending')
-    expect(row?.revenue_gbp_m).toBeNull()
+    expect(row?.data_source).toBe('verified')
+    expect(row?.revenue_gbp_m).toBe(862.1)
+    expect(row?.surplus_gbp_m).toBe(-85.3)
+    expect(row?.borrowing_gbp_m).toBe(54.9)
+    expect(row?.source_pdf).toContain('nottingham.ac.uk')
 
     const coverage = providerFinanceCoverage.find((item) => item.institution_id === 'nottingham' && item.fiscal_year === '2024-25')
-    expect(coverage?.source_status).toBe('pending')
-    expect(coverage?.included_in_aggregates).toBe(false)
+    expect(coverage?.source_status).toBe('verified')
+    expect(coverage?.included_in_aggregates).toBe(true)
   })
 
   it('does not allow estimated rows in the primary financial dataset', () => {
@@ -195,7 +198,8 @@ describe('HEStats data validation', () => {
     expect(estateRecords).toHaveLength(institutions.length * ESTATE_YEARS.length)
     expect(keys.size).toBe(estateRecords.length)
     expect(blockingIssues(validateEstateRecords())).toEqual([])
-    expect(ESTATE_YEARS).not.toContain('2024-25')
+    expect(ESTATE_YEARS).toContain('2024-25')
+    expect(estateRecords.filter((row) => row.academic_year === '2024-25' && row.source_status === 'verified')).toHaveLength(137)
 
     const pendingRows = estateRecords.filter((row) => row.source_status === 'pending')
     expect(pendingRows.length).toBeGreaterThan(0)

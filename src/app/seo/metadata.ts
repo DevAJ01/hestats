@@ -77,7 +77,7 @@ export const SEO_PAGES: SeoPage[] = [
     path: '/rankings',
     title: 'UK University Finance Rankings | HEStats',
     description:
-      'Rank UK universities by revenue, surplus, research income, borrowing, liquidity, staff costs, financial health and other verified financial metrics.',
+      'Rank UK universities using a transparent overall evidence score or compare revenue, outcomes, research, estates, borrowing, liquidity and financial health.',
     priority: 0.9,
     changeFrequency: 'weekly',
     section: 'Rankings',
@@ -122,6 +122,16 @@ export const SEO_PAGES: SeoPage[] = [
     changeFrequency: 'weekly',
     section: 'Sector',
     keywords: ['UK higher education sector', 'university sector finances', 'sector financial health'],
+  },
+  {
+    path: '/system-watch',
+    title: 'UK Higher Education System Risk Monitor | HEStats',
+    description:
+      'Track transparent, source-backed UK higher education risk indicators across institution finances, graduate employment, labour demand and recruitment exposure.',
+    priority: 0.9,
+    changeFrequency: 'weekly',
+    section: 'Sector',
+    keywords: ['UK higher education risk', 'university financial risk', 'graduate employment risk', 'HE system watch'],
   },
   {
     path: '/reports',

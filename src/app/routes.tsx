@@ -21,6 +21,7 @@ import { ExplorerPage } from './pages/ExplorerPage'
 import { IntelligencePage } from './pages/IntelligencePage'
 import { BrandPage } from './pages/BrandPage'
 import { SocialStudioPage } from './pages/SocialStudioPage'
+import { SystemWatchPage } from './pages/SystemWatchPage'
 
 function NotFoundPage() {
   const error = useRouteError()
@@ -62,6 +63,8 @@ export const appRoutes: RouteObject[] = [
 
       { path: 'compare', Component: ComparePage },
       { path: 'rankings', Component: RankingsPage },
+      { path: 'system-watch', Component: SystemWatchPage },
+      { path: 'risk', element: <Navigate to="/system-watch" replace /> },
 
       // Explorer — unified visualisation workspace (map · graph · timeline · table)
       { path: 'explorer', Component: ExplorerPage },

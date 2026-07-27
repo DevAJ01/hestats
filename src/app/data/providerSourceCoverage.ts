@@ -50,8 +50,8 @@ const DOMAIN_SOURCE: Record<ProviderDomain, Pick<ProviderSourceCoverageRecord, '
   estates: {
     source_id: 'hesa-estates',
     source_url: 'https://www.hesa.ac.uk/data-and-analysis/estates/environmental',
-    source_reference: 'HESA Estates open data tables 1-5; provider-level metrics awaiting internal source row reconciliation',
-    period: '2015-16 to 2023-24',
+    source_reference: 'HESA Estates open data tables 1-5; 2024-25 Tables 1 and 2 provider rows ingested, remaining optional fields stay pending',
+    period: '2015-16 to 2024-25',
   },
   tef: {
     source_id: 'ofs-tef',
