@@ -20,6 +20,7 @@ const PUBLIC_ROUTE_SMOKE_CASES = [
   '/intelligence',
   '/social-studio',
   '/sector',
+  '/system-watch',
   '/reports',
   '/graduate-outcomes',
   '/employers',

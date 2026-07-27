@@ -137,7 +137,7 @@ export const DATA_SOURCES: DataSourceDef[] = [
     publisher_url: 'https://www.hesa.ac.uk',
     dataset: 'Estates open data',
     dataset_url: 'https://www.hesa.ac.uk/data-and-analysis/estates',
-    description: 'Official HESA estates management data, including estate size, condition, energy, carbon and environmental metrics where returned by providers.',
+    description: 'Official HESA estates management data, including estate size, energy performance, carbon and environmental metrics where returned by providers.',
     licence: 'CC-BY-4.0',
     licence_url: 'https://www.hesa.ac.uk/about/copyright',
     update_frequency: 'Annual',

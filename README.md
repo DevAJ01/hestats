@@ -6,7 +6,7 @@ HEStats is an open-source UK Higher Education Financial Intelligence Platform.
 
 The long-term aim is to turn official university annual financial statements and higher education datasets into structured, searchable, comparable, visual intelligence. Think Bloomberg Terminal, Financial Times Markets, TradingView, Palantir Foundry, Companies House, and sector-specific public infrastructure for UK universities.
 
-HEStats is currently a prototype. Some records are verified seed data and some records are explicitly labelled estimates while the real ingestion and provenance pipeline is being built. Do not cite estimated rows as audited fact.
+HEStats is currently a prototype. Primary institution records are either source-backed and labelled `verified`, or explicitly `pending` with null metrics; modelled values are not mixed into official aggregates.
 
 ## What HEStats Is For
 
@@ -26,7 +26,9 @@ The app is a Vite React prototype with:
 
 - University directory and profile pages.
 - Rankings and comparison workspaces.
+- Coverage-aware overall evidence rankings and the UK HE System Watch risk monitor.
 - Explorer, reports, open data, API-shape, methodology, and support pages.
+- HESA Estates DT042 Tables 1–5 for 2015/16–2024/25, with a complete long-form archive and provider-year summaries.
 - Dark and light terminal-style themes.
 - Local open-data CSV/JSON generators.
 - Data validation tests for duplicate UKPRNs, orphan financial rows, invalid source states, and broken identifiers.
@@ -35,7 +37,6 @@ The app is a Vite React prototype with:
 Known limitations:
 
 - Financial coverage is not yet a complete official production dataset.
-- Several UKPRNs are marked `PENDING-*` until verified.
 - The API page documents a local simulator and intended response shape, not a hosted production API.
 - The app currently ships as a single large bundle; code-splitting is future work.
 
@@ -84,6 +85,24 @@ pnpm test:smoke
 pnpm test:data
 pnpm build
 ```
+
+## HESA Estates Pipeline
+
+The repository includes the complete HESA DT042 Tables 1–5 archive as a compact, source-preserving CSV gzip:
+
+```text
+public/data/hesa-estates-dt042-2015-16-to-2024-25.csv.gz
+```
+
+To reproduce it from the official `data.xlsx` downloaded from HESA, install `openpyxl` in the Python environment and run:
+
+```bash
+pnpm extract:hesa-estates-workbook -- /path/to/data.xlsx
+pnpm ingest:hesa-estates -- public/data/hesa-estates-dt042-2015-16-to-2024-25.csv.gz
+pnpm test:data
+```
+
+The extractor retains all 346,050 published rows. The app bundle receives the 10-year provider summary panel plus latest-year normalised headline metrics; `/api/v1/estate-metrics` exposes those records and links to the full archive. Blank, optional, suppressed and non-reporting cells remain missing and are never converted to zero. Set `HESTATS_ESTATE_METRIC_MODE=all` when generating a backend-oriented latest-year metric bundle.
 
 Before opening a pull request, run:
 

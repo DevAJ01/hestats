@@ -9,8 +9,10 @@ import { RiskBadge } from '../components/institutions/RiskBadge'
 import { HealthBadge } from '../components/institutions/HealthBadge'
 import { Sparkline } from '../components/charts/Sparkline'
 import { useYear } from '../context/YearContext'
+import { getOverallRankingsForYear, OverallInstitutionRanking, OVERALL_RANKING_METHOD } from '../data/rankings'
 
 type SortKey =
+  | 'overall' | 'overall_finance' | 'overall_outcomes' | 'overall_research' | 'overall_sustainability' | 'coverage'
   | 'revenue' | 'surplus' | 'surplus_margin' | 'research' | 'tuition'
   | 'staff_cost_ratio' | 'cash' | 'borrowing' | 'borrowing_ratio'
   | 'liquidity' | 'international' | 'students' | 'capex'
@@ -24,6 +26,19 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
+  {
+    id: 'overall',
+    label: 'Overall',
+    defaultSort: 'overall',
+    metrics: [
+      { key: 'overall', label: 'Overall Score' },
+      { key: 'overall_finance', label: 'Finance' },
+      { key: 'overall_outcomes', label: 'Outcomes' },
+      { key: 'overall_research', label: 'Research' },
+      { key: 'overall_sustainability', label: 'Estates' },
+      { key: 'coverage', label: 'Coverage' },
+    ],
+  },
   {
     id: 'income',
     label: 'Income',
@@ -115,7 +130,14 @@ function fmt(key: SortKey, val: number | null): string {
     case 'students':
       return val >= 1000 ? `${(val / 1000).toFixed(1)}k` : String(Math.round(val))
     case 'health':
+    case 'overall':
+    case 'overall_finance':
+    case 'overall_outcomes':
+    case 'overall_research':
+    case 'overall_sustainability':
       return `${Math.round(val)}/100`
+    case 'coverage':
+      return `${Math.round(val)}%`
     case 'income_per_student':
       return `£${val.toFixed(0)}k`
     default:
@@ -126,8 +148,14 @@ function fmt(key: SortKey, val: number | null): string {
 type FinRow = ReturnType<typeof getAllLatestFinancials>[0]
 type HealthRow = ReturnType<typeof computeHealthScore>
 
-function getValue(key: SortKey, fin: FinRow, health: HealthRow): number | null {
+function getValue(key: SortKey, fin: FinRow, health: HealthRow, overall?: OverallInstitutionRanking): number | null {
   switch (key) {
+    case 'overall': return overall?.overall_score ?? null
+    case 'overall_finance': return overall?.finance_score ?? null
+    case 'overall_outcomes': return overall?.outcomes_score ?? null
+    case 'overall_research': return overall?.research_score ?? null
+    case 'overall_sustainability': return overall?.sustainability_score ?? null
+    case 'coverage': return overall?.coverage_pct ?? null
     case 'revenue': return fin.revenue_gbp_m
     case 'surplus': return fin.surplus_gbp_m
     case 'surplus_margin': return fin.surplus_margin_pct
@@ -179,6 +207,14 @@ export function RankingsPage() {
   const latestYear = selectedYear
   const prevYearIdx = AVAILABLE_YEARS.indexOf(selectedYear) + 1
   const prevYear = prevYearIdx < AVAILABLE_YEARS.length ? AVAILABLE_YEARS[prevYearIdx] : undefined
+  const overallById = useMemo(
+    () => new Map(getOverallRankingsForYear(selectedYear).map((row) => [row.institution_id, row])),
+    [selectedYear],
+  )
+  const prevOverallById = useMemo(
+    () => new Map((prevYear ? getOverallRankingsForYear(prevYear) : []).map((row) => [row.institution_id, row])),
+    [prevYear],
+  )
 
   const rows = useMemo(() => {
     return institutions
@@ -190,7 +226,7 @@ export function RankingsPage() {
         const history = getFinancialsByInstitution(inst.id)
           .sort((a, b) => a.fiscal_year.localeCompare(b.fiscal_year))
           .map((f) => f.revenue_gbp_m)
-        return { inst, fin, health, prevFin, history }
+        return { inst, fin, health, overall: overallById.get(inst.id), prevOverall: prevOverallById.get(inst.id), prevFin, history }
       })
       .filter(Boolean)
       .filter((r) =>
@@ -198,18 +234,18 @@ export function RankingsPage() {
         r!.inst.canonical_name.toLowerCase().includes(search.toLowerCase()) ||
         r!.inst.short_name.toLowerCase().includes(search.toLowerCase()),
       )
-      .filter((r) => r !== null && isKnownNumber(getValue(sortKey, r.fin, r.health)))
+      .filter((r) => r !== null && isKnownNumber(getValue(sortKey, r.fin, r.health, r.overall)))
       .sort((a, b) => {
-        const aVal = getValue(sortKey, a!.fin, a!.health)
-        const bVal = getValue(sortKey, b!.fin, b!.health)
+        const aVal = getValue(sortKey, a!.fin, a!.health, a!.overall)
+        const bVal = getValue(sortKey, b!.fin, b!.health, b!.overall)
         return sortDir === 'desc' ? (bVal ?? 0) - (aVal ?? 0) : (aVal ?? 0) - (bVal ?? 0)
-      }) as { inst: typeof institutions[0]; fin: FinRow; health: HealthRow; prevFin: FinRow | undefined; history: number[] }[]
-  }, [yearFins, sortKey, sortDir, search, prevYear])
+      }) as { inst: typeof institutions[0]; fin: FinRow; health: HealthRow; overall: OverallInstitutionRanking | undefined; prevOverall: OverallInstitutionRanking | undefined; prevFin: FinRow | undefined; history: number[] }[]
+  }, [yearFins, sortKey, sortDir, search, prevYear, overallById, prevOverallById])
 
   const maxVals = useMemo(() => {
     const m: Partial<Record<SortKey, number>> = {}
     activeTab.metrics.forEach(({ key }) => {
-      m[key] = Math.max(1, ...rows.map((r) => getValue(key, r.fin, r.health)).filter(isKnownNumber).map((value) => Math.abs(value)))
+      m[key] = Math.max(1, ...rows.map((r) => getValue(key, r.fin, r.health, r.overall)).filter(isKnownNumber).map((value) => Math.abs(value)))
     })
     return m
   }, [rows, activeTab])
@@ -233,7 +269,7 @@ export function RankingsPage() {
         `"${r.inst.canonical_name}"`,
         r.inst.nation,
         ...activeTab.metrics.map(({ key }) => {
-          const value = getValue(key, r.fin, r.health)
+          const value = getValue(key, r.fin, r.health, r.overall)
           return isKnownNumber(value) ? value.toFixed(2) : ''
         }),
         r.health.score ?? '',
@@ -320,6 +356,23 @@ export function RankingsPage() {
         </div>
       </div>
 
+      {activeTab.id === 'overall' && (
+        <div
+          className="grid gap-3 px-3 py-3 border sm:grid-cols-[1fr_auto]"
+          style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}
+        >
+          <div>
+            <p style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>{OVERALL_RANKING_METHOD.label}</p>
+            <p className="mt-1" style={{ color: 'var(--text-2)', fontSize: 11.5, lineHeight: 1.55 }}>
+              A transparent, evidence-coverage-aware comparison — not an editorial league table. Missing dimensions are reweighted, never treated as zero.
+            </p>
+          </div>
+          <div className="font-num flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: 'var(--muted)', fontSize: 10.5 }}>
+            <span>FIN 35%</span><span>OUT 35%</span><span>RES 15%</span><span>EST 15%</span>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div
         className="border overflow-hidden"
@@ -358,8 +411,8 @@ export function RankingsPage() {
             </thead>
             <tbody>
               {rows.map((r, idx) => {
-                const prevVal = r.prevFin ? getValue(sortKey, r.prevFin, computeHealthScore(r.prevFin)) : null
-                const curVal = getValue(sortKey, r.fin, r.health)
+                const prevVal = r.prevFin ? getValue(sortKey, r.prevFin, computeHealthScore(r.prevFin), r.prevOverall) : null
+                const curVal = getValue(sortKey, r.fin, r.health, r.overall)
                 const yoy = isKnownNumber(prevVal) && isKnownNumber(curVal) && prevVal !== 0 ? ((curVal - prevVal) / Math.abs(prevVal)) * 100 : null
                 const positive = isLowerBetter(sortKey) ? (yoy ?? 0) < 0 : (yoy ?? 0) > 0
                 return (
@@ -382,7 +435,7 @@ export function RankingsPage() {
                       </Link>
                     </td>
                     {activeTab.metrics.map(({ key }) => {
-                      const val = getValue(key, r.fin, r.health)
+                      const val = getValue(key, r.fin, r.health, r.overall)
                       const maxV = maxVals[key] ?? 1
                       const barPct = isKnownNumber(val) && maxV > 0 ? Math.min((Math.abs(val) / maxV) * 100, 100) : 0
                       const isActive = key === sortKey

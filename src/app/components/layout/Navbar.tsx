@@ -5,6 +5,7 @@ import {
   Compass, Newspaper, Database, Terminal, Heart, Hash, ChevronDown,
   TrendingUp, FileText, GraduationCap, BookOpen, Briefcase, Route,
   Megaphone,
+  Activity,
 } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
 import { institutions } from '../../data/institutions'
@@ -17,10 +18,10 @@ const PRIMARY_NAV = [
   { href: '/compare', label: 'Compare' },
   { href: '/rankings', label: 'Rankings' },
   { href: '/explorer', label: 'Explorer' },
+  { href: '/system-watch', label: 'System Watch' },
+  { href: '/student-journey', label: 'Students' },
   { href: '/intelligence', label: 'Intelligence', dropdown: true },
   { href: '/open-data', label: 'Open Data' },
-  { href: '/api', label: 'API' },
-  { href: '/support', label: 'Support' },
 ]
 
 // Intelligence groups the deeper analytical workspaces contextually, instead of
@@ -32,6 +33,7 @@ const INTELLIGENCE_MENU: { title: string; items: { href: string; label: string; 
       { href: '/intelligence', label: 'Intelligence Centre', desc: 'News, policy & alerts feed', icon: Newspaper },
       { href: '/social-studio', label: 'Social Studio', desc: 'Metric-led post drafts', icon: Megaphone },
       { href: '/sector', label: 'Sector Overview', desc: 'Sector-wide financial trends', icon: TrendingUp },
+      { href: '/system-watch', label: 'System Watch', desc: 'Finance & employment risk', icon: Activity },
       { href: '/reports', label: 'Annual Reports', desc: 'Full report library', icon: FileText },
       { href: '/employers', label: 'Employer Intelligence', desc: 'Top graduate employers', icon: Briefcase },
       { href: '/degrees', label: 'Degree Intelligence', desc: 'Subject-level analytics', icon: BookOpen },
@@ -103,6 +105,7 @@ interface Command {
 }
 
 const COMMANDS: Command[] = [
+  { icon: <Activity className="w-3.5 h-3.5" />, label: 'Open UK HE System Watch', hint: 'Finance, employment & labour risk', type: 'Risk Monitor', href: '/system-watch', keywords: 'atomic clock risk sector employment' },
   { icon: <GitCompare className="w-3.5 h-3.5" />, label: 'Compare universities', hint: 'Up to six side by side', type: 'Workflow', href: '/compare', keywords: 'versus benchmark' },
   { icon: <GitCompare className="w-3.5 h-3.5" />, label: 'Compare Oxford and Cambridge', hint: 'Quick comparison', type: 'Compare', href: '/compare?set=oxbridge' },
   { icon: <BarChart2 className="w-3.5 h-3.5" />, label: 'Show highest revenue universities', hint: 'Financial league table', type: 'Rankings', href: '/rankings?sort=revenue' },
@@ -280,9 +283,10 @@ function BottomNav({ onSearch }: { onSearch: () => void }) {
   const items = [
     { href: '/', label: 'Overview', icon: BarChart2 },
     { href: '/explorer', label: 'Explorer', icon: Compass },
+    { href: '/system-watch', label: 'Watch', icon: Activity },
     { type: 'search' as const, label: 'Search', icon: Search },
     { href: '/compare', label: 'Compare', icon: GitCompare },
-    { href: '/intelligence', label: 'Intel', icon: Newspaper },
+    { href: '/student-journey', label: 'Students', icon: GraduationCap },
   ]
 
   return (

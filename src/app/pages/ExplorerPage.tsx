@@ -17,8 +17,10 @@ import { providerUniverse } from '../data/providers'
 import { Institution } from '../data/types'
 import { InstitutionCard } from '../components/institutions/InstitutionCard'
 import { InstitutionRow } from '../components/institutions/InstitutionRow'
+import { getOverallRankingsForYear } from '../data/rankings'
 
 type ViewMode = 'table' | 'cards' | 'map' | 'graph' | 'timeline'
+type MapColourMode = 'health' | 'risk' | 'nation' | 'overall'
 
 const VIEWS: { id: ViewMode; label: string; icon: typeof TableIcon }[] = [
   { id: 'table', label: 'Table', icon: TableIcon },
@@ -49,8 +51,14 @@ export function ExplorerPage() {
   const [missionGroup, setMissionGroup] = useState(params.get('group') ?? 'All')
   const [sortBy, setSortBy] = useState<'revenue' | 'surplus' | 'research' | 'liquidity' | 'name'>((params.get('sort') as never) ?? 'revenue')
   const [hovered, setHovered] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string | null>(params.get('selected'))
+  const [mapColour, setMapColour] = useState<MapColourMode>((params.get('color') as MapColourMode) || 'health')
 
   const finMap = useMemo(() => Object.fromEntries(getAllLatestFinancials().map((f) => [f.institution_id, f])), [])
+  const overallMap = useMemo(
+    () => new Map(getOverallRankingsForYear('2024-25').map((row) => [row.institution_id, row])),
+    [],
+  )
   const plottedProviders = useMemo(() =>
     institutions.filter((inst) => getInstitutionCoordinates(inst) && finMap[inst.id]).length,
   [finMap])
@@ -67,9 +75,11 @@ export function ExplorerPage() {
     if (nation !== 'All') next.set('nation', nation)
     if (missionGroup !== 'All') next.set('group', missionGroup)
     if (sortBy !== 'revenue') next.set('sort', sortBy)
+    if (view === 'map' && mapColour !== 'health') next.set('color', mapColour)
+    if (view === 'map' && selected) next.set('selected', selected)
     setParams(next, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, query, nation, missionGroup, sortBy])
+  }, [view, query, nation, missionGroup, sortBy, mapColour, selected])
 
   function setViewAndUrl(v: ViewMode) { setView(v) }
 
@@ -112,6 +122,41 @@ export function ExplorerPage() {
       .filter((b): b is NonNullable<typeof b> => b !== null)
   }, [filtered, finMap])
   const maxRev = Math.max(...bubbles.map((b) => b.fin.revenue_gbp_m).filter(isKnownNumber), 1)
+  const activeMapId = hovered ?? selected
+
+  function mapBubbleColour(inst: Institution, fin: (typeof finMap)[string]) {
+    if (mapColour === 'risk') {
+      if (fin.risk_flag === 'High') return 'var(--negative)'
+      if (fin.risk_flag === 'Medium') return 'var(--warning)'
+      if (fin.risk_flag === 'Low') return 'var(--positive)'
+      return 'var(--muted)'
+    }
+    if (mapColour === 'nation') {
+      return {
+        England: 'var(--chart-1)',
+        Scotland: 'var(--chart-2)',
+        Wales: 'var(--chart-3)',
+        'Northern Ireland': 'var(--chart-4)',
+      }[inst.nation]
+    }
+    if (mapColour === 'overall') {
+      const score = overallMap.get(inst.id)?.overall_score
+      if (!isKnownNumber(score)) return 'var(--muted)'
+      if (score >= 75) return 'var(--positive)'
+      if (score >= 55) return 'var(--chart-1)'
+      if (score >= 35) return 'var(--warning)'
+      return 'var(--negative)'
+    }
+    return getGradeColor(computeHealthScore(fin).grade)
+  }
+
+  const mapLegend = mapColour === 'nation'
+    ? [['England', 'var(--chart-1)'], ['Scotland', 'var(--chart-2)'], ['Wales', 'var(--chart-3)'], ['Northern Ireland', 'var(--chart-4)']]
+    : mapColour === 'risk'
+      ? [['Low', 'var(--positive)'], ['Medium', 'var(--warning)'], ['High', 'var(--negative)'], ['Pending', 'var(--muted)']]
+      : mapColour === 'overall'
+        ? [['75–100', 'var(--positive)'], ['55–74', 'var(--chart-1)'], ['35–54', 'var(--warning)'], ['<35 / pending', 'var(--negative)']]
+        : [['AAA/AA', 'var(--positive)'], ['A/BBB', 'var(--warning)'], ['BB–CCC', 'var(--negative)'], ['Pending', 'var(--muted)']]
 
   // Graph data (scatter: research income vs surplus margin, size = revenue)
   const scatterData = useMemo(() => filtered
@@ -192,6 +237,14 @@ export function ExplorerPage() {
           <option value="liquidity">Sort: Liquidity ▾</option>
           <option value="name">Sort: Name ▾</option>
         </select>
+        {view === 'map' && (
+          <select aria-label="Map colour metric" value={mapColour} onChange={(e) => setMapColour(e.target.value as MapColourMode)} style={SELECT_STYLE}>
+            <option value="health">Colour: Health</option>
+            <option value="overall">Colour: Overall score</option>
+            <option value="risk">Colour: Risk flag</option>
+            <option value="nation">Colour: Nation</option>
+          </select>
+        )}
       </div>
 
       {/* ── TABLE ── */}
@@ -260,14 +313,30 @@ export function ExplorerPage() {
               />
               {[...bubbles].sort((a, b) => compareNullableDesc(a.fin.revenue_gbp_m, b.fin.revenue_gbp_m)).map(({ inst, fin, x, y }) => {
                 const r = isKnownNumber(fin.revenue_gbp_m) ? Math.max(3, Math.sqrt(fin.revenue_gbp_m / maxRev) * 22) : 4
-                const h = computeHealthScore(fin)
-                const color = getGradeColor(h.grade)
-                const active = hovered === inst.id
+                const color = mapBubbleColour(inst, fin)
+                const active = activeMapId === inst.id
+                const isSelected = selected === inst.id
                 return (
-                  <g key={inst.id}>
-                    <circle cx={x} cy={y} r={r} fill={color} fillOpacity={active ? 0.85 : 0.55} stroke={active ? color : 'transparent'} strokeWidth={1.5}
-                      style={{ cursor: 'pointer', transition: 'fill-opacity 0.15s' }}
-                      onMouseEnter={() => setHovered(inst.id)} onMouseLeave={() => setHovered(null)} />
+                  <g
+                    key={inst.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${inst.canonical_name}. ${formatCurrencyM(fin.revenue_gbp_m)} income. Press Enter for details.`}
+                    onMouseEnter={() => setHovered(inst.id)}
+                    onMouseLeave={() => setHovered(null)}
+                    onFocus={() => setHovered(inst.id)}
+                    onBlur={() => setHovered(null)}
+                    onClick={() => setSelected((current) => current === inst.id ? null : inst.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        setSelected((current) => current === inst.id ? null : inst.id)
+                      }
+                    }}
+                    style={{ cursor: 'pointer', outline: 'none' }}
+                  >
+                    <circle cx={x} cy={y} r={r} fill={color} fillOpacity={active ? 0.88 : 0.55} stroke={isSelected ? 'var(--text)' : active ? color : 'transparent'} strokeWidth={isSelected ? 2.5 : 1.5}
+                      style={{ transition: 'fill-opacity 0.15s, stroke-width 0.15s' }} />
                     {(active || r > 14) && <text x={x} y={y + r + 9} textAnchor="middle" fontSize={8.5} fill="var(--text-2)" style={{ pointerEvents: 'none' }}>{inst.short_name}</text>}
                   </g>
                 )
@@ -277,9 +346,13 @@ export function ExplorerPage() {
               <span style={{ color: 'var(--muted)', fontSize: 10 }}>
                 Boundary: {UK_OUTLINE_SOURCE.publisher} · {UK_OUTLINE_SOURCE.source_reference}
               </span>
-              <span style={{ color: 'var(--muted)', fontSize: 10 }}>
-                Plotted: {bubbles.length} providers · {regionCoordinateRows} region-level map points · {unplottedProviderRows} not plotted
-              </span>
+              <div className="flex flex-wrap items-center gap-3" aria-label={`${mapColour} legend`}>
+                {mapLegend.map(([label, colour]) => (
+                  <span key={label} className="flex items-center gap-1.5" style={{ color: 'var(--muted)', fontSize: 10 }}>
+                    <span aria-hidden style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: colour, display: 'inline-block' }} />{label}
+                  </span>
+                ))}
+              </div>
               <a href={UK_OUTLINE_SOURCE.source_url} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--link)', fontSize: 10 }}>
                 Source
               </a>
@@ -287,23 +360,32 @@ export function ExplorerPage() {
           </div>
           <div className="border p-3" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
             <p style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>
-              {hovered ? 'Selected' : 'Hover a bubble'}
+              {activeMapId ? (selected === activeMapId ? 'Selected · click again to clear' : 'Preview · click to pin') : 'Explore the map'}
             </p>
             {(() => {
-              const b = bubbles.find((x) => x.inst.id === hovered)
-              if (!b) return <p style={{ color: 'var(--muted)', fontSize: 12 }}>Bubble size = total income · colour = financial health. Region-level points are used only where HESA supplies region rather than exact campus coordinates.</p>
+              const b = bubbles.find((x) => x.inst.id === activeMapId)
+              if (!b) return (
+                <div>
+                  <p style={{ color: 'var(--text-2)', fontSize: 12, lineHeight: 1.55 }}>Bubble size = total income. Colour follows the selected evidence layer.</p>
+                  <p className="mt-2" style={{ color: 'var(--muted)', fontSize: 11, lineHeight: 1.55 }}>Hover to preview, click to pin, or use Tab and Enter. Region-level points are labelled where exact campus coordinates are not available.</p>
+                </div>
+              )
+              const overall = overallMap.get(b.inst.id)
               return (
                 <div>
                   <p style={{ color: 'var(--text)', fontSize: 15, fontWeight: 600 }}>{b.inst.canonical_name}</p>
                   <p style={{ color: 'var(--muted)', fontSize: 11, marginBottom: 10 }}>{b.inst.city} · {b.inst.nation}</p>
                   <div className="grid grid-cols-2 gap-2 mb-3">
-                    {[['Income', formatCurrencyM(b.fin.revenue_gbp_m)], ['Margin', formatPct(b.fin.surplus_margin_pct)], ['Research', formatCurrencyM(b.fin.research_income_gbp_m)], ['Liquidity', formatDays(b.fin.liquidity_days)]].map(([l, v]) => (
+                    {[['Income', formatCurrencyM(b.fin.revenue_gbp_m)], ['Margin', formatPct(b.fin.surplus_margin_pct)], ['Overall', isKnownNumber(overall?.overall_score) ? `${overall.overall_score}/100` : 'Pending'], ['Coverage', overall ? `${overall.coverage_pct}%` : 'Pending']].map(([l, v]) => (
                       <div key={l} className="px-2 py-1.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}>
                         <p style={{ color: 'var(--muted)', fontSize: 9, textTransform: 'uppercase' }}>{l}</p>
                         <p className="font-num" style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600 }}>{v}</p>
                       </div>
                     ))}
                   </div>
+                  <p className="mb-3" style={{ color: 'var(--muted)', fontSize: 10.5 }}>
+                    Coordinate precision: {b.precision === 'region' ? 'regional centroid' : 'campus-level'}
+                  </p>
                   <Link to={`/universities/${b.inst.id}`} className="block text-center px-3 py-1.5" style={{ backgroundColor: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 500, borderRadius: 3 }}>View profile</Link>
                 </div>
               )
