@@ -2,64 +2,28 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { TrendingUp, TrendingDown, ArrowUpRight, FileText, ChevronRight, Activity, AlertCircle, Heart, Coffee, GraduationCap, Map as MapIcon, Trophy } from 'lucide-react'
 import { institutions } from '../data/institutions'
-import { compareNullableDesc, financials, formatCurrencyM, formatNumber, formatPct, getAllLatestFinancials, getFinancialsByInstitution, AVAILABLE_YEARS, isAggregateEligible, isKnownNumber } from '../data/financials'
-import { getStudentCoverage } from '../data/students'
-import { getLatestIntelligence } from '../data/intelligence'
-import { nationalStudentFinanceRecords } from '../data/nationalStudentFinance'
-import { getSectorAverageScore, getAllHealthScores, scoreToGrade, computeHealthScore, getGradeColor } from '../data/health'
-import { SUPPORT_LINKS } from '../data/links'
-import { Sparkline } from '../components/charts/Sparkline'
-import { RiskBadge } from '../components/institutions/RiskBadge'
-import { NationBadge } from '../components/institutions/NationBadge'
-import { HealthBadge } from '../components/institutions/HealthBadge'
-import { MetricTrendChart } from '../components/charts/MetricTrendChart'
-import { IncomeBreakdownChart } from '../components/charts/IncomeBreakdownChart'
-import { Panel } from '../components/layout/Panel'
+import { AVAILABLE_YEARS, getAggregateEligibleFinancials, isKnownNumber, sumKnown } from '../data/financials'
+import { SYSTEM_RISK_SNAPSHOT } from '../data/systemRisk'
+import { useYear } from '../context/YearContext'
+import { useWorkspace } from '../context/WorkspaceContext'
 import { WorkspaceSection } from '../components/layout/WorkspaceSection'
 import { IntelligenceCardList } from '../components/intelligence/IntelligenceCardList'
 import { SYSTEM_RISK_SNAPSHOT } from '../data/systemRisk'
 
-function aggregateByYear() {
-  const byYear = new Map<string, { revenue: number; surplus: number; research: number; staff: number; cash: number; borrowing: number; capex: number; intl: number; intlCount: number; students: number; studentsCount: number; tuition: number; other: number; net_assets: number; count: number }>()
-  for (const f of financials) {
-    const e = byYear.get(f.fiscal_year) ?? { revenue: 0, surplus: 0, research: 0, staff: 0, cash: 0, borrowing: 0, capex: 0, intl: 0, intlCount: 0, students: 0, studentsCount: 0, tuition: 0, other: 0, net_assets: 0, count: 0 }
-    if (isKnownNumber(f.revenue_gbp_m)) e.revenue += f.revenue_gbp_m
-    if (isKnownNumber(f.surplus_gbp_m)) e.surplus += f.surplus_gbp_m
-    if (isKnownNumber(f.research_income_gbp_m)) e.research += f.research_income_gbp_m
-    if (isKnownNumber(f.staff_costs_gbp_m)) e.staff += f.staff_costs_gbp_m
-    if (isKnownNumber(f.cash_gbp_m)) e.cash += f.cash_gbp_m
-    if (isKnownNumber(f.borrowing_gbp_m)) e.borrowing += f.borrowing_gbp_m
-    if (isKnownNumber(f.capital_expenditure_gbp_m)) e.capex += f.capital_expenditure_gbp_m
-    if (isKnownNumber(f.international_fte_pct)) {
-      e.intl += f.international_fte_pct
-      e.intlCount += 1
-    }
-    if (isKnownNumber(f.student_fte_total)) {
-      e.students += f.student_fte_total
-      e.studentsCount += 1
-    }
-    if (isKnownNumber(f.tuition_fee_income_gbp_m)) e.tuition += f.tuition_fee_income_gbp_m
-    if (isKnownNumber(f.other_income_gbp_m)) e.other += f.other_income_gbp_m
-    if (isKnownNumber(f.net_assets_gbp_m)) e.net_assets += f.net_assets_gbp_m
-    if (isAggregateEligible(f)) e.count += 1
-    byYear.set(f.fiscal_year, e)
-  }
-  return byYear
+const institutionById = new Map(institutions.map((institution) => [institution.id, institution]))
+const sectorSeries = [...AVAILABLE_YEARS].reverse().map((year) => {
+  const rows = getAggregateEligibleFinancials(year)
+  return { year, income: sumKnown(rows, 'revenue_gbp_m'), research: sumKnown(rows, 'research_income_gbp_m'), providers: rows.length }
+})
+function billions(value: number | null) {
+  return isKnownNumber(value) ? '£' + (value / 1000).toFixed(2) + 'bn' : 'Pending'
 }
-
-function fmtGBP(m: number) {
-  if (m >= 1000) return `£${(m / 1000).toFixed(2)}bn`
-  return `£${m.toLocaleString(undefined, { maximumFractionDigits: 0 })}m`
+function change(current: number | null, previous: number | null) {
+  if (!isKnownNumber(current) || !isKnownNumber(previous) || previous === 0) return null
+  return (current - previous) / Math.abs(previous) * 100
 }
-
-function pctChange(current: number, prev: number) {
-  if (!prev) return 0
-  return ((current - prev) / prev) * 100
-}
-
-function cagr(end: number, start: number, years: number) {
-  if (!start || !years || end <= 0) return 0
-  return (Math.pow(end / start, 1 / years) - 1) * 100
+function Change({ value }: { value: number | null }) {
+  return value === null ? <span className="metric-footnote">No earlier comparable total</span> : <span className="metric-footnote"><span className={value >= 0 ? 'metric-positive' : 'metric-negative'}>{value >= 0 ? '+' : ''}{value.toFixed(1)}%</span> vs previous year</span>
 }
 
 export function HomePage() {
@@ -808,89 +772,30 @@ export function HomePage() {
             </div>
           </Panel>
         </div>
-
-        <Panel title="Recent Reports" subtitle="Latest published annual statements" padded={false}>
-          <div>
-            {recentReports.map(({ f, inst }) => (
-              <a
-                key={`${inst?.id}-${f.fiscal_year}`}
-                href={f.source_pdf}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-start gap-2.5 px-3 py-2.5 transition-colors group"
-                style={{ borderBottom: '1px solid var(--border)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--panel-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <FileText className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: 'var(--muted)' }} />
-                <div className="flex-1 min-w-0">
-                  <p className="truncate group-hover:underline" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 500 }}>
-                    {inst?.canonical_name ?? 'Unknown'}
-                  </p>
-                  <p className="font-num" style={{ color: 'var(--muted)', fontSize: 10 }}>
-                    FY{f.fiscal_year} · published {f.published}
-                  </p>
-                </div>
-                <ArrowUpRight className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: 'var(--muted)' }} />
-              </a>
-            ))}
+        <details className="trend-data"><summary>View trend data and coverage</summary><p>Provider coverage varies by year. Changes compare aggregate totals, not a fixed group of providers.</p><table><caption className="sr-only">Verified sector totals by financial year</caption><thead><tr><th>Year</th><th>Income</th><th>Research</th><th>Providers</th></tr></thead><tbody>{trend.map((row) => <tr key={row.year}><th>{row.year}</th><td>{billions(row.income)}</td><td>{billions(row.research)}</td><td>{row.providers}</td></tr>)}</tbody></table></details>
+      </section>
+      <section className="observatory-panel watch-panel" aria-labelledby="system-watch-title">
+        <div className="panel-heading"><h2 id="system-watch-title">System watch</h2><Link to="/system-watch" aria-label="Open system watch"><ChevronRight size={19} /></Link></div>
+        <p>Finance, graduate employment, labour demand and recruitment exposure.</p>
+        <div className="watch-summary">
+          <div className="risk-gauge" role="img" aria-label={'System pressure score ' + snapshot.score + ' out of 100'}>
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 600, height: 222 }}><PieChart><Pie data={[{ value: snapshot.score }, { value: 100 - snapshot.score }]} dataKey="value" innerRadius="79%" outerRadius="98%" startAngle={90} endAngle={-270} stroke="none" isAnimationActive={false}><Cell fill="var(--warning)" /><Cell fill="var(--border)" /></Pie></PieChart></ResponsiveContainer>
+            <div className="risk-value"><strong>{snapshot.score}</strong><span>/ 100</span></div>
           </div>
-        </Panel>
-      </div>
-
-      {/* Career intelligence status */}
-      <div className="mb-2.5 border px-3 py-3" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
-        <div className="flex flex-wrap items-center gap-3 mb-2">
-          <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Career Intelligence</span>
-          <span style={{ color: 'var(--positive)', fontSize: 11 }}>{careerIntelligence.length} sourced records attached</span>
+          <div className="risk-description"><strong>{snapshot.level}</strong><p>As of {riskDate}. Based on selected indicators across finance, demand and recruitment.</p></div>
         </div>
-        <p style={{ color: 'var(--text-2)', fontSize: 11.5, lineHeight: 1.6, marginBottom: 10 }}>
-          Graduate outcomes, labour-market and AI exposure records now display only when each claim has source provenance and verification metadata. External analysis is labelled separately from official statistics.
-        </p>
-        <div className="mb-3">
-          <IntelligenceCardList records={careerIntelligence} compact />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {[
-            { label: 'Graduate Outcomes', href: '/graduate-outcomes' },
-            { label: 'Employer Intelligence', href: '/employers' },
-            { label: 'Degree Intelligence', href: '/degrees' },
-            { label: 'Career Explorer', href: '/career-explorer' },
-            { label: 'Student Journey', href: '/student-journey' },
-          ].map(({ label, href }) => (
-            <Link key={href} to={href} className="flex items-center gap-1 px-2.5 py-1 hover:underline"
-              style={{ border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text-2)', fontSize: 11, textDecoration: 'none' }}>
-              {label} <ArrowUpRight className="w-3 h-3" />
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Methodology footer */}
-      <div
-        className="mt-2.5 px-3 py-2 border flex flex-wrap items-center gap-x-6 gap-y-1"
-        style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3 }}
-      >
-        <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Methodology</span>
-        <span style={{ color: 'var(--text-2)', fontSize: 11 }}>
-          Metrics normalised to OfS AFR concept families. Sourced from audited institutional accounts and HESA open data.
-        </span>
-        <Link to="/about" className="flex items-center gap-1 hover:underline" style={{ color: 'var(--link)', fontSize: 11 }}>
-          Full methodology <ArrowUpRight className="w-3 h-3" />
-        </Link>
-        <div className="ml-auto flex items-center gap-3">
-          <span style={{ color: 'var(--muted)', fontSize: 10 }}>Free and open-source by Ashan Jeevanathan</span>
-          <a
-            href={SUPPORT_LINKS.kofi}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 hover:underline"
-            style={{ color: 'var(--negative)', fontSize: 11, fontWeight: 500 }}
-          >
-            <Coffee className="w-3 h-3" /> Support HEStats
-          </a>
-        </div>
-      </div>
+        <Link className="observatory-button watch-action" to="/system-watch">View underlying indicators <ArrowRight size={16} /></Link>
+      </section>
     </div>
-  )
+
+    <section className="overview-institutions" aria-labelledby="institutions-title">
+      <div className="panel-heading"><div><h2 id="institutions-title">Institutions to explore</h2><p>Compare key financial indicators for leading universities.</p></div><Link className="text-link" to="/universities">View all universities <ArrowRight size={16} /></Link></div>
+      <div className="overview-table-scroll"><table className="overview-table"><caption className="sr-only">Leading institutions by income for {selectedYear}. Select at least two to compare.</caption><thead><tr><th scope="col">#</th><th scope="col">Institution</th><th scope="col" aria-sort={descending ? 'descending' : 'ascending'}><button className="table-sort" onClick={() => setDescending((value) => !value)}>Total income <span className="table-year">(FY {selectedYear})</span>{descending ? <ArrowDown size={14} /> : <ArrowUp size={14} />}</button></th><th scope="col">Compare</th></tr></thead><tbody>
+        {visible.map((row) => { const institution = institutionById.get(row.institution_id); return <tr key={row.institution_id} className={selected.includes(row.institution_id) ? 'selected' : ''}><td>{featured.indexOf(row) + 1}</td><th scope="row"><Link to={'/universities/' + row.institution_id}><Building2 size={21} aria-hidden="true" /><span>{institution?.canonical_name ?? row.institution_id}</span></Link></th><td className="income-value">{isKnownNumber(row.revenue_gbp_m) ? '£' + row.revenue_gbp_m.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'm' : 'Pending'}</td><td><input type="checkbox" aria-label={'Compare ' + (institution?.short_name ?? row.institution_id)} checked={selected.includes(row.institution_id)} onChange={() => toggle(row.institution_id)} /></td></tr> })}
+      </tbody></table></div>
+      <div className="comparison-footer"><p>Source: HESA Finance · {selectedYear}</p><div className="comparison-controls"><span role="status">{selected.length > 0 ? selected.length + ' selected' : 'Select 2–4 institutions'}</span>{selected.length > 0 && <button className="text-link" onClick={() => setSelected([])}>Clear</button>}{selected.length >= 2 ? <Link className="observatory-button primary" to={'/compare?ids=' + selected.join(',')}>Compare selected <ArrowRight size={16} /></Link> : <button className="observatory-button" disabled>Compare selected <ArrowRight size={16} /></button>}</div></div>
+    </section>
+    {hasWorkspace && <section className="overview-workspace" aria-label="Saved workspace"><WorkspaceSection /></section>}
+    <div className="overview-more"><Link to="/sector">Explore all sector indicators <ArrowRight size={16} /></Link><Link to="/student-journey">Students & careers <ArrowRight size={16} /></Link><Link to="/intelligence">Latest sector intelligence <ArrowRight size={16} /></Link></div>
+  </div>
 }

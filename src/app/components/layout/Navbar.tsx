@@ -8,8 +8,10 @@ import {
   Activity,
 } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
-import { institutions } from '../../data/institutions'
+import { useYear } from '../../context/YearContext'
+import { AVAILABLE_YEARS } from '../../data/financials'
 import { BrandLogo } from '../brand/BrandLogo'
+import { SpotlightModal } from './SpotlightModal'
 
 // ── Reduced, workflow-oriented primary navigation ───────────────────────────
 const PRIMARY_NAV = [
@@ -289,124 +291,61 @@ function BottomNav({ onSearch }: { onSearch: () => void }) {
     { href: '/student-journey', label: 'Students', icon: GraduationCap },
   ]
 
-  return (
-    <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-[120] flex items-stretch"
-      style={{ backgroundColor: 'var(--bg-2)', borderTop: '1px solid var(--border)', paddingBottom: 'env(safe-area-inset-bottom)' }}
-    >
-      {items.map((item) => {
-        const Icon = item.icon
-        if ('type' in item && item.type === 'search') {
-          return (
-            <button key="search" onClick={onSearch} className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2" style={{ color: 'var(--text-2)' }}>
-              <span className="flex items-center justify-center w-9 h-9 -mt-4 rounded-full" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>
-                <Icon className="w-4 h-4" />
-              </span>
-              <span style={{ fontSize: 9.5 }}>{item.label}</span>
-            </button>
-          )
-        }
-        const active = isActive(item.href!)
-        return (
-          <Link key={item.href} to={item.href!} className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5" style={{ color: active ? 'var(--accent)' : 'var(--text-2)' }}>
-            <Icon className="w-4 h-4" />
-            <span style={{ fontSize: 9.5, fontWeight: active ? 600 : 400 }}>{item.label}</span>
-          </Link>
-        )
-      })}
+function Navigation({ onNavigate }: { onNavigate?: () => void }) {
+  const { theme } = useTheme()
+  return <>
+    <Link className="observatory-brand" to="/" onClick={onNavigate} aria-label="HEStats overview">
+      <BrandLogo variant="mark" tone={theme === 'dark' ? 'onDark' : 'onLight'} size={36} />
+      <span><strong>HEStats</strong><small>UK higher education<br />intelligence</small></span>
+    </Link>
+    <nav aria-label="Main navigation" className="observatory-navigation">
+      {NAV_GROUPS.map((group, index) => <div className="nav-group" key={group.label}>
+        {index > 0 && <p>{group.label}</p>}
+        {group.items.map(({ href, label, icon: Icon }) => <NavLink key={href} to={href} end={href === '/'} onClick={onNavigate} className={({ isActive }) => 'observatory-nav-link' + (isActive ? ' active' : '')}><Icon size={18} /><span>{label}</span></NavLink>)}
+      </div>)}
     </nav>
-  )
+    <div className="sidebar-note"><span>Independent. Open. Accessible.</span><Link to="/support" onClick={onNavigate}><Heart size={14} />Support HEStats</Link></div>
+  </>
 }
 
 export function Navbar() {
   const location = useLocation()
   const { theme, toggleTheme } = useTheme()
+  const { selectedYear, setSelectedYear } = useYear()
   const [spotlightOpen, setSpotlightOpen] = useState(false)
-  const [moreOpen, setMoreOpen] = useState(false)
-
-  const isActive = (href: string) =>
-    href === '/' ? location.pathname === '/' : location.pathname.startsWith(href)
-
+  const [menuOpen, setMenuOpen] = useState(false)
+  useEffect(() => { setMenuOpen(false) }, [location.pathname])
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.key === '/' || (e.key === 'k' && (e.metaKey || e.ctrlKey))) && !spotlightOpen) {
-        const tag = (e.target as HTMLElement).tagName
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return
-        e.preventDefault()
-        setSpotlightOpen(true)
+      const target = e.target as HTMLElement
+      if (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+      if (e.key === '/' || (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey))) {
+        e.preventDefault(); setSpotlightOpen(true)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [spotlightOpen])
-
-  useEffect(() => { setMoreOpen(false) }, [location.pathname])
-
-  return (
-    <>
-      {spotlightOpen && <SpotlightModal onClose={() => setSpotlightOpen(false)} />}
-
-      <header className="sticky top-0 z-50 border-b" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)' }}>
-        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 h-12 flex items-center gap-0">
-          {/* Brand */}
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0 pr-4 lg:pr-6">
-            <BrandLogo variant="mark" tone={theme === 'dark' ? 'onDark' : 'onLight'} size={21} />
-            <div className="flex items-baseline gap-1.5">
-              <BrandLogo variant="wordmark" tone={theme === 'dark' ? 'onDark' : 'onLight'} size={13.5} showTag={false} />
-              <span className="hidden sm:inline" style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Terminal</span>
-            </div>
-          </Link>
-
-          {/* Primary nav — desktop only, calm and spacious */}
-          <nav className="hidden lg:flex items-center h-full flex-1">
-            {PRIMARY_NAV.map((link) =>
-              'dropdown' in link && link.dropdown ? (
-                <IntelligenceDropdown key={link.href} active={isActive(link.href)} />
-              ) : (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className="px-3 h-full flex items-center transition-colors border-b-2 whitespace-nowrap"
-                  style={{
-                    color: isActive(link.href) ? 'var(--text)' : 'var(--text-2)',
-                    borderColor: isActive(link.href) ? 'var(--accent)' : 'transparent',
-                    fontSize: 12.5,
-                    fontWeight: isActive(link.href) ? 600 : 400,
-                    letterSpacing: '0.01em',
-                  }}
-                >
-                  {link.label}
-                </Link>
-              ),
-            )}
-          </nav>
-
-          {/* Right controls */}
-          <div className="flex items-center gap-0.5 ml-auto">
-            <button
-              onClick={() => setSpotlightOpen(true)}
-              className="flex items-center gap-2 px-2.5 py-1.5 transition-colors"
-              style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 3, color: 'var(--muted)', fontSize: 12, marginRight: 4 }}
-              aria-label="Search"
-            >
-              <Search className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden sm:inline" style={{ minWidth: 120 }}>Ask anything…</span>
-              <kbd className="hidden md:inline" style={{ border: '1px solid var(--border)', borderRadius: 2, fontSize: 10, padding: '1px 5px', fontFamily: "'JetBrains Mono', monospace", color: 'var(--muted)' }}>⌘K</kbd>
-            </button>
-
-            <button onClick={toggleTheme} className="w-10 h-10 flex items-center justify-center transition-colors" style={{ color: 'var(--text-2)' }} aria-label="Toggle theme">
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-
-            <button className="hidden sm:flex w-10 h-10 items-center justify-center transition-colors relative" style={{ color: 'var(--text-2)' }} aria-label="Notifications">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <BottomNav onSearch={() => setSpotlightOpen(true)} />
-    </>
-  )
+  }, [])
+  return <>
+    <a className="skip-link" href="#main-content">Skip to content</a>
+    <aside className="observatory-sidebar"><Navigation /></aside>
+    <header className="observatory-topbar">
+      <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
+        <Dialog.Trigger className="icon-button mobile-menu" aria-label="Open navigation"><Menu size={21} /></Dialog.Trigger>
+        <Dialog.Portal>
+          <Dialog.Overlay className="navigation-overlay" />
+          <Dialog.Content className="navigation-drawer" aria-describedby={undefined}>
+            <Dialog.Title className="sr-only">Navigation</Dialog.Title>
+            <Dialog.Close className="icon-button drawer-close" aria-label="Close navigation"><X size={20} /></Dialog.Close>
+            <Navigation onNavigate={() => setMenuOpen(false)} />
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+      <button className="observatory-search" aria-label="Search HEStats" onClick={() => setSpotlightOpen(true)}><Search size={20} /><span>Search for a university, indicator or keyword…</span><kbd>⌘ K</kbd></button>
+      {location.pathname === '/' && <label className="observatory-year"><span className="sr-only">Financial year</span><select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)}>{AVAILABLE_YEARS.map((year) => <option key={year} value={year}>FY {year}</option>)}</select></label>}
+      <button onClick={toggleTheme} className="icon-button" aria-label="Toggle theme">{theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}</button>
+      <Link to="/explorer" className="observatory-button primary topbar-explore">Explore data <ArrowRight size={17} /></Link>
+    </header>
+    {spotlightOpen && <SpotlightModal onClose={() => setSpotlightOpen(false)} />}
+  </>
 }
