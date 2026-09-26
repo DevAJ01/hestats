@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import {
-  Search, Building2, BarChart2, GitCompare,
+  Search, X, Building2, BarChart2, GitCompare,
   Compass, Newspaper, Database, Terminal, Heart, Hash, ChevronDown,
   TrendingUp, FileText, GraduationCap, BookOpen, Briefcase, Route,
   Megaphone,
@@ -204,4 +204,3 @@ export function SpotlightModal({ onClose }: { onClose: () => void }) {
     </div>
   )
 }
-
