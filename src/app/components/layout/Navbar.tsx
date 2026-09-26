@@ -291,6 +291,35 @@ function BottomNav({ onSearch }: { onSearch: () => void }) {
     { href: '/student-journey', label: 'Students', icon: GraduationCap },
   ]
 
+  return (
+    <nav
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-[120] flex items-stretch"
+      style={{ backgroundColor: 'var(--bg-2)', borderTop: '1px solid var(--border)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      {items.map((item) => {
+        const Icon = item.icon
+        if ('type' in item && item.type === 'search') {
+          return (
+            <button key="search" onClick={onSearch} className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2" style={{ color: 'var(--text-2)' }}>
+              <span className="flex items-center justify-center w-9 h-9 -mt-4 rounded-full" style={{ backgroundColor: 'var(--accent)', color: '#fff' }}>
+                <Icon className="w-4 h-4" />
+              </span>
+              <span style={{ fontSize: 9.5 }}>{item.label}</span>
+            </button>
+          )
+        }
+        const active = isActive(item.href!)
+        return (
+          <Link key={item.href} to={item.href!} className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5" style={{ color: active ? 'var(--accent)' : 'var(--text-2)' }}>
+            <Icon className="w-4 h-4" />
+            <span style={{ fontSize: 9.5, fontWeight: active ? 600 : 400 }}>{item.label}</span>
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   const { theme } = useTheme()
   return <>

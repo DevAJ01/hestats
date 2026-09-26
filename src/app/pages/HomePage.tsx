@@ -8,7 +8,6 @@ import { useYear } from '../context/YearContext'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { WorkspaceSection } from '../components/layout/WorkspaceSection'
 import { IntelligenceCardList } from '../components/intelligence/IntelligenceCardList'
-import { SYSTEM_RISK_SNAPSHOT } from '../data/systemRisk'
 
 const institutionById = new Map(institutions.map((institution) => [institution.id, institution]))
 const sectorSeries = [...AVAILABLE_YEARS].reverse().map((year) => {
@@ -773,7 +772,7 @@ export function HomePage() {
           </Panel>
         </div>
         <details className="trend-data"><summary>View trend data and coverage</summary><p>Provider coverage varies by year. Changes compare aggregate totals, not a fixed group of providers.</p><table><caption className="sr-only">Verified sector totals by financial year</caption><thead><tr><th>Year</th><th>Income</th><th>Research</th><th>Providers</th></tr></thead><tbody>{trend.map((row) => <tr key={row.year}><th>{row.year}</th><td>{billions(row.income)}</td><td>{billions(row.research)}</td><td>{row.providers}</td></tr>)}</tbody></table></details>
-      </section>
+      </div>
       <section className="observatory-panel watch-panel" aria-labelledby="system-watch-title">
         <div className="panel-heading"><h2 id="system-watch-title">System watch</h2><Link to="/system-watch" aria-label="Open system watch"><ChevronRight size={19} /></Link></div>
         <p>Finance, graduate employment, labour demand and recruitment exposure.</p>
@@ -786,7 +785,6 @@ export function HomePage() {
         </div>
         <Link className="observatory-button watch-action" to="/system-watch">View underlying indicators <ArrowRight size={16} /></Link>
       </section>
-    </div>
 
     <section className="overview-institutions" aria-labelledby="institutions-title">
       <div className="panel-heading"><div><h2 id="institutions-title">Institutions to explore</h2><p>Compare key financial indicators for leading universities.</p></div><Link className="text-link" to="/universities">View all universities <ArrowRight size={16} /></Link></div>
@@ -798,4 +796,5 @@ export function HomePage() {
     {hasWorkspace && <section className="overview-workspace" aria-label="Saved workspace"><WorkspaceSection /></section>}
     <div className="overview-more"><Link to="/sector">Explore all sector indicators <ArrowRight size={16} /></Link><Link to="/student-journey">Students & careers <ArrowRight size={16} /></Link><Link to="/intelligence">Latest sector intelligence <ArrowRight size={16} /></Link></div>
   </div>
+  )
 }
