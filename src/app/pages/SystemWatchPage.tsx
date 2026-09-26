@@ -1,5 +1,6 @@
 import { Activity, BriefcaseBusiness, Building2, ExternalLink, GraduationCap, Info, ShieldAlert } from 'lucide-react'
 import { SYSTEM_RISK_SNAPSHOT, SystemRiskIndicator, SystemRiskLevel } from '../data/systemRisk'
+import { OfsReportPanel } from '../components/intelligence/OfsReportPanel'
 
 const levelColour: Record<SystemRiskLevel, string> = {
   Stable: 'var(--positive)',
@@ -19,7 +20,7 @@ function IndicatorCard({ indicator }: { indicator: SystemRiskIndicator }) {
   const Icon = iconById[indicator.id]
   const colour = levelColour[indicator.level]
   return (
-    <article className="border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 4 }}>
+    <article className="indicator-card border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 18 }}>
       <div className="flex items-start gap-3 px-4 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="p-2 border" style={{ borderColor: 'var(--border)', color: colour, borderRadius: 3, backgroundColor: 'var(--bg-2)' }}>
           <Icon className="w-4 h-4" />
@@ -71,9 +72,10 @@ export function SystemWatchPage() {
   const colour = levelColour[snapshot.level]
 
   return (
-    <div className="max-w-[1440px] mx-auto px-3 sm:px-5 py-4 sm:py-6 space-y-4">
+    <div className="system-watch-page max-w-[1440px] mx-auto px-3 sm:px-5 py-4 sm:py-6 space-y-4">
+      <header className="watch-heading"><p className="eyebrow">Signals, with perspective</p><h1>Understand the pressure.<br /><span>Follow the evidence.</span></h1><p>Four indicators. One transparent methodology. A clearer view of the forces shaping higher education.</p></header>
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="border px-5 py-5 sm:px-6 sm:py-6" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border-strong)', borderRadius: 4 }}>
+        <div className="watch-score-panel border px-5 py-5 sm:px-6 sm:py-6" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border-strong)', borderRadius: 20 }}>
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4" style={{ color: 'var(--accent)' }} />
             <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase' }}>UK Higher Education System Watch</span>
@@ -88,18 +90,18 @@ export function SystemWatchPage() {
             </div>
           </div>
           <div className="relative mt-6 h-2 overflow-hidden" style={{ backgroundColor: 'var(--bg-2)', borderRadius: 2 }}>
-            <div style={{ width: `${snapshot.score}%`, height: '100%', backgroundColor: colour }} />
+            <div className="risk-score-fill" style={{ width: `${snapshot.score}%`, height: '100%', backgroundColor: colour }} />
             {[30, 55, 75].map((point) => <span key={point} className="absolute top-0 h-full w-px" style={{ left: `${point}%`, backgroundColor: 'var(--border-strong)' }} />)}
           </div>
           <div className="grid grid-cols-4 mt-2 font-num" style={{ color: 'var(--muted)', fontSize: 9 }}>
             <span>STABLE</span><span className="text-center">GUARDED</span><span className="text-center">SEVERE</span><span className="text-right">CRITICAL</span>
           </div>
           <p className="mt-5 max-w-[720px]" style={{ color: 'var(--text-2)', fontSize: 12.5, lineHeight: 1.65 }}>
-            A source-backed early-warning view across institutional finances, graduate employment, labour demand and recruitment concentration. Every component is inspectable and API-ready.
+            An early-warning view across institutional finances, graduate employment, labour demand and recruitment concentration. Explore the evidence and calculation behind each component below.
           </p>
         </div>
 
-        <aside className="border px-5 py-5" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 4 }}>
+        <aside className="border px-5 py-5" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 20 }}>
           <p style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>Coverage & guardrails</p>
           <div className="mt-4 space-y-3">
             {[
@@ -107,6 +109,7 @@ export function SystemWatchPage() {
               ['Graduate outcomes period', snapshot.coverage.graduate_outcomes_period],
               ['Latest labour signal', snapshot.coverage.external_signal_date],
               ['Composite version', 'v1.0'],
+              ['Annual report reviewed', snapshot.review.date],
             ].map(([label, value]) => (
               <div key={label} className="flex items-center justify-between gap-4 pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
                 <span style={{ color: 'var(--text-2)', fontSize: 11 }}>{label}</span>
@@ -121,10 +124,17 @@ export function SystemWatchPage() {
         </aside>
       </section>
 
+      <section className="score-review" aria-labelledby="review-title">
+        <div><p className="eyebrow">After the annual report review</p><h2 id="review-title">{snapshot.score}/100 · {snapshot.review.score_change === 0 ? 'Unchanged' : `${snapshot.review.score_change > 0 ? '+' : ''}${snapshot.review.score_change} points`}</h2><p>{snapshot.review.explanation}</p></div>
+        <details><summary>See the calculation</summary><div className="score-equation">{snapshot.indicators.map((indicator, index) => <p key={indicator.id}><span>{indicator.label}</span><strong>{indicator.score} × {[35, 25, 25, 15][index]}%</strong></p>)}<p><span>Rounded composite</span><strong>{snapshot.score}/100</strong></p></div></details>
+      </section>
+
+      <OfsReportPanel />
+
       <section>
         <div className="flex flex-wrap items-end justify-between gap-2 mb-3">
           <div>
-            <h1 style={{ fontSize: 17, fontWeight: 600 }}>Component indicators</h1>
+            <h2 style={{ fontSize: 20, fontWeight: 600 }}>Component indicators</h2>
             <p className="mt-1" style={{ color: 'var(--muted)', fontSize: 11.5 }}>Open each method panel to inspect the thresholds and source.</p>
           </div>
           <p className="font-num" style={{ color: 'var(--muted)', fontSize: 10 }}>WEIGHTS · FIN 35 · EMP 25 · LAB 25 · REC 15</p>

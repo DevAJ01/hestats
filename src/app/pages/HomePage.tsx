@@ -8,6 +8,7 @@ import { SYSTEM_RISK_SNAPSHOT } from '../data/systemRisk'
 import { useYear } from '../context/YearContext'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { WorkspaceSection } from '../components/layout/WorkspaceSection'
+import { OfsReportPanel } from '../components/intelligence/OfsReportPanel'
 
 const institutionById = new Map(institutions.map((institution) => [institution.id, institution]))
 const sectorSeries = [...AVAILABLE_YEARS].reverse().map((year) => {
@@ -45,7 +46,7 @@ export function HomePage() {
 
   return <div className="sector-overview">
     <section className="overview-heading" aria-labelledby="overview-title">
-      <div><h1 id="overview-title">The sector, in focus.</h1><p>Financial intelligence for UK higher education.</p></div>
+      <div><p className="eyebrow">The higher education observatory</p><h1 id="overview-title">The sector, in focus.</h1><p>Financial intelligence for UK higher education.</p></div>
       <div className="overview-source"><span>Financial year {selectedYear}</span><Link to="/open-data">Source: HESA Finance <ArrowRight size={13} /></Link></div>
     </section>
 
@@ -84,12 +85,13 @@ export function HomePage() {
             <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 600, height: 222 }}><PieChart><Pie data={[{ value: snapshot.score }, { value: 100 - snapshot.score }]} dataKey="value" innerRadius="79%" outerRadius="98%" startAngle={90} endAngle={-270} stroke="none" isAnimationActive={false}><Cell fill="var(--warning)" /><Cell fill="var(--border)" /></Pie></PieChart></ResponsiveContainer>
             <div className="risk-value"><strong>{snapshot.score}</strong><span>/ 100</span></div>
           </div>
-          <div className="risk-description"><strong>{snapshot.level}</strong><p>As of {riskDate}. Based on selected indicators across finance, demand and recruitment.</p></div>
+          <div className="risk-description"><strong>{snapshot.level}</strong><p>Inputs as of {riskDate}. Annual report reviewed {snapshot.review.date}; score unchanged.</p></div>
         </div>
         <Link className="observatory-button watch-action" to="/system-watch">View underlying indicators <ArrowRight size={16} /></Link>
       </section>
     </div>
 
+    <OfsReportPanel compact />
     <section className="overview-institutions" aria-labelledby="institutions-title">
       <div className="panel-heading"><div><h2 id="institutions-title">Institutions to explore</h2><p>Compare key financial indicators for leading universities.</p></div><Link className="text-link" to="/universities">View all universities <ArrowRight size={16} /></Link></div>
       <div className="overview-table-scroll"><table className="overview-table"><caption className="sr-only">Leading institutions by income for {selectedYear}. Select at least two to compare.</caption><thead><tr><th scope="col">#</th><th scope="col">Institution</th><th scope="col" aria-sort={descending ? 'descending' : 'ascending'}><button className="table-sort" onClick={() => setDescending((value) => !value)}>Total income <span className="table-year">(FY {selectedYear})</span>{descending ? <ArrowDown size={14} /> : <ArrowUp size={14} />}</button></th><th scope="col">Compare</th></tr></thead><tbody>

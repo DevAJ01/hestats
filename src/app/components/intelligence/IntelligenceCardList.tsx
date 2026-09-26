@@ -18,6 +18,7 @@ function statusColor(row: IntelligenceRecord) {
 
 function formatMetric(value: number | null, unit: string) {
   if (value === null) return 'Pending'
+  if (unit === 'GBP million') return `£${value.toLocaleString()}m`
   if (unit.startsWith('GBP')) return `GBP ${value.toLocaleString()}`
   if (unit === 'percent') return `${value.toLocaleString()}%`
   if (unit === 'USD trillion') return `$${value.toLocaleString()}tn`
@@ -64,13 +65,14 @@ export function IntelligenceCardList({ records, compact = false }: { records: In
 
             {!compact && row.metrics.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 mt-3">
-                {row.metrics.slice(0, 4).map((metric) => (
+                {row.metrics.map((metric) => (
                   <div key={metric.key} className="px-2 py-2 border" style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--border)', borderRadius: 3 }}>
                     <p style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>{metric.label}</p>
                     <p className="font-num tabular-nums" style={{ color: 'var(--text)', fontSize: 14, fontWeight: 600 }}>
                       {formatMetric(metric.value, metric.unit)}
                     </p>
                     <p style={{ color: 'var(--muted)', fontSize: 9.5, marginTop: 2 }}>{metric.period}</p>
+                    {metric.notes && <p style={{ color: 'var(--text-2)', fontSize: 10, marginTop: 6, lineHeight: 1.5 }}>{metric.notes}</p>}
                   </div>
                 ))}
               </div>

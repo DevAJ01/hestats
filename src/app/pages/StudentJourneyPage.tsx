@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { Map, ArrowRight, ArrowUpRight, Users, GraduationCap, Briefcase, TrendingUp, BookOpen, Microscope, Award } from 'lucide-react'
 import { HESA_GRADUATE_OUTCOMES_HEADLINE, getSectorOutcomes } from '../data/outcomes'
 import { getSectorDegreeStats } from '../data/degrees'
+import { OfsReportPanel } from '../components/intelligence/OfsReportPanel'
 
 interface JourneyStage {
   id: string
@@ -228,6 +229,7 @@ export function StudentJourneyPage() {
 
   return (
     <div className="max-w-[1400px] mx-auto px-3 sm:px-4 py-2.5 space-y-2.5">
+      <OfsReportPanel initialGroup="students" />
       {/* Status bar */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 border" style={{ backgroundColor: 'var(--bg-2)', borderColor: 'var(--border)', borderRadius: 3, fontSize: 11 }}>
         <Map className="w-3 h-3" style={{ color: 'var(--accent)' }} />

@@ -9,6 +9,7 @@ import { HealthBadge } from '../components/institutions/HealthBadge'
 import { RiskBadge } from '../components/institutions/RiskBadge'
 import { Panel } from '../components/layout/Panel'
 import { Sparkline } from '../components/charts/Sparkline'
+import { OfsReportPanel } from '../components/intelligence/OfsReportPanel'
 
 const MISSION_GROUPS = [
   { name: 'Russell Group', ids: ['oxford', 'cambridge', 'imperial', 'ucl', 'lse', 'edinburgh', 'manchester', 'bristol', 'warwick', 'durham', 'exeter', 'cardiff', 'qub'] },
@@ -143,6 +144,7 @@ export function SectorPage() {
 
   return (
     <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-2.5 space-y-2.5">
+      <OfsReportPanel />
       {/* Status bar */}
       <div
         className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 border"

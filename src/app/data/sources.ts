@@ -4,6 +4,7 @@
 // metadata, and the confidence level of each data tier.
 
 import { generatedFinancialProvenance } from './generated/financialRecords'
+import { OFS_ANNUAL_REPORT } from './ofsAnnualReport'
 
 export type SourceTier = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 export type Confidence = 'high' | 'medium' | 'provisional' | 'awaiting'
@@ -40,6 +41,16 @@ export interface RecordProvenance {
 
 // ─── Official Data Sources (8 tiers per the spec) ────────────────────────────
 export const DATA_SOURCES: DataSourceDef[] = [
+  {
+    id: OFS_ANNUAL_REPORT.id, tier: 2, publisher: 'Office for Students',
+    publisher_url: 'https://www.officeforstudents.org.uk', dataset: OFS_ANNUAL_REPORT.title,
+    dataset_url: OFS_ANNUAL_REPORT.url,
+    description: 'Annual report for 1 April 2025 to 31 March 2026, published 14 July 2026. Includes England financial resilience, recruitment, student experience, funding and regulatory monitoring. Reviewed 26 September 2026 against the supplied PDF.',
+    licence: 'OGL-3.0', licence_url: 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/',
+    update_frequency: 'Annual', methodology_url: OFS_ANNUAL_REPORT.landing_url,
+    known_limitations: ['England coverage; not a UK-wide provider finance dataset.', 'Publication year differs from metric periods: actuals, forecasts and monitoring cycles are labelled separately.', 'OfS grant expenditure and its own accounts must not be added to university income, staff or estates totals.', 'Individual metrics retain printed-page and PDF-page references; 2024-25 grant comparators are re-presented.', 'OfS context is not an additional input to the System Watch v1.0 composite.'],
+    coverage: OFS_ANNUAL_REPORT.scope,
+  },
   // TIER 1: HESA
   {
     id: 'hesa-finance',

@@ -1,0 +1,294 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#main-content"
+    - complementary [ref=e5]:
+      - link "HEStats overview" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img "HEStats mark" [ref=e7]
+        - generic [ref=e11]:
+          - strong [ref=e12]: HEStats
+          - generic [ref=e13]: UK higher educationintelligence
+      - navigation "Main navigation" [ref=e14]:
+        - generic [ref=e15]:
+          - link "Overview" [ref=e16] [cursor=pointer]:
+            - /url: /
+          - link "Explorer" [ref=e19] [cursor=pointer]:
+            - /url: /explorer
+          - link "Universities" [ref=e24] [cursor=pointer]:
+            - /url: /universities
+          - link "Compare" [ref=e30] [cursor=pointer]:
+            - /url: /compare
+          - link "Rankings" [ref=e37] [cursor=pointer]:
+            - /url: /rankings
+        - generic [ref=e45]:
+          - paragraph [ref=e46]: Intelligence
+          - link "System watch" [ref=e47] [cursor=pointer]:
+            - /url: /system-watch
+          - link "Sector finances" [ref=e51] [cursor=pointer]:
+            - /url: /sector
+          - link "Students & careers" [ref=e56] [cursor=pointer]:
+            - /url: /student-journey
+          - link "Intelligence centre" [ref=e61] [cursor=pointer]:
+            - /url: /intelligence
+        - generic [ref=e66]:
+          - paragraph [ref=e67]: Sources
+          - link "Open data" [ref=e68] [cursor=pointer]:
+            - /url: /open-data
+          - link "Publications" [ref=e74] [cursor=pointer]:
+            - /url: /reports
+          - link "Methodology" [ref=e79] [cursor=pointer]:
+            - /url: /about
+      - generic [ref=e83]:
+        - text: Independent. Open. Accessible.
+        - link "Support HEStats" [ref=e84] [cursor=pointer]:
+          - /url: /support
+    - banner [ref=e87]:
+      - button "Search HEStats" [ref=e88]:
+        - generic [ref=e92]: Search for a university, indicator or keyword…
+        - generic [ref=e93]: ⌘ K
+      - generic [ref=e94]:
+        - generic [ref=e95]: Financial year
+        - combobox "Financial year" [ref=e96]:
+          - option "FY 2024-25" [selected]
+          - option "FY 2023-24"
+          - option "FY 2022-23"
+          - option "FY 2021-22"
+          - option "FY 2020-21"
+          - option "FY 2019-20"
+          - option "FY 2018-19"
+          - option "FY 2017-18"
+          - option "FY 2016-17"
+          - option "FY 2015-16"
+      - button "Toggle theme" [ref=e97] [cursor=pointer]
+      - link "Explore data" [ref=e104] [cursor=pointer]:
+        - /url: /explorer
+    - generic [ref=e107]:
+      - main [ref=e108]:
+        - generic [ref=e110]:
+          - region [ref=e111]:
+            - generic [ref=e112]:
+              - paragraph [ref=e113]: The higher education observatory
+              - heading "The sector, in focus." [level=1] [ref=e114]
+              - paragraph [ref=e115]: Financial intelligence for UK higher education.
+            - generic [ref=e116]:
+              - generic [ref=e117]: Financial year 2024-25
+              - 'link "Source: HESA Finance" [ref=e118] [cursor=pointer]':
+                - /url: /open-data
+          - region "Sector indicators for 2024-25" [ref=e121]:
+            - link "Sector income £54.79bn +1.1% vs previous year" [ref=e122] [cursor=pointer]:
+              - /url: /sector
+              - generic [ref=e129]:
+                - generic [ref=e130]: Sector income
+                - strong [ref=e131]: £54.79bn
+                - generic [ref=e132]:
+                  - generic [ref=e133]: +1.1%
+                  - text: vs previous year
+            - link "Research income £7.72bn +2.4% vs previous year" [ref=e134] [cursor=pointer]:
+              - /url: /sector
+              - generic [ref=e138]:
+                - generic [ref=e139]: Research income
+                - strong [ref=e140]: £7.72bn
+                - generic [ref=e141]:
+                  - generic [ref=e142]: +2.4%
+                  - text: vs previous year
+            - link "Verified providers 299 included in this year's totals" [ref=e143] [cursor=pointer]:
+              - /url: /open-data
+              - generic [ref=e147]:
+                - generic [ref=e148]: Verified providers
+                - strong [ref=e149]: "299"
+                - generic [ref=e150]: included in this year's totals
+          - generic [ref=e151]:
+            - region [ref=e152]:
+              - generic [ref=e153]:
+                - generic [ref=e154]:
+                  - heading "Sector income" [level=2] [ref=e155]
+                  - paragraph [ref=e156]: UK higher education · 2015-16–2024-25
+                - group "Chart metric" [ref=e157]:
+                  - button "Income" [pressed] [ref=e158] [cursor=pointer]
+                  - button "Research" [ref=e159] [cursor=pointer]
+              - img "Sector income by financial year, in billions of pounds. Values available in the trend data below." [ref=e160]:
+                - application [ref=e163]:
+                  - generic [ref=e167]:
+                    - generic [ref=e168]: "2015"
+                    - generic [ref=e170]: "2016"
+                    - generic [ref=e172]: "2017"
+                    - generic [ref=e174]: "2018"
+                    - generic [ref=e176]: "2019"
+                    - generic [ref=e178]: "2020"
+                    - generic [ref=e180]: "2021"
+                    - generic [ref=e182]: "2022"
+                    - generic [ref=e184]: "2023"
+                    - generic [ref=e186]: "2024"
+                  - generic [ref=e189]:
+                    - generic [ref=e190]: £0bn
+                    - generic [ref=e192]: £15bn
+                    - generic [ref=e194]: £30bn
+                    - generic [ref=e196]: £45bn
+                    - generic [ref=e198]: £60bn
+              - group [ref=e215]:
+                - generic "View trend data and coverage" [ref=e216] [cursor=pointer]
+            - region [ref=e217]:
+              - generic [ref=e218]:
+                - heading "System watch" [level=2] [ref=e219]
+                - link "Open system watch" [ref=e220] [cursor=pointer]:
+                  - /url: /system-watch
+              - paragraph [ref=e223]: Finance, graduate employment, labour demand and recruitment exposure.
+              - generic [ref=e224]:
+                - img "System pressure score 56 out of 100" [ref=e225]:
+                  - generic:
+                    - strong: "56"
+                    - generic: / 100
+                - generic [ref=e234]:
+                  - strong [ref=e235]: Severe
+                  - paragraph [ref=e236]: Inputs as of 26 July 2026. Annual report reviewed 2026-09-26; score unchanged.
+              - link "View underlying indicators" [ref=e237] [cursor=pointer]:
+                - /url: /system-watch
+          - region [ref=e240]:
+            - generic [ref=e241]:
+              - generic [ref=e242]:
+                - paragraph [ref=e243]: Evidence update · England
+                - heading "A clearer view of sector resilience." [level=2] [ref=e246]
+                - paragraph [ref=e247]: OfS Annual report 2025–26 · Published 14 July 2026
+              - link "Read report" [ref=e248] [cursor=pointer]:
+                - /url: https://www.officeforstudents.org.uk/media/c5wfhf2c/ofs-ara-2026_accessible.pdf
+            - generic [ref=e252]:
+              - article [ref=e253]:
+                - text: Reported
+                - strong [ref=e254]: 35.8%
+                - heading "Institutions reporting a deficit" [level=3] [ref=e255]
+                - paragraph [ref=e256]: 2024-25
+                - 'link "Institutions reporting a deficit: report page 54" [ref=e257] [cursor=pointer]':
+                  - /url: https://www.officeforstudents.org.uk/media/c5wfhf2c/ofs-ara-2026_accessible.pdf#page=55
+                  - text: p. 54
+              - article [ref=e261]:
+                - text: Forecast
+                - strong [ref=e262]: 42.7%
+                - heading "Institutions forecasting a deficit" [level=3] [ref=e263]
+                - paragraph [ref=e264]: 2025-26 forecast
+                - 'link "Institutions forecasting a deficit: report page 54" [ref=e265] [cursor=pointer]':
+                  - /url: https://www.officeforstudents.org.uk/media/c5wfhf2c/ofs-ara-2026_accessible.pdf#page=55
+                  - text: p. 54
+              - article [ref=e269]:
+                - text: Reported
+                - strong [ref=e270]: "108"
+                - heading "Providers under formal monitoring" [level=3] [ref=e271]
+                - paragraph [ref=e272]: Close of AFR24 monitoring cycle
+                - 'link "Providers under formal monitoring: report page 57" [ref=e273] [cursor=pointer]':
+                  - /url: https://www.officeforstudents.org.uk/media/c5wfhf2c/ofs-ara-2026_accessible.pdf#page=58
+                  - text: p. 57
+              - article [ref=e277]:
+                - text: Reported
+                - strong [ref=e278]: "-7.3%"
+                - heading "Course fee income against forecast" [level=3] [ref=e279]
+                - paragraph [ref=e280]: 2024-25
+                - 'link "Course fee income against forecast: report page 74" [ref=e281] [cursor=pointer]':
+                  - /url: https://www.officeforstudents.org.uk/media/c5wfhf2c/ofs-ara-2026_accessible.pdf#page=75
+                  - text: p. 74
+            - generic [ref=e285]:
+              - paragraph [ref=e286]: England evidence. Actuals, forecasts and monitoring cycles have different coverage.
+              - link "Explore the evidence" [ref=e287] [cursor=pointer]:
+                - /url: /reports#ofs-annual-report
+          - region [ref=e291]:
+            - generic [ref=e292]:
+              - generic [ref=e293]:
+                - heading "Institutions to explore" [level=2] [ref=e294]
+                - paragraph [ref=e295]: Compare key financial indicators for leading universities.
+              - link "View all universities" [ref=e296] [cursor=pointer]:
+                - /url: /universities
+            - table [ref=e300]:
+              - caption [ref=e301]: Leading institutions by income for 2024-25. Select at least two to compare.
+              - rowgroup [ref=e302]:
+                - row [ref=e303]:
+                  - columnheader "#" [ref=e304]
+                  - columnheader "Institution" [ref=e305]
+                  - columnheader [ref=e306]:
+                    - button "Total income (FY 2024-25)" [ref=e307] [cursor=pointer]:
+                      - text: Total income
+                      - generic [ref=e308]: (FY 2024-25)
+                  - columnheader "Compare" [ref=e311]
+              - rowgroup [ref=e312]:
+                - row [ref=e313]:
+                  - cell "1" [ref=e314]
+                  - rowheader [ref=e315]:
+                    - link "University of Oxford" [ref=e316] [cursor=pointer]:
+                      - /url: /universities/oxford
+                  - cell "£3,021.19m" [ref=e322]
+                  - cell [ref=e323]:
+                    - checkbox "Compare Oxford" [ref=e324] [cursor=pointer]
+                - row [ref=e325]:
+                  - cell "2" [ref=e326]
+                  - rowheader [ref=e327]:
+                    - link "University of Cambridge" [ref=e328] [cursor=pointer]:
+                      - /url: /universities/cambridge
+                  - cell "£2,660.17m" [ref=e334]
+                  - cell [ref=e335]:
+                    - checkbox "Compare Cambridge" [ref=e336] [cursor=pointer]
+                - row [ref=e337]:
+                  - cell "3" [ref=e338]
+                  - rowheader [ref=e339]:
+                    - link "University College London" [ref=e340] [cursor=pointer]:
+                      - /url: /universities/ucl
+                  - cell "£2,213.01m" [ref=e346]
+                  - cell [ref=e347]:
+                    - checkbox "Compare UCL" [ref=e348] [cursor=pointer]
+                - row [ref=e349]:
+                  - cell "4" [ref=e350]
+                  - rowheader [ref=e351]:
+                    - link "Imperial College London" [ref=e352] [cursor=pointer]:
+                      - /url: /universities/imperial
+                  - cell "£1,492.64m" [ref=e358]
+                  - cell [ref=e359]:
+                    - checkbox "Compare Imperial" [ref=e360] [cursor=pointer]
+            - generic [ref=e361]:
+              - paragraph [ref=e362]: "Source: HESA Finance · 2024-25"
+              - generic [ref=e363]:
+                - status [ref=e364]: Select 2–4 institutions
+                - button "Compare selected" [disabled] [ref=e365]
+          - generic [ref=e368]:
+            - link "Explore all sector indicators" [ref=e369] [cursor=pointer]:
+              - /url: /sector
+            - link "Students & careers" [ref=e372] [cursor=pointer]:
+              - /url: /student-journey
+            - link "Latest sector intelligence" [ref=e375] [cursor=pointer]:
+              - /url: /intelligence
+      - contentinfo [ref=e378]:
+        - generic [ref=e379]:
+          - generic [ref=e380]:
+            - generic [ref=e381]:
+              - img "HEStats mark" [ref=e382]
+              - generic [ref=e386]: HEstats
+              - generic [ref=e388]: hestats.co.uk
+            - navigation [ref=e389]:
+              - link "Universities" [ref=e390] [cursor=pointer]:
+                - /url: /universities
+              - link "Compare" [ref=e391] [cursor=pointer]:
+                - /url: /compare
+              - link "Rankings" [ref=e392] [cursor=pointer]:
+                - /url: /rankings
+              - link "Explorer" [ref=e393] [cursor=pointer]:
+                - /url: /explorer
+              - link "Intelligence" [ref=e394] [cursor=pointer]:
+                - /url: /intelligence
+              - link "Open Data" [ref=e395] [cursor=pointer]:
+                - /url: /open-data
+              - link "API" [ref=e396] [cursor=pointer]:
+                - /url: /api
+              - link "Brand" [ref=e397] [cursor=pointer]:
+                - /url: /brand
+              - link "Methodology" [ref=e398] [cursor=pointer]:
+                - /url: /about
+              - link "Support" [ref=e399] [cursor=pointer]:
+                - /url: /support
+          - generic [ref=e400]:
+            - generic [ref=e401]: © 2026 HEStats
+            - generic [ref=e402]: ·
+            - link "Created by Ashan Jeevanathan" [ref=e403] [cursor=pointer]:
+              - /url: /about/#ashan-jeevanathan
+            - generic [ref=e404]: ·
+            - generic [ref=e405]: "Data registry: OfS · HESA · annual reports · Companies House"
+            - generic [ref=e406]: ·
+            - generic [ref=e407]: CC BY 4.0
+            - generic [ref=e408]: Verified HESA rows · pending gaps labelled
+    - complementary [ref=e410]
+  - generic [aria-hidden] [ref=e411]: £0bn

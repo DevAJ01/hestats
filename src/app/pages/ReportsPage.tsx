@@ -6,6 +6,7 @@ import type { FinancialYear, Institution } from '../data/types'
 import { NationBadge } from '../components/institutions/NationBadge'
 import { DataSourceBadge } from '../components/institutions/DataSourceBadge'
 import { Link } from 'react-router'
+import { OfsReportPanel } from '../components/intelligence/OfsReportPanel'
 
 function StatusIcon({ status }: { status: string }) {
   if (status === 'found') return <CheckCircle className="w-3.5 h-3.5" style={{ color: 'var(--positive)' }} />
@@ -60,6 +61,7 @@ export function ReportsPage() {
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 py-2.5 space-y-2.5">
+      <div id="ofs-annual-report"><OfsReportPanel /></div>
       {/* Status bar */}
       <div
         className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 border"

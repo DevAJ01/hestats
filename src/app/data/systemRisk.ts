@@ -1,5 +1,6 @@
 import { getAggregateEligibleFinancials, isKnownNumber } from './financials'
 import { HESA_GRADUATE_OUTCOMES_HEADLINE } from './outcomes'
+import { OFS_ANNUAL_REPORT, OFS_REPORT_METRICS } from './ofsAnnualReport'
 
 export type SystemRiskLevel = 'Stable' | 'Guarded' | 'Severe' | 'Critical'
 
@@ -17,6 +18,7 @@ export interface SystemRiskIndicator {
 }
 
 export interface SystemRiskSnapshot {
+  review: { date: string; source_id: string; source_url: string; previous_score: number; score_change: number; explanation: string }
   score: number
   level: SystemRiskLevel
   as_of: string
@@ -100,7 +102,7 @@ export function buildSystemRiskSnapshot(): SystemRiskSnapshot {
       signals: [
         { label: 'Providers in deficit', value: `${round(deficitShare, 1)}%`, direction: deficitShare >= 35 ? 'negative' : 'neutral' },
         { label: 'Under 30 liquidity days', value: `${round(lowLiquidityShare, 1)}%`, direction: lowLiquidityShare >= 15 ? 'negative' : 'neutral' },
-        { label: 'OfS 2025-26 deficit forecast', value: '42.7%', direction: 'negative' },
+        { label: 'OfS England 2025-26 deficit forecast (context)', value: `${OFS_REPORT_METRICS.deficit_forecast.value}%`, direction: 'negative' },
       ],
       source_name: 'HEStats verified finance panel + OfS 2026 sustainability report',
       source_url: 'https://www.officeforstudents.org.uk/publications/financial-sustainability-of-higher-education-providers-in-england-2026/',
@@ -164,6 +166,11 @@ export function buildSystemRiskSnapshot(): SystemRiskSnapshot {
   )
 
   return {
+    review: {
+      date: OFS_ANNUAL_REPORT.reviewed, source_id: OFS_ANNUAL_REPORT.id, source_url: OFS_ANNUAL_REPORT.url,
+      previous_score: 56, score_change: score - 56,
+      explanation: 'Recalculated after reviewing the OfS 2025–26 annual report. The v1.0 inputs and weights are unchanged: finance 35%, employment 25%, labour demand 25%, recruitment exposure 15%. England-only monitoring counts and forecasts are contextual evidence, not replacements for UK provider actuals. The report supplies no new comparable liquidity, employment or labour-demand input. The score is not a September 2026 nowcast.',
+    },
     score,
     level: systemRiskLevel(score),
     as_of: '2026-07-26',

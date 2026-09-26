@@ -1,0 +1,307 @@
+- generic [ref=e1]:
+  - generic [ref=e782]:
+    - link "Skip to content" [ref=e783] [cursor=pointer]:
+      - /url: "#main-content"
+    - banner [ref=e784]:
+      - button "Open navigation" [ref=e785] [cursor=pointer]
+      - button "Search HEStats" [ref=e787]
+      - button "Toggle theme" [ref=e791] [cursor=pointer]
+    - dialog "Search HEStats" [ref=e1073]:
+      - generic [ref=e1074]:
+        - textbox "Search universities and actions" [active] [ref=e1078]:
+          - /placeholder: Search universities or actions…
+        - button "Close search" [ref=e1079] [cursor=pointer]
+      - generic [ref=e1084]:
+        - paragraph [ref=e1085]: Suggested
+        - button "OfS annual report 2025–26 Financial resilience, student experience and funding" [ref=e1086]:
+          - generic [ref=e1091]:
+            - generic [ref=e1092]: OfS annual report 2025–26
+            - generic [ref=e1093]: Financial resilience, student experience and funding
+        - button "Open UK HE System Watch Finance, employment & labour risk" [ref=e1094]:
+          - generic [ref=e1098]:
+            - generic [ref=e1099]: Open UK HE System Watch
+            - generic [ref=e1100]: Finance, employment & labour risk
+        - button "Compare universities Up to six side by side" [ref=e1101]:
+          - generic [ref=e1108]:
+            - generic [ref=e1109]: Compare universities
+            - generic [ref=e1110]: Up to six side by side
+        - button "Compare Oxford and Cambridge Quick comparison" [ref=e1111]:
+          - generic [ref=e1118]:
+            - generic [ref=e1119]: Compare Oxford and Cambridge
+            - generic [ref=e1120]: Quick comparison
+        - button "Show highest revenue universities Financial league table" [ref=e1121]:
+          - generic [ref=e1124]:
+            - generic [ref=e1125]: Show highest revenue universities
+            - generic [ref=e1126]: Financial league table
+        - button "Universities with highest graduate salaries Outcomes ranking" [ref=e1127]:
+          - generic [ref=e1130]:
+            - generic [ref=e1131]: Universities with highest graduate salaries
+            - generic [ref=e1132]: Outcomes ranking
+        - button "Explore the sector visually Map · graph · timeline · table" [ref=e1133]:
+          - generic [ref=e1138]:
+            - generic [ref=e1139]: Explore the sector visually
+            - generic [ref=e1140]: Map · graph · timeline · table
+        - button "Latest sector intelligence News, policy & reports" [ref=e1141]:
+          - generic [ref=e1146]:
+            - generic [ref=e1147]: Latest sector intelligence
+            - generic [ref=e1148]: News, policy & reports
+        - button "Government funding updates Policy feed" [ref=e1149]:
+          - generic [ref=e1154]:
+            - generic [ref=e1155]: Government funding updates
+            - generic [ref=e1156]: Policy feed
+        - button "Create social post from metrics Verified data drafts" [ref=e1157]:
+          - generic [ref=e1162]:
+            - generic [ref=e1163]: Create social post from metrics
+            - generic [ref=e1164]: Verified data drafts
+        - button "Download open data CSV · JSON · API" [ref=e1165]:
+          - generic [ref=e1171]:
+            - generic [ref=e1172]: Download open data
+            - generic [ref=e1173]: CSV · JSON · API
+        - button "API reference Endpoints & keys" [ref=e1174]:
+          - generic [ref=e1178]:
+            - generic [ref=e1179]: API reference
+            - generic [ref=e1180]: Endpoints & keys
+        - button "Brand system Logos, colours & social kit" [ref=e1181]:
+          - generic [ref=e1186]:
+            - generic [ref=e1187]: Brand system
+            - generic [ref=e1188]: Logos, colours & social kit
+        - button "Support HEStats Keep the data open" [ref=e1189]:
+          - generic [ref=e1193]:
+            - generic [ref=e1194]: Support HEStats
+            - generic [ref=e1195]: Keep the data open
+      - generic [ref=e1196]: 304 universities indexed
+    - generic [ref=e798]:
+      - navigation "Breadcrumb" [ref=e800]:
+        - link "Overview" [ref=e805] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e808]: system-watch
+      - main [ref=e810]:
+        - generic [ref=e812]:
+          - generic [ref=e813]:
+            - paragraph [ref=e814]: Signals, with perspective
+            - heading "Understand the pressure. Follow the evidence." [level=1] [ref=e815]: Understand the pressure.Follow the evidence.
+            - paragraph [ref=e816]: Four indicators. One transparent methodology. A clearer view of the forces shaping higher education.
+          - generic [ref=e817]:
+            - generic [ref=e818]:
+              - generic [ref=e819]: UK Higher Education System Watch
+              - generic [ref=e823]:
+                - generic [ref=e824]: 56/100
+                - generic [ref=e825]:
+                  - paragraph [ref=e826]: Severe
+                  - paragraph [ref=e827]: AS OF 2026-07-26
+              - generic [ref=e833]:
+                - generic [ref=e834]: STABLE
+                - generic [ref=e835]: GUARDED
+                - generic [ref=e836]: SEVERE
+                - generic [ref=e837]: CRITICAL
+              - paragraph [ref=e838]: An early-warning view across institutional finances, graduate employment, labour demand and recruitment concentration. Explore the evidence and calculation behind each component below.
+            - complementary [ref=e839]:
+              - paragraph [ref=e840]: Coverage & guardrails
+              - generic [ref=e841]:
+                - generic [ref=e842]:
+                  - generic [ref=e843]: Verified finance providers
+                  - generic [ref=e844]: "299"
+                - generic [ref=e845]:
+                  - generic [ref=e846]: Graduate outcomes period
+                  - generic [ref=e847]: 2023-24
+                - generic [ref=e848]:
+                  - generic [ref=e849]: Latest labour signal
+                  - generic [ref=e850]: 2026-07-21
+                - generic [ref=e851]:
+                  - generic [ref=e852]: Composite version
+                  - generic [ref=e853]: v1.0
+                - generic [ref=e854]:
+                  - generic [ref=e855]: Annual report reviewed
+                  - generic [ref=e856]: 2026-09-26
+              - paragraph [ref=e860]: This is a transparent early-warning indicator, not a credit rating, regulatory judgement or forecast of institutional failure. Each signal retains its own reporting period.
+          - region [ref=e861]:
+            - generic [ref=e862]:
+              - paragraph [ref=e863]: After the annual report review
+              - heading "56/100 · Unchanged" [level=2] [ref=e864]
+              - paragraph [ref=e865]: "Recalculated after reviewing the OfS 2025–26 annual report. The v1.0 inputs and weights are unchanged: finance 35%, employment 25%, labour demand 25%, recruitment exposure 15%. England-only monitoring counts and forecasts are contextual evidence, not replacements for UK provider actuals. The report supplies no new comparable liquidity, employment or labour-demand input. The score is not a September 2026 nowcast."
+            - group [ref=e866]:
+              - generic "See the calculation" [ref=e867] [cursor=pointer]
+          - region [ref=e868]:
+            - generic [ref=e869]:
+              - generic [ref=e870]:
+                - paragraph [ref=e871]: Evidence update · England
+                - heading "A clearer view of sector resilience." [level=2] [ref=e874]
+                - paragraph [ref=e875]: OfS Annual report 2025–26 · Published 14 July 2026
+              - link "Read report" [ref=e876] [cursor=pointer]:
+                - /url: https://www.officeforstudents.org.uk/media/c5wfhf2c/ofs-ara-2026_accessible.pdf
+            - group "Report topic" [ref=e880]:
+              - button "Financial resilience" [pressed] [ref=e881] [cursor=pointer]
+              - button "Student experience" [ref=e882] [cursor=pointer]
+              - button "Public funding" [ref=e883] [cursor=pointer]
+            - generic [ref=e884]:
+              - article [ref=e885]:
+                - text: Reported
+                - strong [ref=e886]: 35.8%
+                - heading "Institutions reporting a deficit" [level=3] [ref=e887]
+                - paragraph [ref=e888]: 2024-25
+                - 'link "Institutions reporting a deficit: report page 54" [ref=e889] [cursor=pointer]':
+                  - /url: https://www.officeforstudents.org.uk/media/c5wfhf2c/ofs-ara-2026_accessible.pdf#page=55
+                  - text: p. 54
+              - article [ref=e893]:
+                - text: Forecast
+                - strong [ref=e894]: 42.7%
+                - heading "Institutions forecasting a deficit" [level=3] [ref=e895]
+                - paragraph [ref=e896]: 2025-26 forecast
+                - 'link "Institutions forecasting a deficit: report page 54" [ref=e897] [cursor=pointer]':
+                  - /url: https://www.officeforstudents.org.uk/media/c5wfhf2c/ofs-ara-2026_accessible.pdf#page=55
+                  - text: p. 54
+              - article [ref=e901]:
+                - text: Reported
+                - strong [ref=e902]: "108"
+                - heading "Providers under formal monitoring" [level=3] [ref=e903]
+                - paragraph [ref=e904]: Close of AFR24 monitoring cycle
+                - 'link "Providers under formal monitoring: report page 57" [ref=e905] [cursor=pointer]':
+                  - /url: https://www.officeforstudents.org.uk/media/c5wfhf2c/ofs-ara-2026_accessible.pdf#page=58
+                  - text: p. 57
+              - article [ref=e909]:
+                - text: Reported
+                - strong [ref=e910]: "-7.3%"
+                - heading "Course fee income against forecast" [level=3] [ref=e911]
+                - paragraph [ref=e912]: 2024-25
+                - 'link "Course fee income against forecast: report page 74" [ref=e913] [cursor=pointer]':
+                  - /url: https://www.officeforstudents.org.uk/media/c5wfhf2c/ofs-ara-2026_accessible.pdf#page=75
+                  - text: p. 74
+            - generic [ref=e917]:
+              - paragraph [ref=e918]: England evidence. Actuals, forecasts and monitoring cycles have different coverage.
+              - group [ref=e919]:
+                - generic "Coverage & interpretation" [ref=e920] [cursor=pointer]
+          - generic [ref=e923]:
+            - generic [ref=e924]:
+              - generic [ref=e925]:
+                - heading "Component indicators" [level=2] [ref=e926]
+                - paragraph [ref=e927]: Open each method panel to inspect the thresholds and source.
+              - paragraph [ref=e928]: WEIGHTS · FIN 35 · EMP 25 · LAB 25 · REC 15
+            - generic [ref=e929]:
+              - article [ref=e930]:
+                - generic [ref=e937]:
+                  - generic [ref=e938]:
+                    - generic [ref=e939]:
+                      - heading "Institution finances" [level=2] [ref=e940]
+                      - paragraph [ref=e941]: FY 2024-25
+                    - generic [ref=e942]:
+                      - paragraph [ref=e943]: "57"
+                      - paragraph [ref=e944]: Severe
+                  - paragraph [ref=e945]: Provider deficits and very low cash cover are combined into a comparable pressure score.
+                - generic [ref=e946]:
+                  - generic [ref=e947]:
+                    - generic [ref=e948]: Providers in deficit
+                    - generic [ref=e949]: 37.8%
+                  - generic [ref=e950]:
+                    - generic [ref=e951]: Under 30 liquidity days
+                    - generic [ref=e952]: 9.7%
+                  - generic [ref=e953]:
+                    - generic [ref=e954]: OfS England 2025-26 deficit forecast (context)
+                    - generic [ref=e955]: 42.7%
+                - group [ref=e956]:
+                  - generic "Method and source" [ref=e957] [cursor=pointer]
+              - article [ref=e958]:
+                - generic [ref=e964]:
+                  - generic [ref=e965]:
+                    - generic [ref=e966]:
+                      - heading "Graduate employment" [level=2] [ref=e967]
+                      - paragraph [ref=e968]: Graduates 2023-24
+                    - generic [ref=e969]:
+                      - paragraph [ref=e970]: "50"
+                      - paragraph [ref=e971]: Guarded
+                  - paragraph [ref=e972]: A directional indicator based on work or further study and unemployment 15 months after graduation.
+                - generic [ref=e973]:
+                  - generic [ref=e974]:
+                    - generic [ref=e975]: Work or further study
+                    - generic [ref=e976]: 87%
+                  - generic [ref=e977]:
+                    - generic [ref=e978]: Unemployed
+                    - generic [ref=e979]: 7%
+                  - generic [ref=e980]:
+                    - generic [ref=e981]: Full-time employment
+                    - generic [ref=e982]: 57%
+                - group [ref=e983]:
+                  - generic "Method and source" [ref=e984] [cursor=pointer]
+              - article [ref=e985]:
+                - generic [ref=e992]:
+                  - generic [ref=e993]:
+                    - generic [ref=e994]:
+                      - heading "UK labour demand" [level=2] [ref=e995]
+                      - paragraph [ref=e996]: Apr-Jun 2026
+                    - generic [ref=e997]:
+                      - paragraph [ref=e998]: "50"
+                      - paragraph [ref=e999]: Guarded
+                  - paragraph [ref=e1000]: The national hiring backdrop combines vacancy momentum and unemployed people per vacancy.
+                - generic [ref=e1001]:
+                  - generic [ref=e1002]:
+                    - generic [ref=e1003]: UK vacancies
+                    - generic [ref=e1004]: 712k
+                  - generic [ref=e1005]:
+                    - generic [ref=e1006]: Vacancies year on year
+                    - generic [ref=e1007]: "-2.5%"
+                  - generic [ref=e1008]:
+                    - generic [ref=e1009]: Unemployed per vacancy
+                    - generic [ref=e1010]: "2.5"
+                - group [ref=e1011]:
+                  - generic "Method and source" [ref=e1012] [cursor=pointer]
+              - article [ref=e1013]:
+                - generic [ref=e1018]:
+                  - generic [ref=e1019]:
+                    - generic [ref=e1020]:
+                      - heading "Recruitment exposure" [level=2] [ref=e1021]
+                      - paragraph [ref=e1022]: FY 2024-25
+                    - generic [ref=e1023]:
+                      - paragraph [ref=e1024]: "76"
+                      - paragraph [ref=e1025]: Critical
+                  - paragraph [ref=e1026]: A concentration signal showing how many reporting providers receive at least 70% of income from tuition fees.
+                - generic [ref=e1027]:
+                  - generic [ref=e1028]:
+                    - generic [ref=e1029]: Tuition-exposed providers
+                    - generic [ref=e1030]: 45.3%
+                  - generic [ref=e1031]:
+                    - generic [ref=e1032]: Exposure threshold
+                    - generic [ref=e1033]: 70% of income
+                  - generic [ref=e1034]:
+                    - generic [ref=e1035]: Verified finance rows
+                    - generic [ref=e1036]: "299"
+                - group [ref=e1037]:
+                  - generic "Method and source" [ref=e1038] [cursor=pointer]
+      - contentinfo [ref=e1039]:
+        - generic [ref=e1040]:
+          - generic [ref=e1041]:
+            - generic [ref=e1042]:
+              - img "HEStats mark" [ref=e1043]
+              - generic [ref=e1047]: HEstats
+              - generic [ref=e1049]: hestats.co.uk
+            - navigation [ref=e1050]:
+              - link "Universities" [ref=e1051] [cursor=pointer]:
+                - /url: /universities
+              - link "Compare" [ref=e1052] [cursor=pointer]:
+                - /url: /compare
+              - link "Rankings" [ref=e1053] [cursor=pointer]:
+                - /url: /rankings
+              - link "Explorer" [ref=e1054] [cursor=pointer]:
+                - /url: /explorer
+              - link "Intelligence" [ref=e1055] [cursor=pointer]:
+                - /url: /intelligence
+              - link "Open Data" [ref=e1056] [cursor=pointer]:
+                - /url: /open-data
+              - link "API" [ref=e1057] [cursor=pointer]:
+                - /url: /api
+              - link "Brand" [ref=e1058] [cursor=pointer]:
+                - /url: /brand
+              - link "Methodology" [ref=e1059] [cursor=pointer]:
+                - /url: /about
+              - link "Support" [ref=e1060] [cursor=pointer]:
+                - /url: /support
+          - generic [ref=e1061]:
+            - generic [ref=e1062]: © 2026 HEStats
+            - generic [ref=e1063]: ·
+            - link "Created by Ashan Jeevanathan" [ref=e1064] [cursor=pointer]:
+              - /url: /about/#ashan-jeevanathan
+            - generic [ref=e1065]: ·
+            - generic [ref=e1066]: "Data registry: OfS · HESA · annual reports · Companies House"
+            - generic [ref=e1067]: ·
+            - generic [ref=e1068]: CC BY 4.0
+            - generic [ref=e1069]: Verified HESA rows · pending gaps labelled
+    - complementary [ref=e1071]
+  - generic [aria-hidden] [ref=e411]: £0bn

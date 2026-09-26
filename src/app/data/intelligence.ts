@@ -1,4 +1,5 @@
 import type { Confidence } from './sources'
+import { OFS_ANNUAL_REPORT_RECORDS } from './ofsAnnualReport'
 
 export type IntelligenceCategory =
   | 'he-finance'
@@ -51,6 +52,7 @@ export interface IntelligenceRecord {
 }
 
 export const INTELLIGENCE_RECORDS: IntelligenceRecord[] = [
+  ...OFS_ANNUAL_REPORT_RECORDS,
   {
     id: 'hesa-provider-universe-2024-25',
     title: 'HESA 2024-25 student provider universe has 304 reporting providers',

@@ -19,6 +19,7 @@ interface Command {
 }
 
 const COMMANDS: Command[] = [
+  { icon: <FileText className="w-3.5 h-3.5" />, label: 'OfS annual report 2025–26', hint: 'Financial resilience, student experience and funding', type: 'Source', href: '/reports#ofs-annual-report', keywords: 'ofs 2026 annual report accounts source evidence' },
   { icon: <Activity className="w-3.5 h-3.5" />, label: 'Open UK HE System Watch', hint: 'Finance, employment & labour risk', type: 'Risk Monitor', href: '/system-watch', keywords: 'atomic clock risk sector employment' },
   { icon: <GitCompare className="w-3.5 h-3.5" />, label: 'Compare universities', hint: 'Up to six side by side', type: 'Workflow', href: '/compare', keywords: 'versus benchmark' },
   { icon: <GitCompare className="w-3.5 h-3.5" />, label: 'Compare Oxford and Cambridge', hint: 'Quick comparison', type: 'Compare', href: '/compare?set=oxbridge' },
@@ -115,12 +116,12 @@ export function SpotlightModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-start justify-center pt-16 sm:pt-24 px-3"
+      className="spotlight-overlay fixed inset-0 z-[200] flex items-start justify-center pt-16 sm:pt-24 px-3"
       style={{ backgroundColor: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' }}
       onClick={onClose}
     >
       <div
-        role="dialog" aria-modal="true" aria-label="Search HEStats" className="w-full max-w-[620px] overflow-hidden"
+        role="dialog" aria-modal="true" aria-label="Search HEStats" className="spotlight-dialog w-full max-w-[620px] overflow-hidden"
         style={{ backgroundColor: 'var(--panel)', border: '1px solid var(--border-strong)', borderRadius: 8 }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -129,6 +130,7 @@ export function SpotlightModal({ onClose }: { onClose: () => void }) {
           <input
             ref={inputRef}
             type="text"
+            aria-label="Search universities and actions"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKey}
@@ -137,10 +139,11 @@ export function SpotlightModal({ onClose }: { onClose: () => void }) {
             style={{ color: 'var(--text)', fontSize: 14 }}
           />
           {query && (
-            <button onClick={() => setQuery('')} style={{ color: 'var(--muted)' }}>
+            <button aria-label="Clear search" onClick={() => setQuery('')} style={{ color: 'var(--muted)' }}>
               <X className="w-3.5 h-3.5" />
             </button>
           )}
+          <button className="icon-button" aria-label="Close search" onClick={onClose}><X size={18} /></button>
           <kbd
             className="hidden sm:inline"
             style={{ color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 10, padding: '2px 6px', fontFamily: "'JetBrains Mono', monospace" }}
