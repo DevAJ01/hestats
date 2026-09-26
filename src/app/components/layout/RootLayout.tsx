@@ -6,19 +6,14 @@ import { ContextPanel } from './ContextPanel'
 import { SeoManager } from '../seo/SeoManager'
 
 export function RootLayout() {
-  return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
-    >
-      <SeoManager />
-      <Navbar />
+  return <div className="observatory-shell">
+    <SeoManager />
+    <Navbar />
+    <div className="observatory-content">
       <Breadcrumbs />
-      <main className="flex-1 pb-16 lg:pb-0">
-        <Outlet />
-      </main>
+      <main id="main-content" tabIndex={-1}><Outlet /></main>
       <Footer />
-      <ContextPanel />
     </div>
-  )
+    <ContextPanel />
+  </div>
 }
